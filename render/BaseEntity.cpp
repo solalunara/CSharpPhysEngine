@@ -4,11 +4,24 @@
 #include "World.h"
 #include "Transform.h"
 
+#include <algorithm>
+#include <iterator>
+#include <vector>
+
 
 //plane functions
 intptr_t InitPlane( glm::vec3 vNormal, float fDist )
 {
     return (intptr_t) new Plane( vNormal, fDist );
+}
+void GetPlaneVals( intptr_t p, glm::vec3 *norm, float *dist )
+{
+    if ( !norm )
+        norm = new glm::vec3();
+    if ( !dist )
+        dist = new float();
+    *norm = ((Plane *) p)->vNormal;
+    *dist = ((Plane *) p)->fDist;
 }
 float DistanceFromPointToPlane( intptr_t p, glm::vec3 pt )
 {
@@ -33,6 +46,15 @@ void DestructPlane( intptr_t ptr )
 intptr_t InitAABB( glm::vec3 mins, glm::vec3 maxs )
 {
     return (intptr_t) new BoundingBox( mins, maxs );
+}
+void GetAABBPoints( intptr_t BBox, glm::vec3 *mins, glm::vec3 *maxs )
+{
+    if ( !mins )
+        mins = new glm::vec3();
+    if ( !maxs )
+        maxs = new glm::vec3();
+    *mins = ((BoundingBox *) BBox)->mins;
+    *maxs = ((BoundingBox *) BBox)->maxs;
 }
 bool TestCollisionAABB( intptr_t b1, intptr_t b2, glm::vec3 ptB1, glm::vec3 ptB2 )
 {
@@ -115,27 +137,45 @@ void DestructAABB( intptr_t boxptr )
 
 //baseentity functions
 BaseEntity::BaseEntity( BaseFace **EntFaces, GLuint FaceLength, Transform *transform, glm::vec3 mins, glm::vec3 maxs, World *world ) :
-    AABB( BoundingBox( mins, maxs ) ), EntFaces( EntFaces ), FaceLength( FaceLength ), transform( transform ), world( world )
+    AABB( new BoundingBox( mins, maxs ) ), EntFaces( EntFaces ), FaceLength( FaceLength ), transform( transform ), world( world )
 {
 	this->EntIndex = AddEntToWorld( (intptr_t) world, (intptr_t) this );
+}
+BaseEntity::BaseEntity( const BaseEntity &e )
+{
+    FaceLength = e.FaceLength;
+    AABB = new BoundingBox( *e.AABB );
+    transform = new Transform( *e.transform );
+    world = e.world;
+    EntIndex = e.EntIndex;
+    std::vector<BaseFace *> faces;
+    for ( int i = 0; i < FaceLength; ++i )
+    {
+        faces.push_back( new BaseFace( *e.EntFaces[ i ] ) );
+    }
+    EntFaces = faces.data();
 }
 BaseEntity::~BaseEntity()
 {
 	delete EntFaces;
-
+    delete AABB;
 	delete transform;
 }
 intptr_t InitBaseEntity( intptr_t *EntFaces, unsigned int FaceLength, intptr_t transform, glm::vec3 mins, glm::vec3 maxs, intptr_t world )
 {
     return (intptr_t) new BaseEntity( (BaseFace **) EntFaces, FaceLength, (Transform *) transform, mins, maxs, (World *) world );
 }
-intptr_t GetEntMatrix( intptr_t b )
-{
-	return (intptr_t) (&((BaseEntity *) b)->transform->m_ThisToWorld);
-}
 intptr_t GetEntTransform( intptr_t ent )
 {
-    return (intptr_t) ((BaseEntity *) ent)->transform;
+    return (intptr_t) new Transform( *((BaseEntity *) ent)->transform );
+}
+intptr_t GetEntBBox( intptr_t ent )
+{
+    return (intptr_t) new BoundingBox( *((BaseEntity *) ent)->AABB );
+}
+intptr_t GetEntWorld( intptr_t ent )
+{
+    return (intptr_t) new World( *((BaseEntity *) ent)->world );
 }
 void DestructBaseEntity( intptr_t entptr )
 {
@@ -148,6 +188,11 @@ Camera::Camera( Transform *transform, glm::mat4 perspective, World *world ) :
     m_Perspective( perspective )
 {
 };
+intptr_t MakePerspective( float fov, float aspect, float nearclip, float farclip )
+{
+    glm::mat4 *perspective = new glm::mat4( glm::perspective( fov, aspect, nearclip, farclip ) );
+    return (intptr_t) perspective;
+}
 intptr_t InitCamera( intptr_t transform, intptr_t perspective, intptr_t world )
 {
     return (intptr_t) new Camera( (Transform *) transform, *((glm::mat4 *)perspective), (World *) world );

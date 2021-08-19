@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "BaseFace.h"
+#include "Texture.h"
+
+#include <vector>
 
 
 BaseFace::BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint *indices, Texture *texture, GLenum DrawType ) :
@@ -27,6 +30,31 @@ BaseFace::BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint
 
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+}
+BaseFace::BaseFace( const BaseFace &f )
+{
+	VertLength = f.VertLength;
+	IndLength = f.IndLength;
+
+	EBO = f.EBO;
+	VAO = f.VAO;
+	VBO = f.VBO;
+
+	std::vector<float> verts;
+	for ( int i = 0; i < VertLength; ++i )
+	{
+		verts.push_back( f.vertices[i] );
+	}
+	vertices = verts.data();
+
+	std::vector<unsigned int> inds;
+	for ( int i = 0; i < IndLength; ++i )
+	{
+		inds.push_back( f.indices[ i ] );
+	}
+	indices = inds.data();
+
+	this->texture = new Texture( *f.texture );
 }
 BaseFace::~BaseFace()
 {

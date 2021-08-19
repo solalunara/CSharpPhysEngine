@@ -11,6 +11,27 @@ intptr_t InitTransform( glm::vec3 position, glm::vec3 scale, intptr_t rotation )
 {
 	return (intptr_t) new Transform( position, scale, *(glm::mat4 *) rotation );
 }
+void GetTransformVals( intptr_t transform, glm::vec3 *position, glm::vec3 *scale, intptr_t *rotation )
+{
+	if ( !position )
+		position = new glm::vec3();
+	if ( !scale )
+		scale = new glm::vec3();
+	if ( !rotation )
+		rotation = new intptr_t();
+
+	*position = ((Transform *) transform)->m_Position;
+	*scale = ((Transform *) transform)->m_Scale;
+	*rotation = (intptr_t) new glm::mat4( ((Transform *) transform)->m_Rotation );
+}
+intptr_t GetThisToWorld( intptr_t transform )
+{
+	return (intptr_t) new glm::mat4( ((Transform *) transform)->m_ThisToWorld );
+}
+intptr_t GetWorldToThis( intptr_t transform )
+{
+	return (intptr_t) new glm::mat4( ((Transform *) transform)->m_WorldToThis );
+}
 void UpdateTransform( intptr_t tptr )
 {
 	Transform *t = (Transform *) tptr;
@@ -140,10 +161,6 @@ void InverseTransformPoint( intptr_t tptr, glm::vec3 *pt )
 	pt->x = vNewPt.x;
 	pt->y = vNewPt.y;
 	pt->z = vNewPt.z;
-}
-void DestructTransform( intptr_t tptr )
-{
-	delete (Transform *) tptr;
 }
 
 intptr_t InitMatrix( float *values1, float *values2, float *values3, float *values4 )

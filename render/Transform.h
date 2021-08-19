@@ -29,6 +29,9 @@ struct RENDER_API Transform
 
 };
 extern "C" RENDER_API intptr_t InitTransform( glm::vec3 position, glm::vec3 scale, intptr_t rotation );
+extern "C" RENDER_API void GetTransformVals( intptr_t transform, glm::vec3 *position, glm::vec3 *scale, intptr_t *rotation );
+extern "C" RENDER_API intptr_t GetThisToWorld( intptr_t transform );
+extern "C" RENDER_API intptr_t GetWorldToThis( intptr_t transform );
 extern "C" RENDER_API void UpdateTransform( intptr_t tptr );
 extern "C" RENDER_API void AddToPos( intptr_t tptr, glm::vec3 v );
 extern "C" RENDER_API void SetPos( intptr_t tptr, glm::vec3 v );

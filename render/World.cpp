@@ -9,9 +9,7 @@ World::World()
 }
 World::~World()
 {
-	for ( unsigned int i = 0; i < iCurrentIndex; ++i )
-		if ( EntList[ i ] ) delete EntList[ i ];
-	delete[] EntList;
+	//delete[] EntList;
 }
 intptr_t InitWorld()
 {
@@ -24,7 +22,7 @@ unsigned int AddEntToWorld( intptr_t w, intptr_t pEnt )
 }
 intptr_t GetEntAtWorldIndex( intptr_t w, unsigned int index )
 {
-	return (intptr_t) ((World *) w)->EntList[ index ];
+	return (intptr_t) new BaseEntity( *((World *) w)->EntList[ index ] );
 }
 unsigned int GetWorldSize( intptr_t w )
 {

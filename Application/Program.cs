@@ -10,27 +10,58 @@ namespace Application
     class Program
     {
         static readonly IntPtr NULL = IntPtr.Zero;
+#pragma warning disable 0414 
+        static readonly float Movespeed_Air = 5.0f;
+        static readonly float Movespeed_Gnd = 20.0f;
+
         static bool CursorControl = true;
+        static uint MoveTracker = (uint) Move.MOVE_NONE;
         static void Main( string[] args )
         {
             Render_Interface.Init( out IntPtr window, out IntPtr shader, out IntPtr camera, out IntPtr world, out IntPtr inputdata );
-            IntPtr[] texture = { Texture_Interface.InitTexture( Texture_Interface.ToCString( "themasterpiece.png" ) ) };
-            Brush_Interface.InitBrush( new Vector( -10, -10, -11 ), new Vector( 10, 10, -9 ), texture, 1, world );
-            Brush_Interface.InitBrush( new Vector( -10, -11, -10 ), new Vector( 10, -9, 10 ), texture, 1, world );
+            Texture[] texture = { new Texture( "themasterpiece.png" ) };
+
+            World w = new World( world );
+
+            Brush b1 = new Brush( new Vector( -10, -10, -11 ), new Vector( 10, 10, -9 ), texture, w );
+            Brush b2 = new Brush( new Vector( -10, -11, -10 ), new Vector( 10, -9, 10 ), texture, w );
+            Player player = new Player( camera );
 
             InputHandle inptptr = Input;
             Render_Interface.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
 
-            long starttime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            float lasttime = 0;
+            PhysicsObject CamPhys = new PhysicsObject( player, PhysicsObject.Default_Gravity );
+            // Pointer, so doesn't need to be updated each frame, the underlying object is changed
+            Transform CamTransform = player.Transform;
+
+            float lasttime = Render_Interface.GetTime();
 
             while ( !Render_Interface.ShouldTerminate( window ) )
             {
-                float time = ( DateTimeOffset.Now.ToUnixTimeMilliseconds() - starttime ) / 1000.0f;
+                float time = Render_Interface.GetTime();
                 float frametime = time - lasttime;
-                float fps = 1 / frametime;
                 lasttime = time;
-                Console.WriteLine( fps );
+
+                
+                bool Collision = CamPhys.Simulate( frametime );
+
+                float Movespeed = Collision ? Movespeed_Gnd : Movespeed_Air;
+                Vector Force = new Vector();
+                if ( ( MoveTracker & (uint) Move.MOVE_FORWARD ) != 0 )
+                    Force += CamTransform.TransformDirection( new Vector( 0, 0, -1 ) ) * Movespeed * CamPhys.Mass;
+                if ( ( MoveTracker & (uint) Move.MOVE_BACKWARD ) != 0 )
+                    Force += CamTransform.TransformDirection( new Vector( 0, 0, 1 ) ) * Movespeed * CamPhys.Mass;
+                if ( ( MoveTracker & (uint) Move.MOVE_LEFT ) != 0 )
+                    Force += CamTransform.TransformDirection( new Vector( -1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
+                if ( ( MoveTracker & (uint) Move.MOVE_RIGHT ) != 0 )
+                    Force += CamTransform.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
+                Force.y = 0;
+                CamPhys.AddForce( Force );
+
+                if ( ( MoveTracker & (uint) Move.MOVE_JUMP ) != 0 )
+                {
+                    CamPhys.Velocity.y = 5.0f;
+                }
 
                 Render_Interface.RenderLoop( window, shader, camera, world, CursorControl );
             }
@@ -43,6 +74,29 @@ namespace Application
             if ( act == Actions.PRESSED && key == Keys.ESCAPE ) //pressed
             {
                 CursorControl = !CursorControl;
+            }
+
+            bool bSetToTrue = act == Actions.PRESSED || act == Actions.HELD;
+
+            switch( key )
+            {
+                case Keys.W:
+                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_FORWARD, bSetToTrue );
+                    break;
+                case Keys.S:
+                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_BACKWARD, bSetToTrue );
+                    break;
+                case Keys.A:
+                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_LEFT, bSetToTrue );
+                    break;
+                case Keys.D:
+                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_RIGHT, bSetToTrue );
+                    break;
+                case Keys.SPACE:
+                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_JUMP, bSetToTrue );
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -61,5 +115,13 @@ namespace Application
         PRESSED = 1,
         HELD = 2,
     }
-
+    public enum Move
+    {
+        MOVE_NONE       = 0,
+        MOVE_FORWARD    = 1 << 0,
+        MOVE_BACKWARD   = 1 << 1,
+        MOVE_LEFT       = 1 << 2,
+        MOVE_RIGHT      = 1 << 3,
+        MOVE_JUMP       = 1 << 4,
+    }
 }

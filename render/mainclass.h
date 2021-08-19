@@ -29,8 +29,8 @@ typedef unsigned int Move;
 
 //callback functions
 extern "C" RENDER_API void WindowSizeChanged( GLFWwindow *window, int width, int height );
-
 extern "C" RENDER_API void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods );
+
 struct InputData
 {
 	bool action;
@@ -50,7 +50,9 @@ extern "C" RENDER_API void Terminate( intptr_t window, intptr_t shader, intptr_t
 
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );
 
-typedef int (*fptr)( intptr_t window, int key, int scancode, int act, int mods );
+extern "C" RENDER_API float GetTime();
+
+typedef intptr_t (*fptr)( intptr_t window, int key, int scancode, int act, int mods );
 extern "C" RENDER_API void SetInputCallback( intptr_t fn );
 
 #endif

@@ -23,7 +23,6 @@ void WindowSizeChanged( GLFWwindow *window, int width, int height )
 	glViewport( 0, 0, width, height );
 	move |= WINDOW_MOVE;
 }
-
 void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods )
 {
 	if ( Callback )
@@ -33,7 +32,6 @@ void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods )
 		move ^= ALLOW_MOUSE_TURN;
 	*/
 }
-
 void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 {
 	if ( bVal )
@@ -41,7 +39,6 @@ void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 	else
 		*ToSet &= ~val;
 }
-
 void Init( intptr_t *window, intptr_t *shader, intptr_t *camera, intptr_t *world )
 {
 	glfwInit();
@@ -76,29 +73,12 @@ void Init( intptr_t *window, intptr_t *shader, intptr_t *camera, intptr_t *world
 	//if we're launching from visual studio then the relative paths are different than an executable, so change the paths based on if we're in debug mode
 	if ( !shader )
 	 shader = new intptr_t();
-	//*shader = (intptr_t) new Shader( "..\\Application\\bin\\Debug\\Shaders\\VertexShader.vert", "..\\Application\\bin\\Debug\\Shaders\\FragmentShader.frag" );
 	*shader = (intptr_t) new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
-	//on startup, enable mouse turns camera
-	//move |= ALLOW_MOUSE_TURN;
 	if ( !world )
 		world = new intptr_t();
 	*world = (intptr_t) new World();
-	//Texture *texture = new Texture( "container.jpg" );
-	//Texture *texture2 = new Texture( "texturegeneric.png" );
-	//Texture *themasterpiece = new Texture( "themasterpiece.png" );
-	//delete texture;
-	//delete texture2;
 
-	//Transform *transform1 = new Transform( glm::vec3( 0, 0, -5 ), glm::vec3( 1, 1, 1 ), glm::mat4( 1 ) );
-	//Transform *transform2 = new Transform( glm::vec3( 0, 0, -5 ), glm::vec3( 1, 1, 1 ), glm::mat4( 1 ) );
 	Transform *CamTransform = new Transform( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), glm::mat4( 1 ) );
-
-	//Texture *texturebrush[] =
-	//{
-	//	themasterpiece
-	//};
-	//Brush *brush = new Brush( glm::vec3( -10, -11, -10 ), glm::vec3( 10, -9, 10 ), texturebrush, 1, (World *) world );
-	//Brush *brush2 = new Brush( glm::vec3( -10, -10, -11 ), glm::vec3( 10, 10, -9 ), texturebrush, 1, (World *) world );
 
 
 	int width, height;
@@ -113,7 +93,6 @@ void Init( intptr_t *window, intptr_t *shader, intptr_t *camera, intptr_t *world
 
 	lasttime = (float) glfwGetTime();
 }
-
 void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t world, bool bMouseControl )
 {
 	//time stuff
@@ -173,8 +152,7 @@ void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t wor
 		if ( enti == (BaseEntity *) camera )
 			continue;
 		//tell the vertex shader about where the entity is in world space
-		GetEntMatrix( (intptr_t) enti );
-		SetMatrix( shader, "transform", GetEntMatrix( (intptr_t) enti ) );
+		SetMatrix( shader, "transform", (intptr_t) &enti->transform->m_ThisToWorld );
 		//traverse the entity for faces
 		for ( unsigned int i = 0; i < enti->FaceLength; ++i )
 		{
@@ -191,7 +169,6 @@ void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t wor
 	glfwSwapBuffers( (GLFWwindow *) window );
 	glfwPollEvents();
 }
-
 void Terminate( intptr_t window, intptr_t shader, intptr_t camera, intptr_t world )
 {
 	delete (Shader *) shader;
@@ -199,12 +176,14 @@ void Terminate( intptr_t window, intptr_t shader, intptr_t camera, intptr_t worl
 
 	glfwTerminate();
 }
-
 bool ShouldTerminate( intptr_t window )
 {
 	return glfwWindowShouldClose( (GLFWwindow *) window );
 }
-
+float GetTime()
+{
+	return (float) glfwGetTime();
+}
 void SetInputCallback( intptr_t fn )
 {
 	Callback = (fptr) fn;

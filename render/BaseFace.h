@@ -22,6 +22,7 @@ struct Texture;
 struct RENDER_API BaseFace
 {
 	BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint *indices, Texture *texture, GLenum DrawType );
+	BaseFace( const BaseFace &f );
 	~BaseFace();
 
 	float *vertices;

@@ -37,6 +37,7 @@ struct RENDER_API Plane
 	float fDist;
 };
 extern "C" RENDER_API intptr_t InitPlane( glm::vec3 vNormal, float fDist );
+extern "C" RENDER_API void GetPlaneVals( intptr_t p, glm::vec3 *norm, float *dist );
 extern "C" RENDER_API float DistanceFromPointToPlane( intptr_t p, glm::vec3 pt );
 extern "C" RENDER_API void ClosestPointOnPlane( intptr_t p, glm::vec3 pt, glm::vec3 *out );
 extern "C" RENDER_API void DestructPlane( intptr_t ptr );
@@ -52,6 +53,7 @@ struct RENDER_API BoundingBox
 	glm::vec3 maxs;
 };
 extern "C" RENDER_API intptr_t InitAABB( glm::vec3 mins, glm::vec3 maxs );
+extern "C" RENDER_API void GetAABBPoints( intptr_t BBox, glm::vec3 *mins, glm::vec3 *maxs );
 extern "C" RENDER_API bool TestCollisionPoint( glm::vec3 pt, intptr_t b, glm::vec3 ptB  ); //tests a point against an AABB at a location
 extern "C" RENDER_API bool TestCollisionAABB( intptr_t b1, intptr_t b2, glm::vec3 ptB1, glm::vec3 ptB2 ); //test an aabb against another aabb
 extern "C" RENDER_API intptr_t GetCollisionPlane( glm::vec3 pt, intptr_t b, glm::vec3 ptB ); //gets the plane of the aabb that a point is colliding against
@@ -63,6 +65,7 @@ struct RENDER_API BaseEntity
 {
 public:
 	BaseEntity( BaseFace **EntFaces, GLuint FaceLength, Transform *transform, glm::vec3 mins, glm::vec3 maxs, World *world );
+	BaseEntity( const BaseEntity &e );
 	~BaseEntity();
 
 	BaseFace **EntFaces;
@@ -72,12 +75,13 @@ public:
 	GLuint EntIndex;
 
 	Transform *transform;
-	BoundingBox AABB;
+	BoundingBox *AABB;
 
 };
 extern "C" RENDER_API intptr_t InitBaseEntity( intptr_t *EntFaces, unsigned int FaceLength, intptr_t transform, glm::vec3 mins, glm::vec3 maxs, intptr_t world );
-extern "C" RENDER_API intptr_t GetEntMatrix( intptr_t b );
 extern "C" RENDER_API intptr_t GetEntTransform( intptr_t ent );
+extern "C" RENDER_API intptr_t GetEntBBox( intptr_t ent );
+extern "C" RENDER_API intptr_t GetEntWorld( intptr_t ent );
 extern "C" RENDER_API void DestructBaseEntity( intptr_t entptr );
 
 struct RENDER_API Camera : public BaseEntity
@@ -86,6 +90,7 @@ struct RENDER_API Camera : public BaseEntity
 
 	glm::mat4 m_Perspective;
 };
+extern "C" RENDER_API intptr_t MakePerspective( float fov, float aspect, float nearclip, float farclip );
 extern "C" RENDER_API intptr_t InitCamera( intptr_t transform, intptr_t perspective, intptr_t world );
 extern "C" RENDER_API void DestructCamera( intptr_t camptr );
 
