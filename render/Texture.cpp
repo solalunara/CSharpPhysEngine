@@ -2,8 +2,6 @@
 #include "Texture.h"
 
 #include "CRTDBG.h"
-#define ASSERT( b ) _ASSERTE( b )
-
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -19,7 +17,7 @@ Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum Fi
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, WrapStyle );
 		if ( WrapStyle == GL_CLAMP_TO_BORDER )
 		{
-			ASSERT( BorderColor );
+			_ASSERTE( BorderColor );
 			glTexParameterfv( GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, BorderColor );
 		}
 	}
@@ -32,7 +30,7 @@ Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum Fi
 	int width, height, nrChannels;
 	unsigned char *data = stbi_load( FilePath, &width, &height, &nrChannels, 0 );
 
-	ASSERT( data );
+	_ASSERTE( data );
 
 	ID = 0;
 	glGenTextures( 1, &ID );
@@ -43,11 +41,10 @@ Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum Fi
 	glBindTexture( GL_TEXTURE_2D, 0 );
 
 }
-intptr_t InitTexture( const char *FilePath )
+void InitTexture( const char *FilePath, Texture *pTex )
 {
-	return (intptr_t) new Texture( FilePath );
-}
-void DestructTexture( intptr_t texptr )
-{
-	delete (Texture *) texptr;
+	if ( !pTex )
+		pTex = new Texture( FilePath );
+	else
+		*pTex = Texture( FilePath );
 }

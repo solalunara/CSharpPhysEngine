@@ -15,15 +15,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
-struct Texture;
+#include "Texture.h"
 
 
 struct RENDER_API BaseFace
 {
-	BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint *indices, Texture *texture, GLenum DrawType );
-	BaseFace( const BaseFace &f );
-	~BaseFace();
+	BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint *indices, Texture texture, GLenum DrawType );
 
 	float *vertices;
 	unsigned int VertLength;
@@ -35,9 +32,8 @@ struct RENDER_API BaseFace
 	GLuint VAO;
 	GLuint EBO;
 
-	Texture *texture;
+	Texture texture;
 };
-extern "C" RENDER_API intptr_t InitBaseFace( unsigned int Vertlength, float *vertices, unsigned int IndLength, unsigned int *indices, intptr_t textureptr );
-extern "C" RENDER_API void DestructBaseFace( intptr_t faceptr );
+extern "C" RENDER_API void InitBaseFace( unsigned int Vertlength, float *vertices, unsigned int IndLength, unsigned int *indices, Texture texture, BaseFace *pFace );
 
 #endif

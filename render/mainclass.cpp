@@ -1,13 +1,9 @@
 #include "pch.h"
 #include "mainclass.h"
 #include "CRTDBG.h"
-#include "World.h"
 #include "Texture.h"
 #include "Transform.h"
-#include "BaseEntity.h"
 #include "BaseFace.h"
-#include "Shader.h"
-#include "Brush.h"
 
 #define INITIAL_WIDTH 1000
 #define INITIAL_HEIGHT 720
@@ -39,17 +35,22 @@ void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 	else
 		*ToSet &= ~val;
 }
-void Init( intptr_t *window, intptr_t *shader, intptr_t *camera, intptr_t *world )
+void Init( intptr_t *window, Shader *shader, Camera *camera )
 {
+	if ( !window )
+		window = new intptr_t();
+	if ( !shader )
+		shader = new Shader();
+	if ( !camera )
+		camera = new Camera();
+
 	glfwInit();
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 	//initialize the rendering window
-	if ( !window )
-		window = new intptr_t();
 	*window = (intptr_t) glfwCreateWindow( INITIAL_WIDTH, INITIAL_HEIGHT, "testwindow", NULL, NULL );
-	if ( window == NULL )
+	if ( *window == NULL )
 	{
 		_ASSERTE( false );
 		glfwTerminate();
@@ -70,22 +71,14 @@ void Init( intptr_t *window, intptr_t *shader, intptr_t *camera, intptr_t *world
 	glfwSetKeyCallback( (GLFWwindow *) *window, InputMGR );
 
 	//gather the source for the shaders from their respective files
-	//if we're launching from visual studio then the relative paths are different than an executable, so change the paths based on if we're in debug mode
-	if ( !shader )
-	 shader = new intptr_t();
-	*shader = (intptr_t) new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
-	if ( !world )
-		world = new intptr_t();
-	*world = (intptr_t) new World();
+	*shader = Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
 
-	Transform *CamTransform = new Transform( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), glm::mat4( 1 ) );
+	Transform CamTransform( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), glm::mat4( 1 ) );
 
 
 	int width, height;
 	glfwGetWindowSize( (GLFWwindow *) *window, &width, &height );
-	if ( !camera )
-		camera = new intptr_t();
-	*camera = (intptr_t) new Camera( CamTransform, glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f ), (World *) *world );
+	*camera = Camera( CamTransform, glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f ) );
 
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LESS );
@@ -93,7 +86,9 @@ void Init( intptr_t *window, intptr_t *shader, intptr_t *camera, intptr_t *world
 
 	lasttime = (float) glfwGetTime();
 }
-void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t world, bool bMouseControl )
+
+
+void RenderLoop( intptr_t window, Shader shader, Camera *camera, BaseEntity *pRenderEnts, int iRenderEntLength, bool bMouseControl )
 {
 	//time stuff
 	float frametime = (float) glfwGetTime() - lasttime;
@@ -120,9 +115,9 @@ void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t wor
 		}
 		//rotation axis are in local space, so use inverse transform to get the world up
 		glm::vec3 Up( 0, 1.0f, 0 );
-		InverseTransformDirection( (intptr_t) ((Camera *) camera)->transform, &Up );
-		AddToRotation( (intptr_t) ((Camera *) camera)->transform, glm::rotate( glm::mat4( 1.0f ), glm::radians( LKSPD * frametime * -vCenterDist.x ), Up ) );
-		AddToRotation( (intptr_t) ((Camera *) camera)->transform, glm::rotate( glm::mat4( 1.0f ), glm::radians( LKSPD * frametime * -vCenterDist.y ), glm::vec3( 1.0f, 0, 0 ) ) );
+		InverseTransformDirection( camera->LinkedEnt.transform, Up );
+		AddToRotation( camera->LinkedEnt.transform, glm::rotate( glm::mat4( 1.0f ), glm::radians( LKSPD * frametime * -vCenterDist.x ), Up ) );
+		AddToRotation( camera->LinkedEnt.transform, glm::rotate( glm::mat4( 1.0f ), glm::radians( LKSPD * frametime * -vCenterDist.y ), glm::vec3( 1.0f, 0, 0 ) ) );
 		//move the cursor to the middle of the screen
 		glfwSetCursorPos( (GLFWwindow *) window, width / 2, height / 2 );
 	}
@@ -131,7 +126,7 @@ void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t wor
 	//change the perspective matrix for the new aspect ratio if the window has been resized
 	if ( move & WINDOW_MOVE )
 	{
-		((Camera *) camera)->m_Perspective = glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f );
+		camera->m_Perspective = glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f );
 		move &= ~WINDOW_MOVE;
 	}
 
@@ -141,39 +136,34 @@ void RenderLoop( intptr_t window, intptr_t shader, intptr_t camera, intptr_t wor
 	//glUniformMatrix4fv( glGetUniformLocation( ((Shader *) shader)->ID, "CameraTransform" ), 1, GL_FALSE, glm::value_ptr( ((Camera *) camera)->transform->m_WorldToThis ) );
 	//glUniformMatrix4fv( glGetUniformLocation( ((Shader *) shader)->ID, "Perspective" ), 1, GL_FALSE, glm::value_ptr( ((Camera *) camera)->m_Perspective ) );
 
-	SetMatrix( shader, "CameraTransform", (intptr_t) &((Camera *) camera)->transform->m_WorldToThis );
-	SetMatrix( shader, "Perspective", (intptr_t) &((Camera *) camera)->m_Perspective );
+	SetMatrix( shader, "CameraTransform", camera->LinkedEnt.transform.m_WorldToThis );
+	SetMatrix( shader, "Perspective", camera->m_Perspective );
 
 	bool bCameraCollision = false;
 	//traverse the world for entities
-	for ( GLuint i = 0; i < GetWorldSize( world ); ++i )
+	for ( int i = 0; i < iRenderEntLength; ++i )
 	{
-		BaseEntity *enti = (BaseEntity *) GetEntAtWorldIndex( world, i );
-		if ( enti == (BaseEntity *) camera )
-			continue;
+		BaseEntity enti = pRenderEnts[i];
+		if ( enti.FaceLength == 0 )
+			continue; //nothing to render
 		//tell the vertex shader about where the entity is in world space
-		SetMatrix( shader, "transform", (intptr_t) &enti->transform->m_ThisToWorld );
+		SetMatrix( shader, "transform", enti.transform.m_ThisToWorld );
 		//traverse the entity for faces
-		for ( unsigned int i = 0; i < enti->FaceLength; ++i )
+		for ( unsigned int i = 0; i < enti.FaceLength; ++i )
 		{
-			BaseFace *pFace = enti->EntFaces[ i ];
-			if ( pFace == NULL )
-				continue;
-			glBindVertexArray( pFace->VAO );
-			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, pFace->EBO );
-			glBindTexture( GL_TEXTURE_2D, pFace->texture->ID );
-			glDrawElements( GL_TRIANGLES, pFace->IndLength, GL_UNSIGNED_INT, 0 );
+			BaseFace pFace = enti.EntFaces[ i ];
+			glBindVertexArray( pFace.VAO );
+			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, pFace.EBO );
+			glBindTexture( GL_TEXTURE_2D, pFace.texture.ID );
+			glDrawElements( GL_TRIANGLES, pFace.IndLength, GL_UNSIGNED_INT, 0 );
 		}
 	}
 
 	glfwSwapBuffers( (GLFWwindow *) window );
 	glfwPollEvents();
 }
-void Terminate( intptr_t window, intptr_t shader, intptr_t camera, intptr_t world )
+void Terminate()
 {
-	delete (Shader *) shader;
-	delete (World *) world;
-
 	glfwTerminate();
 }
 bool ShouldTerminate( intptr_t window )

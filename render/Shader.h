@@ -22,15 +22,16 @@
 struct RENDER_API Shader
 {
 	Shader( const char *VertPath, const char *FragPath );
+	Shader();
 
 	GLuint ID = 0;
 };
 
-extern "C" RENDER_API void UseShader( intptr_t s );
+extern "C" RENDER_API void UseShader( Shader s );
 
-extern "C" RENDER_API void SetBool( intptr_t s, const std::string & name, bool value );
-extern "C" RENDER_API void SetInt( intptr_t s, const std::string & name, int value );
-extern "C" RENDER_API void SetFloat( intptr_t s, const std::string & name, float value );
-extern "C" RENDER_API void SetMatrix( intptr_t s, const std::string &name, intptr_t value );
+extern "C" RENDER_API void SetBool( Shader s, const std::string &name, bool value );
+extern "C" RENDER_API void SetInt( Shader s, const std::string &name, int value );
+extern "C" RENDER_API void SetFloat( Shader s, const std::string & name, float value );
+extern "C" RENDER_API void SetMatrix( Shader s, const std::string &name, glm::mat4 value );
 
 #endif

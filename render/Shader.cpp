@@ -81,24 +81,28 @@ Shader::Shader( const char *VertPath, const char *FragPath )
 	glDeleteShader( Fragment );
 }
 
-void UseShader( intptr_t s )
+Shader::Shader()
 {
-	glUseProgram( ((Shader *) s)->ID );
 }
 
-void SetBool( intptr_t s, const std::string &name, bool value ) 
-{ 
-	glUniform1i( glGetUniformLocation( ((Shader *) s)->ID, name.c_str() ), (int) value ); 
-}
-void SetInt( intptr_t s, const std::string &name, int value ) 
-{ 
-	glUniform1i( glGetUniformLocation( ((Shader *) s)->ID, name.c_str() ), value ); 
-}
-void SetFloat( intptr_t s, const std::string &name, float value ) 
-{ 
-	glUniform1f( glGetUniformLocation( ((Shader *) s)->ID, name.c_str() ), value );
-}
-void SetMatrix( intptr_t s, const std::string &name, intptr_t value )
+void UseShader( Shader s )
 {
-	glUniformMatrix4fv( glGetUniformLocation( ((Shader *) s)->ID, name.c_str() ), 1, GL_FALSE, glm::value_ptr( *((glm::mat4 *) value) ) );
+	glUseProgram( s.ID );
+}
+
+void SetBool( Shader s, const std::string &name, bool value )
+{ 
+	glUniform1i( glGetUniformLocation( s.ID, name.c_str() ), (int) value ); 
+}
+void SetInt( Shader s, const std::string &name, int value )
+{ 
+	glUniform1i( glGetUniformLocation( s.ID, name.c_str() ), value );
+}
+void SetFloat( Shader s, const std::string &name, float value )
+{ 
+	glUniform1f( glGetUniformLocation( s.ID, name.c_str() ), value );
+}
+void SetMatrix( Shader s, const std::string &name, glm::mat4 value )
+{
+	glUniformMatrix4fv( glGetUniformLocation( s.ID, name.c_str() ), 1, GL_FALSE, glm::value_ptr( value ) );
 }

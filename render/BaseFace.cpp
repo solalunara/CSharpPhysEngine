@@ -5,7 +5,7 @@
 #include <vector>
 
 
-BaseFace::BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint *indices, Texture *texture, GLenum DrawType ) :
+BaseFace::BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint *indices, Texture texture, GLenum DrawType ) :
 	vertices( vertices ), VertLength( VertLength ), indices( indices ), IndLength( IndLength ), texture( texture ),
 	VBO( 0 ), VAO( 0 ), EBO( 0 )
 {
@@ -31,42 +31,11 @@ BaseFace::BaseFace( GLuint VertLength, float *vertices, GLuint IndLength, GLuint
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 }
-BaseFace::BaseFace( const BaseFace &f )
-{
-	VertLength = f.VertLength;
-	IndLength = f.IndLength;
 
-	EBO = f.EBO;
-	VAO = f.VAO;
-	VBO = f.VBO;
-
-	std::vector<float> verts;
-	for ( int i = 0; i < VertLength; ++i )
-	{
-		verts.push_back( f.vertices[i] );
-	}
-	vertices = verts.data();
-
-	std::vector<unsigned int> inds;
-	for ( int i = 0; i < IndLength; ++i )
-	{
-		inds.push_back( f.indices[ i ] );
-	}
-	indices = inds.data();
-
-	this->texture = new Texture( *f.texture );
-}
-BaseFace::~BaseFace()
+void InitBaseFace( unsigned int Vertlength, float *vertices, unsigned int IndLength, unsigned int *indices, Texture texture, BaseFace *pFace )
 {
-	delete indices;
-	delete vertices;
-	delete texture;
-}
-intptr_t InitBaseFace( unsigned int Vertlength, float *vertices, unsigned int IndLength, unsigned int *indices, intptr_t textureptr )
-{
-	return (intptr_t) new BaseFace( Vertlength, vertices, IndLength, indices, (Texture *) textureptr, GL_DYNAMIC_DRAW );
-}
-void DestructBaseFace( intptr_t faceptr )
-{
-	delete (BaseFace *) faceptr;
+	if ( !pFace )
+		pFace = new BaseFace( Vertlength, vertices, IndLength, indices, texture, GL_DYNAMIC_DRAW );
+	else
+		*pFace = BaseFace( Vertlength, vertices, IndLength, indices, texture, GL_DYNAMIC_DRAW );
 }

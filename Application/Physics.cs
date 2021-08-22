@@ -8,19 +8,20 @@ namespace Application
 {
     class PhysicsObject
     {
+        
         public static readonly Vector Default_Gravity = new Vector( 0, -10, 0 );
-        public PhysicsObject( BaseEntity LinkedEnt, Vector Gravity, float Mass = 1.0f )
+        public PhysicsObject( EHandle LinkedEnt, Vector Gravity, float Mass = 1.0f )
         {
-            this.Gravity = Gravity;
-            this.NetForce = new Vector();
-            this.Mass = Mass;
             this.LinkedEnt = LinkedEnt;
-            this.Velocity = new Vector();
+            this.Gravity = Gravity;
+            this.Mass = Mass;
+
             this.BaseVelocity = new Vector();
         }
-        public void Collide( BaseEntity OtherEnt, float ReflectValue = 0.5f )
+        
+        public void Collide( EHandle OtherEnt, float ReflectValue = 0.5f )
         {
-            Plane collisionplane = OtherEnt.BBox.GetCollisionPlane( LinkedEnt.Transform.Position, OtherEnt.IsBrush() ? new Vector() : OtherEnt.Transform.Position );
+            Plane collisionplane = OtherEnt.ent.AABB.GetCollisionPlane( LinkedEnt.ent.transform.Position, OtherEnt.ent.transform.Position );
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -28,10 +29,10 @@ namespace Application
             //reflect the velocity about the normal of the collision plane
             Velocity -= 2.0f * Vector.Dot( Velocity, collisionplane.Normal ) * collisionplane.Normal;
 
-            Vector NewPos = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.Position );
+            Vector NewPos = collisionplane.ClosestPointOnPlane( LinkedEnt.ent.transform.Position );
 
-            Vector Mins = LinkedEnt.BBox.mins;
-            Vector Maxs = LinkedEnt.BBox.maxs;
+            Vector Mins = LinkedEnt.ent.AABB.mins;
+            Vector Maxs = LinkedEnt.ent.AABB.maxs;
 
             // technically a lot of the "if"s in the "else if"s aren't neccesary, but they help with readability
             if ( Math.Abs( collisionplane.Normal.x ) > .9f )
@@ -61,30 +62,23 @@ namespace Application
 
                 Velocity.z *= ReflectValue;
             }
-            LinkedEnt.Transform.SetPosition( NewPos );
-        }
-        public void AddForce( Vector Force )
-        {
-            NetForce += Force;
+            LinkedEnt.ent.transform.Position = NewPos;
         }
         //returns true if there was a collision
-        public bool Simulate( float dt )
+        public bool Simulate( float dt, EHandle[] world )
         {
             bool Collision = false;
 
-            World world = LinkedEnt.World;
-            uint worldsize = world.Size;
-            for( int i = 0; i < worldsize; ++i )
+            for( int i = 0; i < world.Length; ++i )
             {
-                IntPtr WorldEnt = world.GetEntAtIndex( i );
-                BaseEntity worldent = new BaseEntity( false, false, WorldEnt );
-                if ( WorldEnt == LinkedEnt.LinkedEnt )
+                EHandle WorldEnt = world[ i ];
+                if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
 
-                if ( LinkedEnt.BBox.TestCollisionAABB( worldent.BBox, LinkedEnt.Transform.Position, new Vector() /*Brush bboxes are defined in world space*/ ) ) //if (collision)
+                if ( LinkedEnt.ent.AABB.TestCollisionAABB( WorldEnt.ent.AABB, LinkedEnt.ent.transform.Position, WorldEnt.ent.transform.Position ) ) //if (collision)
                 {
                     Collision = true;
-                    Collide( worldent );
+                    Collide( WorldEnt );
                 }
             }
 
@@ -94,7 +88,7 @@ namespace Application
                 NetForce += Gravity * Mass;
 
             Velocity += NetForce / Mass * dt;
-            LinkedEnt.Transform.AddPosition( Velocity * dt );
+            LinkedEnt.ent.transform.Position += Velocity * dt;
 
             //reset the net force each frame
             for ( int i = 0; i < 3; ++i )
@@ -110,12 +104,12 @@ namespace Application
 
         }
 
-        public Vector Gravity;
-        private Vector NetForce;
-        public float Mass;
 
-        private readonly BaseEntity LinkedEnt;
+        public EHandle LinkedEnt;
+        public Vector Gravity;
+        public Vector NetForce;
         public Vector Velocity;
         public Vector BaseVelocity;
+        public float Mass;
     }
 }

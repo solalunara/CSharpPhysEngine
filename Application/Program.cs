@@ -16,56 +16,58 @@ namespace Application
 
         static bool CursorControl = true;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
+        
         static void Main( string[] args )
         {
-            Render_Interface.Init( out IntPtr window, out IntPtr shader, out IntPtr camera, out IntPtr world, out IntPtr inputdata );
+            Renderer.Init( out IntPtr window, out Shader shader, out Player player );
             Texture[] texture = { new Texture( "themasterpiece.png" ) };
 
-            World w = new World( world );
+            EHandle b1 = new EHandle( new Vector( -10, -10, -11 ), new Vector( 10, 10, -9 ), texture );
+            EHandle b2 = new EHandle( new Vector( -10, -11, -10 ), new Vector( 10, -9, 10 ), texture );
+            EHandle[] brushes = { b1, b2 };
 
-            Brush b1 = new Brush( new Vector( -10, -10, -11 ), new Vector( 10, 10, -9 ), texture, w );
-            Brush b2 = new Brush( new Vector( -10, -11, -10 ), new Vector( 10, -9, 10 ), texture, w );
-            Player player = new Player( camera );
+            EHandle PlayerHandle = new EHandle( player.LinkedEnt );
 
             InputHandle inptptr = Input;
-            Render_Interface.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
+            Renderer.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
 
-            PhysicsObject CamPhys = new PhysicsObject( player, PhysicsObject.Default_Gravity );
-            // Pointer, so doesn't need to be updated each frame, the underlying object is changed
-            Transform CamTransform = player.Transform;
+            PhysicsObject CamPhys = new PhysicsObject( PlayerHandle, PhysicsObject.Default_Gravity );
 
-            float lasttime = Render_Interface.GetTime();
+            float lasttime = Renderer.GetTime();
 
-            while ( !Render_Interface.ShouldTerminate( window ) )
+            while ( !Renderer.ShouldTerminate( window ) )
             {
-                float time = Render_Interface.GetTime();
+                float time = Renderer.GetTime();
                 float frametime = time - lasttime;
                 lasttime = time;
 
-                
-                bool Collision = CamPhys.Simulate( frametime );
+                PlayerHandle.ent.transform.Rotation = player.LinkedEnt.transform.Rotation; //c++ code does rotation with mouse, so copy change over here
+                BaseEntity[] EntList = { b1.ent, b2.ent };
+
+
+                bool Collision = CamPhys.Simulate( frametime, brushes );
 
                 float Movespeed = Collision ? Movespeed_Gnd : Movespeed_Air;
                 Vector Force = new Vector();
                 if ( ( MoveTracker & (uint) Move.MOVE_FORWARD ) != 0 )
-                    Force += CamTransform.TransformDirection( new Vector( 0, 0, -1 ) ) * Movespeed * CamPhys.Mass;
+                    Force += player.LinkedEnt.transform.TransformDirection( new Vector( 0, 0, -1 ) ) * Movespeed * CamPhys.Mass;
                 if ( ( MoveTracker & (uint) Move.MOVE_BACKWARD ) != 0 )
-                    Force += CamTransform.TransformDirection( new Vector( 0, 0, 1 ) ) * Movespeed * CamPhys.Mass;
+                    Force += player.LinkedEnt.transform.TransformDirection( new Vector( 0, 0, 1 ) ) * Movespeed * CamPhys.Mass;
                 if ( ( MoveTracker & (uint) Move.MOVE_LEFT ) != 0 )
-                    Force += CamTransform.TransformDirection( new Vector( -1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
+                    Force += player.LinkedEnt.transform.TransformDirection( new Vector( -1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                 if ( ( MoveTracker & (uint) Move.MOVE_RIGHT ) != 0 )
-                    Force += CamTransform.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
+                    Force += player.LinkedEnt.transform.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                 Force.y = 0;
-                CamPhys.AddForce( Force );
+                CamPhys.NetForce += Force;
 
                 if ( ( MoveTracker & (uint) Move.MOVE_JUMP ) != 0 )
                 {
                     CamPhys.Velocity.y = 5.0f;
                 }
-
-                Render_Interface.RenderLoop( window, shader, camera, world, CursorControl );
+                player.LinkedEnt.transform.Position = PlayerHandle.ent.transform.Position;
+                Renderer.RenderLoop( window, shader, ref player, EntList, EntList.Length, CursorControl );
             }
-            Render_Interface.Terminate( window, shader, camera, world );
+            Renderer.Terminate();
         }
 
         public delegate void InputHandle( IntPtr window, Keys key, int scancode, Actions act, int mods );
@@ -81,19 +83,19 @@ namespace Application
             switch( key )
             {
                 case Keys.W:
-                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_FORWARD, bSetToTrue );
+                    Renderer.SetFlag( ref MoveTracker, (uint) Move.MOVE_FORWARD, bSetToTrue );
                     break;
                 case Keys.S:
-                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_BACKWARD, bSetToTrue );
+                    Renderer.SetFlag( ref MoveTracker, (uint) Move.MOVE_BACKWARD, bSetToTrue );
                     break;
                 case Keys.A:
-                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_LEFT, bSetToTrue );
+                    Renderer.SetFlag( ref MoveTracker, (uint) Move.MOVE_LEFT, bSetToTrue );
                     break;
                 case Keys.D:
-                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_RIGHT, bSetToTrue );
+                    Renderer.SetFlag( ref MoveTracker, (uint) Move.MOVE_RIGHT, bSetToTrue );
                     break;
                 case Keys.SPACE:
-                    Render_Interface.SetFlag( ref MoveTracker, (uint) Move.MOVE_JUMP, bSetToTrue );
+                    Renderer.SetFlag( ref MoveTracker, (uint) Move.MOVE_JUMP, bSetToTrue );
                     break;
                 default:
                     break;

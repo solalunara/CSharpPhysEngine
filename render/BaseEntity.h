@@ -16,10 +16,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
-struct BaseFace;
-struct World;
-struct Transform;
+#include "Transform.h"
+#include "BaseFace.h"
 
 
 struct RENDER_API Plane
@@ -36,11 +34,6 @@ struct RENDER_API Plane
 	glm::vec3 vNormal;
 	float fDist;
 };
-extern "C" RENDER_API intptr_t InitPlane( glm::vec3 vNormal, float fDist );
-extern "C" RENDER_API void GetPlaneVals( intptr_t p, glm::vec3 *norm, float *dist );
-extern "C" RENDER_API float DistanceFromPointToPlane( intptr_t p, glm::vec3 pt );
-extern "C" RENDER_API void ClosestPointOnPlane( intptr_t p, glm::vec3 pt, glm::vec3 *out );
-extern "C" RENDER_API void DestructPlane( intptr_t ptr );
 
 struct RENDER_API BoundingBox
 {
@@ -48,50 +41,42 @@ struct RENDER_API BoundingBox
 		mins( mins ), maxs( maxs )
 	{
 	}
+	BoundingBox() :
+		mins( glm::vec3() ), maxs( glm::vec3() )
+	{
+	}
 
 	glm::vec3 mins;
 	glm::vec3 maxs;
 };
-extern "C" RENDER_API intptr_t InitAABB( glm::vec3 mins, glm::vec3 maxs );
-extern "C" RENDER_API void GetAABBPoints( intptr_t BBox, glm::vec3 *mins, glm::vec3 *maxs );
-extern "C" RENDER_API bool TestCollisionPoint( glm::vec3 pt, intptr_t b, glm::vec3 ptB  ); //tests a point against an AABB at a location
-extern "C" RENDER_API bool TestCollisionAABB( intptr_t b1, intptr_t b2, glm::vec3 ptB1, glm::vec3 ptB2 ); //test an aabb against another aabb
-extern "C" RENDER_API intptr_t GetCollisionPlane( glm::vec3 pt, intptr_t b, glm::vec3 ptB ); //gets the plane of the aabb that a point is colliding against
-extern "C" RENDER_API void GetCollisionNormal( glm::vec3 pt, intptr_t b, glm::vec3 *normal, glm::vec3 ptB ); //gets the normal of the collision
-extern "C" RENDER_API void DestructAABB( intptr_t boxptr );
 
 
 struct RENDER_API BaseEntity
 {
 public:
-	BaseEntity( BaseFace **EntFaces, GLuint FaceLength, Transform *transform, glm::vec3 mins, glm::vec3 maxs, World *world );
-	BaseEntity( const BaseEntity &e );
-	~BaseEntity();
+	BaseEntity( BaseFace *EntFaces, GLuint FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs );
+	BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, GLuint TextureLength ); //brush init
+	BaseEntity();
 
-	BaseFace **EntFaces;
+	BaseFace *EntFaces;
 	GLuint FaceLength;
 
-	World *world;
-	GLuint EntIndex;
-
-	Transform *transform;
-	BoundingBox *AABB;
+	Transform transform;
+	BoundingBox AABB;
 
 };
-extern "C" RENDER_API intptr_t InitBaseEntity( intptr_t *EntFaces, unsigned int FaceLength, intptr_t transform, glm::vec3 mins, glm::vec3 maxs, intptr_t world );
-extern "C" RENDER_API intptr_t GetEntTransform( intptr_t ent );
-extern "C" RENDER_API intptr_t GetEntBBox( intptr_t ent );
-extern "C" RENDER_API intptr_t GetEntWorld( intptr_t ent );
-extern "C" RENDER_API void DestructBaseEntity( intptr_t entptr );
+extern "C" RENDER_API void InitBaseEntity( BaseFace *EntFaces, unsigned int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt );
+extern "C" RENDER_API void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, unsigned int TextureLength, BaseEntity *pEnt );
 
-struct RENDER_API Camera : public BaseEntity
+struct RENDER_API Camera
 {
-	Camera( Transform *transform, glm::mat4 perspective, World *world );
+	Camera( Transform transform, glm::mat4 perspective );
+	Camera();
 
+	BaseEntity LinkedEnt;
 	glm::mat4 m_Perspective;
 };
-extern "C" RENDER_API intptr_t MakePerspective( float fov, float aspect, float nearclip, float farclip );
-extern "C" RENDER_API intptr_t InitCamera( intptr_t transform, intptr_t perspective, intptr_t world );
-extern "C" RENDER_API void DestructCamera( intptr_t camptr );
+extern "C" RENDER_API void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat );
+extern "C" RENDER_API void InitCamera( Transform transform, glm::mat4 perspective, Camera *pCam );
 
 #endif

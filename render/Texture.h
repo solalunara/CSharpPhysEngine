@@ -23,7 +23,6 @@ struct RENDER_API Texture
 	GLuint ID;
 	GLenum Unit;
 };
-extern "C" RENDER_API intptr_t InitTexture( const char *FilePath );
-extern "C" RENDER_API void DestructTexture( intptr_t texptr );
+extern "C" RENDER_API void InitTexture( const char *FilePath, Texture *pTex );
 
 #endif

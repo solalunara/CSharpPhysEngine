@@ -176,7 +176,6 @@
   <ItemGroup>
     <ClInclude Include="BaseEntity.h" />
     <ClInclude Include="BaseFace.h" />
-    <ClInclude Include="Brush.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="mainclass.h" />
     <ClInclude Include="pch.h" />
@@ -184,12 +183,10 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Transform.h" />
-    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BaseEntity.cpp" />
     <ClCompile Include="BaseFace.cpp" />
-    <ClCompile Include="Brush.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="mainclass.cpp" />
@@ -202,7 +199,6 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Transform.cpp" />
-    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Application\bin\Debug\Shaders\FragmentShader.frag" />
