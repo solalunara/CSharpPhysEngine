@@ -82,13 +82,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\FVP\Documents\programming\cpp\opengl\compilerlib\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\FVP\Documents\programming\cpp\opengl\compilerlib\Libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)\compilerlib\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\compilerlib\Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Users\FVP\Documents\programming\cpp\opengl\compilerlib\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\FVP\Documents\programming\cpp\opengl\compilerlib\Libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)\compilerlib\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\compilerlib\Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
