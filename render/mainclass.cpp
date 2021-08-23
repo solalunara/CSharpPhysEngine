@@ -32,12 +32,10 @@ void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 	else
 		*ToSet &= ~val;
 }
-void Init( intptr_t *window, Shader *shader )
+void Init( intptr_t *window )
 {
 	if ( !window )
 		window = new intptr_t();
-	if ( !shader )
-		shader = new Shader();
 
 	glfwInit();
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
@@ -64,9 +62,6 @@ void Init( intptr_t *window, Shader *shader )
 	glfwSetFramebufferSizeCallback( (GLFWwindow *) *window, WindowSizeChanged );
 	//callback function for key pressed
 	glfwSetKeyCallback( (GLFWwindow *) *window, InputMGR );
-
-	//gather the source for the shaders from their respective files
-	*shader = Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
 
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LESS );

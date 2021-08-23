@@ -85,6 +85,13 @@ Shader::Shader()
 {
 }
 
+void InitShader( const char *VertPath, const char *FragPath, Shader *pShader )
+{
+	if ( !pShader )
+		pShader = new Shader();
+	*pShader = Shader( VertPath, FragPath );
+}
+
 void UseShader( Shader s )
 {
 	glUseProgram( s.ID );

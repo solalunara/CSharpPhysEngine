@@ -26,7 +26,7 @@ extern "C" RENDER_API void InputMGR( GLFWwindow *window, int key, int scancode, 
 extern "C" RENDER_API void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal );
 
 //render related functions
-extern "C" RENDER_API void Init( intptr_t *window, Shader *shader );
+extern "C" RENDER_API void Init( intptr_t *window );
 extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
 extern "C" RENDER_API void Terminate();
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );

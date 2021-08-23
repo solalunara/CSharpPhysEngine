@@ -27,6 +27,8 @@ struct RENDER_API Shader
 	GLuint ID = 0;
 };
 
+extern "C" RENDER_API void InitShader( const char *VertPath, const char *FragPath, Shader *pShader );
+
 extern "C" RENDER_API void UseShader( Shader s );
 
 extern "C" RENDER_API void SetBool( Shader s, const std::string &name, bool value );

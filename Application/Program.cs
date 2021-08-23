@@ -9,27 +9,31 @@ namespace PhysEngine
 {
     class Program
     {
-        static bool CursorControl = true;
+        static bool Paused = false;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
         static Player player;
 
         const float fov = 75.0f;
         const float Movespeed_Air = 5.0f;
-        const float Movespeed_Gnd = 10.0f;
+        const float Movespeed_Gnd = 20.0f;
+
+        const float Max_Player_Speed = 5.0f;
 
 
         static void Main( string[] args )
         {
-            Renderer.Init( out IntPtr window, out Shader shader );
+            Renderer.Init( out IntPtr window );
+            Shader shader = new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
             Texture[] texture = { new Texture( "themasterpiece.png" ) };
 
             EHandle b1 = new EHandle( new Vector( -10, -10, -11 ), new Vector( 10, 10, -9 ), texture );
             EHandle b2 = new EHandle( new Vector( -10, -11, -10 ), new Vector( 10, -9, 10 ), texture );
-            EHandle[] brushes = { b1, b2 };
+            World world = new World( b1, b2 );
 
             Renderer.GetWindowSize( window, out int width, out int height );
             Util.MakePerspective( fov, (float) width / height, 0.01f, 1000.0f, out Matrix persp );
             player = new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp );
+            Matrix PlayerYaw = Matrix.IdentityMatrix();
 
             InputHandle inptptr = Input;
             Renderer.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
@@ -48,29 +52,25 @@ namespace PhysEngine
                 if ( frametime > 1.0f )
                     frametime = 0; //most likely debugging
 
-                BaseEntity[] EntList = { b1.ent, b2.ent };
                 bool Collision = false;
-                if ( CursorControl )
+                if ( !Paused )
                 {
                     Mouse.HideMouse( window );
                     const float LookSpeed = 10.0f;
                     Mouse.GetMouseOffset( window, out double x, out double y );
                     Vector Up = player.LinkedEnt.ent.transform.InverseTransformDirection( new Vector( 0, 1, 0 ) );
-                    Vector Right = new Vector( -1, 0, 0 );
+                    Vector Rt = new Vector( 1, 0, 0 );
+                    Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -x ), new Vector( 0, -1, 0 ), out Matrix XRotGlobal );
                     Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -x ), Up, out Matrix XRot );
-                    Util.MakeRotMatrix( (float) ( frametime * LookSpeed * y ), Right, out Matrix YRot );
+                    Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -y ), Rt, out Matrix YRot );
                     Util.MultiplyMatrix( ref player.LinkedEnt.ent.transform.Rotation, XRot );
                     Util.MultiplyMatrix( ref player.LinkedEnt.ent.transform.Rotation, YRot );
+
                     Transform.UpdateTransform( ref player.LinkedEnt.ent.transform );
                     Mouse.MoveMouseToCenter( window );
 
-                    Collision = CamPhys.Simulate( frametime, brushes );
-                }
-                else
-                    Mouse.ShowMouse( window );
+                    Collision = CamPhys.TestCollision( world, out bool TopCollision );
 
-                if ( CursorControl )
-                {
                     float Movespeed = Collision ? Movespeed_Gnd : Movespeed_Air;
                     Vector Force = new Vector();
                     if ( ( MoveTracker & (uint) Move.MOVE_FORWARD ) != 0 )
@@ -84,12 +84,24 @@ namespace PhysEngine
                     Force.y = 0;
                     CamPhys.NetForce += Force;
 
-                    if ( ( MoveTracker & (uint) Move.MOVE_JUMP ) != 0 && Collision )
+                    if ( ( MoveTracker & (uint) Move.MOVE_JUMP ) != 0 && TopCollision )
                     {
                         CamPhys.Velocity.y = 5.0f;
                     }
+
+                    if ( CamPhys.Velocity.Length() > Max_Player_Speed && Collision )
+                    {
+                        CamPhys.Velocity = CamPhys.Velocity.Normalized() * Max_Player_Speed;
+                    }
+
+                    CamPhys.Simulate( frametime, world );
+
+                    Console.WriteLine( PlayerYaw.GetForward() );
                 }
-                Renderer.RenderLoop( window, shader, player.LinkedEnt.ent, player.Perspective, EntList, EntList.Length );
+                else
+                    Mouse.ShowMouse( window );
+
+                Renderer.RenderLoop( window, shader, player.LinkedEnt.ent, player.Perspective, world.GetEntList(), world.WorldEnts.Count );
             }
             Renderer.Terminate();
         }
@@ -99,7 +111,7 @@ namespace PhysEngine
         {
             if ( act == Actions.PRESSED && key == Keys.ESCAPE ) //pressed
             {
-                CursorControl = !CursorControl;
+                Paused = !Paused;
             }
 
             bool bSetToTrue = act == Actions.PRESSED || act == Actions.HELD;

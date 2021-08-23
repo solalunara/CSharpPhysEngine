@@ -12,7 +12,7 @@ namespace PhysEngine
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void SetFlag( ref uint ToSet, uint flag, bool val );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void Init( out IntPtr window, out Shader shader );
+        public static extern void Init( out IntPtr window );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void RenderLoop( IntPtr window, Shader shader, BaseEntity camera, Matrix perspective, BaseEntity[] EntsToRender, int EntToRenderLength );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -60,6 +60,10 @@ namespace PhysEngine
         public static extern void MakePerspective( float fov, float aspect, float nearclip, float farclip, out Matrix persp );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void MultiplyMatrix( ref Matrix multiplied, Matrix multiplier );
+        public static byte[] ToCString( string s )
+        {
+            return Encoding.UTF8.GetBytes( s );
+        }
     }
 
     public class Player
@@ -120,7 +124,15 @@ namespace PhysEngine
         {
             this.ID = ID;
         }
+        public Shader( string VertPath, string FragPath )
+        {
+            InitShader( Util.ToCString( VertPath ), Util.ToCString( FragPath ), out Shader s );
+            this.ID = s.ID;
+        }
         public uint ID;
+
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void InitShader( byte[] VertPath, byte[] FragPath, out Shader s );
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -128,7 +140,7 @@ namespace PhysEngine
     {
         public Texture( string filepath )
         {
-            InitTexture( ToCString( filepath ), out Texture tex );
+            InitTexture( Util.ToCString( filepath ), out Texture tex );
             ID = tex.ID;
             Unit = tex.Unit;
         }
@@ -139,10 +151,6 @@ namespace PhysEngine
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitTexture( byte[] FilePath, out Texture tex );
 
-        public static byte[] ToCString( string s )
-        {
-            return Encoding.UTF8.GetBytes( s );
-        }
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Vector4
@@ -242,6 +250,19 @@ namespace PhysEngine
                 { 0, 0, 0, 1 }
             };
             return new Matrix( values );
+        }
+
+        public Vector GetRight()
+        {
+            return new Vector( Columns[ 0 ][ 0 ], Columns[ 1 ][ 0 ], Columns[ 2 ][ 0 ] );
+        }
+        public Vector GetUp()
+        {
+            return new Vector( Columns[ 0 ][ 1 ], Columns[ 1 ][ 1 ], Columns[ 2 ][ 1 ] );
+        }
+        public Vector GetForward()
+        {
+            return new Vector( -Columns[ 0 ][ 2 ], -Columns[ 1 ][ 2 ], -Columns[ 2 ][ 2 ] );
         }
     }
 

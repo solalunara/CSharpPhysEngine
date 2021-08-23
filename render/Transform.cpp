@@ -55,9 +55,9 @@ void GetForward( Transform tptr, glm::vec3 *v )
 {
 	if ( !v )
 		v = new glm::vec3();
-	v->x = tptr.m_ThisToWorld[ 2 ][ 0 ];
-	v->y = tptr.m_ThisToWorld[ 2 ][ 1 ];
-	v->z = tptr.m_ThisToWorld[ 2 ][ 2 ];
+	v->x = -tptr.m_ThisToWorld[ 2 ][ 0 ];
+	v->y = -tptr.m_ThisToWorld[ 2 ][ 1 ];
+	v->z = -tptr.m_ThisToWorld[ 2 ][ 2 ];
 }
 void TransformDirection( Transform tptr, glm::vec3 *dir )
 {

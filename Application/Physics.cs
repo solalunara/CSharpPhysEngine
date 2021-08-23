@@ -23,7 +23,7 @@ namespace PhysEngine
             this.BaseVelocity = new Vector();
         }
         
-        public void Collide( EHandle OtherEnt, float ReflectValue = 0.5f )
+        public void Collide( EHandle OtherEnt, float ReflectValue = 0.0f )
         {
             Plane collisionplane = OtherEnt.ent.AABB.GetCollisionPlane( LinkedEnt.ent.transform.Position, OtherEnt.ent.transform.Position );
             //if velocity is already in the direction of the normal, don't reflect it
@@ -69,26 +69,25 @@ namespace PhysEngine
             LinkedEnt.ent.transform.Position = NewPos;
         }
         //returns true if there was a collision
-        public bool Simulate( float dt, EHandle[] world )
+        public void Simulate( float dt, World world )
         {
-            bool Collision = false;
-
-            for( int i = 0; i < world.Length; ++i )
+            for( int i = 0; i < world.WorldEnts.Count; ++i )
             {
-                EHandle WorldEnt = world[ i ];
+                EHandle WorldEnt = world.WorldEnts[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
 
-                if ( LinkedEnt.ent.AABB.TestCollisionAABB( WorldEnt.ent.AABB, LinkedEnt.ent.transform.Position, WorldEnt.ent.transform.Position ) ) //if (collision)
+                
+                if ( WorldEnt.ent.AABB.TestCollisionAABB( LinkedEnt.ent.AABB, WorldEnt.ent.transform.Position, LinkedEnt.ent.transform.Position ) ) //if (collision)
                 {
-                    Collision = true;
                     Collide( WorldEnt );
                 }
             }
 
-            //if there is a collision, a normal force acts on the object that cancels the gravitational force
+            bool Collision = TestCollision( world, out bool TopCollision );
+            //if there is a (top) collision, a normal force acts on the object that cancels the gravitational force
             //this is mathematically equivalent to not doing the gravitational force (for simple newtonian mechanics)
-            if ( !Collision )
+            if ( !TopCollision )
                 NetForce += Gravity * Mass;
 
             DragSimulate( dt, Collision );
@@ -99,7 +98,27 @@ namespace PhysEngine
             //reset the net force each frame
             for ( int i = 0; i < 3; ++i )
                 NetForce[ i ] = 0;
+        }
 
+        //checks to see if this entity should collide with any entities in the world given it's current position
+        public bool TestCollision( World world, out bool TopCollision )
+        {
+            bool Collision = false;
+            TopCollision = false;
+            for ( int i = 0; i < world.WorldEnts.Count; ++i )
+            {
+                EHandle WorldEnt = world.WorldEnts[ i ];
+                if ( WorldEnt == LinkedEnt )
+                    continue; //prevent self collisions
+
+                if ( WorldEnt.ent.AABB.TestCollisionAABB( LinkedEnt.ent.AABB, WorldEnt.ent.transform.Position, LinkedEnt.ent.transform.Position ) ) //if (collision)
+                {
+                    Collision = true;
+                    Vector vCollisionNormal = WorldEnt.ent.AABB.GetCollisionNormal( LinkedEnt.ent.transform.Position, WorldEnt.ent.transform.Position );
+                    if ( vCollisionNormal.y > .9f )
+                        TopCollision = true;
+                }
+            }
             return Collision;
         }
 
