@@ -19,12 +19,6 @@
 #include "Shader.h"
 #include "BaseEntity.h"
 
-enum
-{
-	WINDOW_MOVE = 1 << 5,
-};
-typedef unsigned int Move;
-
 
 //callback functions
 extern "C" RENDER_API void WindowSizeChanged( GLFWwindow *window, int width, int height );
@@ -32,15 +26,26 @@ extern "C" RENDER_API void InputMGR( GLFWwindow *window, int key, int scancode, 
 extern "C" RENDER_API void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal );
 
 //render related functions
-extern "C" RENDER_API void Init( intptr_t *window, Shader *shader, Camera *camera );
-extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, Camera *camera, BaseEntity *pRenderEnts, int iRenderEntLength, bool bMouseControl );
+extern "C" RENDER_API void Init( intptr_t *window, Shader *shader );
+extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
 extern "C" RENDER_API void Terminate();
-
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );
-
 extern "C" RENDER_API float GetTime();
 
+extern "C" RENDER_API void GetWindowSize( intptr_t window, int *x, int *y );
+
+//input callback
 typedef intptr_t (*fptr)( intptr_t window, int key, int scancode, int act, int mods );
 extern "C" RENDER_API void SetInputCallback( intptr_t fn );
+
+//window move callback
+typedef intptr_t (*fptrw)( intptr_t window, int width, int height );
+extern "C" RENDER_API void SetWindowMoveCallback( intptr_t fn );
+
+//mouse related functions
+extern "C" RENDER_API void GetMouseOffset( intptr_t window, double *x, double *y );
+extern "C" RENDER_API void MoveMouseToCenter( intptr_t window );
+extern "C" RENDER_API void HideMouse( intptr_t window );
+extern "C" RENDER_API void ShowMouse( intptr_t window );
 
 #endif

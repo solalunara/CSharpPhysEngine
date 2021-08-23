@@ -106,26 +106,14 @@ void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, unsigned int 
         pEnt = new BaseEntity();
     *pEnt = BaseEntity( mins, maxs, textures, TextureLength );
 }
-
-//camear functions
-Camera::Camera( Transform transform, glm::mat4 perspective ) :
-    LinkedEnt( BaseEntity( NULL, 0, transform, glm::vec3( -.5f, -1.5f, -.5f ), glm::vec3( .5f, .5f, .5f ) ) ),
-    m_Perspective( perspective )
-{
-};
-Camera::Camera() :
-    m_Perspective( glm::mat4( 1 ) )
-{
-}
 void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat )
 {
     if ( !pMat )
         pMat = new glm::mat4();
-    *pMat = glm::mat4( glm::perspective( fov, aspect, nearclip, farclip ) );
+    *pMat = glm::mat4( glm::perspective( glm::radians( fov ), aspect, nearclip, farclip ) );
 }
-void InitCamera( Transform transform, glm::mat4 perspective, Camera *pCam )
+void MultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier )
 {
-    if ( !pCam )
-        pCam = new Camera();
-    *pCam = Camera( transform, perspective );
+    _ASSERTE( pMultiply );
+    *pMultiply *= multiplier;
 }

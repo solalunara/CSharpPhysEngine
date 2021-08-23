@@ -5,24 +5,41 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace Application
+namespace PhysEngine
 {
     public class Renderer
     {
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void SetFlag( ref uint ToSet, uint flag, bool val );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void Init( out IntPtr window, out Shader shader );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void RenderLoop( IntPtr window, Shader shader, BaseEntity camera, Matrix perspective, BaseEntity[] EntsToRender, int EntToRenderLength );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void Terminate();
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern bool ShouldTerminate( IntPtr window );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void GetWindowSize( IntPtr window, out int x, out int y );
+   
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern float GetTime();
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void SetInputCallback( IntPtr fn );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void SetFlag( ref uint ToSet, uint flag, bool val );
+        public static extern void SetWindowMoveCallback( IntPtr fn );
+        
+    }
+    public class Mouse
+    {
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void Init( out IntPtr window, out Shader shader, out Player camera );
+        public static extern void GetMouseOffset( IntPtr window, out double x, out double y );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void RenderLoop( IntPtr window, Shader shader, ref Player camera, BaseEntity[] EntsToRender, int EntToRenderLength, bool bMouseControl );
+        public static extern void MoveMouseToCenter( IntPtr window );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void Terminate();
+        public static extern void HideMouse( IntPtr window );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern bool ShouldTerminate( IntPtr window );
+        public static extern void ShowMouse( IntPtr window );
     }
     public class Util
     {
@@ -37,6 +54,23 @@ namespace Application
                 mangagedArray[ i ] = Marshal.PtrToStructure<T>( ins );
             }
         }
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void MakeRotMatrix( float degrees, Vector axis, out Matrix rot );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void MakePerspective( float fov, float aspect, float nearclip, float farclip, out Matrix persp );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void MultiplyMatrix( ref Matrix multiplied, Matrix multiplier );
+    }
+
+    public class Player
+    {
+        public Player( THandle transform, Matrix Perspective ) //persp is width/height
+        {
+            LinkedEnt = new EHandle( new BaseFace[ 0 ], transform.TransformData, new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
+            this.Perspective = Perspective;
+        }
+        public EHandle LinkedEnt;
+        public Matrix Perspective;
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -197,6 +231,18 @@ namespace Application
         }
         [MarshalAs( UnmanagedType.ByValArray, SizeConst = 4 )]
         public Vector4[] Columns;
+
+        public static Matrix IdentityMatrix()
+        {
+            float[,] values =
+            {
+                { 1, 0, 0, 0 },
+                { 0, 1, 0, 0 },
+                { 0, 0, 1, 0 },
+                { 0, 0, 0, 1 }
+            };
+            return new Matrix( values );
+        }
     }
 
 
@@ -265,6 +311,9 @@ namespace Application
         public static Vector operator /( Vector a, float b ) => new Vector( a.x / b, a.y / b, a.z / b );
         public static Vector operator /( float b, Vector a ) => a / b;
         public static float Dot( Vector a, Vector b ) => a.x * b.x + a.y * b.y + a.z * b.z;
+        public float LengthSqr() => x * x + y * y + z * z;
+        public float Length() => (float) Math.Sqrt( LengthSqr() );
+        public Vector Normalized() => this / Length();
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -356,27 +405,6 @@ namespace Application
     }
 
     [StructLayout( LayoutKind.Sequential )]
-    public struct Player
-    {
-        public Player( Transform transform )
-        {
-            MakePerspective( 45, 1, 0.01f, 5000f, out Matrix persp );
-            InitCamera( transform, persp, out Player p );
-            LinkedEnt = p.LinkedEnt;
-            perspective = p.perspective;
-        }
-        [MarshalAs( UnmanagedType.Struct )]
-        public BaseEntity LinkedEnt;
-        [MarshalAs( UnmanagedType.Struct )]
-        public Matrix perspective;
-
-        //Camera
-        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        private static extern void MakePerspective( float fov, float aspect, float nearclip, float farclip, out Matrix persp );
-        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        private static extern void InitCamera( Transform transformptr, Matrix perspectiveptr, out Player p );
-    }
-    [StructLayout( LayoutKind.Sequential )]
     public struct Transform
     {
         public Transform( Vector position, Vector scale, Matrix rotation )
@@ -409,7 +437,7 @@ namespace Application
         public Vector InverseTransformPoint( Vector pt ) { InverseTransformPoint( this, ref pt ); return pt; }
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void UpdateTransform( Transform t );
+        public static extern void UpdateTransform( ref Transform t );
         [ DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitTransform( Vector position, Vector scale, Matrix rotation, out Transform t );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -438,11 +466,11 @@ namespace Application
         { get => t; }
 
         public Vector Position
-        { get { return t.Position; } set { t.Position = value; Transform.UpdateTransform( t ); } }
+        { get { return t.Position; } set { t.Position = value; Transform.UpdateTransform( ref t ); } }
         public Vector Scale
-        { get { return t.Scale; } set { t.Scale = value; Transform.UpdateTransform( t ); } }
+        { get { return t.Scale; } set { t.Scale = value; Transform.UpdateTransform( ref t ); } }
         public Matrix Rotation
-        { get { return t.Rotation; } set { t.Rotation = value; Transform.UpdateTransform( t ); } }
+        { get { return t.Rotation; } set { t.Rotation = value; Transform.UpdateTransform( ref t ); } }
 
         public Vector GetRight() => t.GetRight();
         public Vector GetUp() => t.GetUp();

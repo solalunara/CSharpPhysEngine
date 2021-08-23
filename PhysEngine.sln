@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.31605.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "render", "render\render.vcxproj", "{04D05156-5164-4EC4-9392-0F83E8592465}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{473F3EC0-38E7-444A-9EC0-24DE30AF3E46}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhysEngine", "Application\PhysEngine.csproj", "{473F3EC0-38E7-444A-9EC0-24DE30AF3E46}"
 	ProjectSection(ProjectDependencies) = postProject
 		{04D05156-5164-4EC4-9392-0F83E8592465} = {04D05156-5164-4EC4-9392-0F83E8592465}
 	EndProjectSection

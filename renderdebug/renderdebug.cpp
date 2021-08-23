@@ -9,7 +9,7 @@
 
 int main()
 {
-	
+	/*
 	intptr_t window;
 	Shader shader;
 	Camera camera;
@@ -23,4 +23,5 @@ int main()
 		RenderLoop( window, shader, &camera, ents, 1, false );
 	}
 	Terminate();
+	*/
 }

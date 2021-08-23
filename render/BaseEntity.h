@@ -68,15 +68,9 @@ public:
 extern "C" RENDER_API void InitBaseEntity( BaseFace *EntFaces, unsigned int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt );
 extern "C" RENDER_API void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, unsigned int TextureLength, BaseEntity *pEnt );
 
-struct RENDER_API Camera
-{
-	Camera( Transform transform, glm::mat4 perspective );
-	Camera();
-
-	BaseEntity LinkedEnt;
-	glm::mat4 m_Perspective;
-};
+//matrix utils
 extern "C" RENDER_API void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat );
-extern "C" RENDER_API void InitCamera( Transform transform, glm::mat4 perspective, Camera *pCam );
+extern "C" RENDER_API void MakeRotMatrix( float degrees, glm::vec3 axis, glm::mat4 * pMat );
+extern "C" RENDER_API void MultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier );
 
 #endif

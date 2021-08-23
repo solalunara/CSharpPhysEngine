@@ -10,23 +10,20 @@
 
 #define LKSPD 20.0f
 
-static Move move = NULL;
-static float lasttime;
 static fptr Callback = NULL;
+static fptrw WindowMoveCallback = NULL;
 
 void WindowSizeChanged( GLFWwindow *window, int width, int height )
 {
 	glViewport( 0, 0, width, height );
-	move |= WINDOW_MOVE;
+	//camera.m_Perspective = glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f );
+	if ( WindowMoveCallback )
+		WindowMoveCallback( (intptr_t) window, width, height );
 }
 void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods )
 {
 	if ( Callback )
 		Callback( (intptr_t) window, key, scancode, action, mods );
-	/*
-	if ( key == GLFW_KEY_ESCAPE && action == GLFW_PRESS )
-		move ^= ALLOW_MOUSE_TURN;
-	*/
 }
 void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 {
@@ -35,14 +32,12 @@ void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 	else
 		*ToSet &= ~val;
 }
-void Init( intptr_t *window, Shader *shader, Camera *camera )
+void Init( intptr_t *window, Shader *shader )
 {
 	if ( !window )
 		window = new intptr_t();
 	if ( !shader )
 		shader = new Shader();
-	if ( !camera )
-		camera = new Camera();
 
 	glfwInit();
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
@@ -73,71 +68,24 @@ void Init( intptr_t *window, Shader *shader, Camera *camera )
 	//gather the source for the shaders from their respective files
 	*shader = Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
 
-	Transform CamTransform( glm::vec3( 0, 0, 0 ), glm::vec3( 1, 1, 1 ), glm::mat4( 1 ) );
-
-
-	int width, height;
-	glfwGetWindowSize( (GLFWwindow *) *window, &width, &height );
-	*camera = Camera( CamTransform, glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f ) );
-
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc( GL_LESS );
-
-
-	lasttime = (float) glfwGetTime();
 }
 
 
-void RenderLoop( intptr_t window, Shader shader, Camera *camera, BaseEntity *pRenderEnts, int iRenderEntLength, bool bMouseControl )
+void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength )
 {
-	//time stuff
-	float frametime = (float) glfwGetTime() - lasttime;
-	lasttime = (float) glfwGetTime();
-	float fps = 1 / frametime;
-
-
 	glClearColor( .1f, .2f, .7f, 1.0f );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	int width, height;
 	glfwGetWindowSize( (GLFWwindow *) window, &width, &height );
-	if ( bMouseControl )
-	{
-		glfwSetInputMode( (GLFWwindow *) window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN );
-		glm::vec2 vCenterDist( 0.0f, 0.0f );
-		//try to avoid a jerk at startup when moving
-		if ( lasttime > 1 )
-		{
-			//get the distance from the center of the screen and create a 
-			double xpos, ypos;
-			glfwGetCursorPos( (GLFWwindow *) window, &xpos, &ypos );
-			vCenterDist = glm::vec2( xpos - ( width / 2 ), ypos - ( height / 2 ) );
-		}
-		//rotation axis are in local space, so use inverse transform to get the world up
-		glm::vec3 Up( 0, 1.0f, 0 );
-		InverseTransformDirection( camera->LinkedEnt.transform, Up );
-		AddToRotation( camera->LinkedEnt.transform, glm::rotate( glm::mat4( 1.0f ), glm::radians( LKSPD * frametime * -vCenterDist.x ), Up ) );
-		AddToRotation( camera->LinkedEnt.transform, glm::rotate( glm::mat4( 1.0f ), glm::radians( LKSPD * frametime * -vCenterDist.y ), glm::vec3( 1.0f, 0, 0 ) ) );
-		//move the cursor to the middle of the screen
-		glfwSetCursorPos( (GLFWwindow *) window, width / 2, height / 2 );
-	}
-	else
-		glfwSetInputMode( (GLFWwindow *) window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
-	//change the perspective matrix for the new aspect ratio if the window has been resized
-	if ( move & WINDOW_MOVE )
-	{
-		camera->m_Perspective = glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f );
-		move &= ~WINDOW_MOVE;
-	}
 
 	UseShader( shader );
 
 	//tell the vertex shader about the camera position and perspective matrix
-	//glUniformMatrix4fv( glGetUniformLocation( ((Shader *) shader)->ID, "CameraTransform" ), 1, GL_FALSE, glm::value_ptr( ((Camera *) camera)->transform->m_WorldToThis ) );
-	//glUniformMatrix4fv( glGetUniformLocation( ((Shader *) shader)->ID, "Perspective" ), 1, GL_FALSE, glm::value_ptr( ((Camera *) camera)->m_Perspective ) );
-
-	SetMatrix( shader, "CameraTransform", camera->LinkedEnt.transform.m_WorldToThis );
-	SetMatrix( shader, "Perspective", camera->m_Perspective );
+	SetMatrix( shader, "CameraTransform", camera.transform.m_WorldToThis );
+	SetMatrix( shader, "Perspective", perspective );
 
 	bool bCameraCollision = false;
 	//traverse the world for entities
@@ -174,7 +122,58 @@ float GetTime()
 {
 	return (float) glfwGetTime();
 }
+
+void GetWindowSize( intptr_t window, int *x, int *y )
+{
+	if ( !x )
+		x = new int();
+	if ( !y )
+		y = new int();
+	glfwGetWindowSize( (GLFWwindow *) window, x, y );
+}
+
+void GetMouseOffset( intptr_t window, double *x, double *y )
+{
+	int width, height;
+	glfwGetWindowSize( (GLFWwindow *) window, &width, &height );
+
+	if ( !x )
+		x = new double();
+	if ( !y )
+		y = new double();
+	//get the distance from the center of the screen and create a 
+	double xpos, ypos;
+	glfwGetCursorPos( (GLFWwindow *) window, &xpos, &ypos );
+	*x = xpos - ( width / 2 );
+	*y = ypos - ( height / 2 );
+}
+void MoveMouseToCenter( intptr_t window )
+{
+	int width, height;
+	glfwGetWindowSize( (GLFWwindow *) window, &width, &height );
+	glfwSetCursorPos( (GLFWwindow *) window, width / 2, height / 2 );
+}
+void HideMouse( intptr_t window )
+{
+	glfwSetInputMode( (GLFWwindow *) window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN );
+}
+void ShowMouse( intptr_t window )
+{
+	glfwSetInputMode( (GLFWwindow *) window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+}
+
+void MakeRotMatrix( float degrees, glm::vec3 axis, glm::mat4 *pMat )
+{
+	if ( !pMat )
+		pMat = new glm::mat4( 1 );
+	*pMat = glm::rotate( glm::mat4( 1 ), glm::radians( degrees ), axis );
+}
+
 void SetInputCallback( intptr_t fn )
 {
 	Callback = (fptr) fn;
+}
+void SetWindowMoveCallback( intptr_t fn )
+{
+	WindowMoveCallback = (fptrw) fn;
 }

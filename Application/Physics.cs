@@ -4,17 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application
+namespace PhysEngine
 {
     class PhysicsObject
     {
+        const float GroundDragCoeff = 0.6f;
+        const float AirDensity = 1.255f; //kg/m^3
         
         public static readonly Vector Default_Gravity = new Vector( 0, -10, 0 );
-        public PhysicsObject( EHandle LinkedEnt, Vector Gravity, float Mass = 1.0f )
+        public static readonly Vector Default_Coeffs = new Vector( 1, 1, 1 );
+        public PhysicsObject( EHandle LinkedEnt, Vector Gravity, Vector AirDragCoeffs, float Mass = 1.0f )
         {
             this.LinkedEnt = LinkedEnt;
             this.Gravity = Gravity;
             this.Mass = Mass;
+            this.AirDragCoeffs = AirDragCoeffs;
 
             this.BaseVelocity = new Vector();
         }
@@ -87,6 +91,8 @@ namespace Application
             if ( !Collision )
                 NetForce += Gravity * Mass;
 
+            DragSimulate( dt, Collision );
+
             Velocity += NetForce / Mass * dt;
             LinkedEnt.ent.transform.Position += Velocity * dt;
 
@@ -99,15 +105,43 @@ namespace Application
 
         //NOTE: Drag uses LOCAL velocity. If you want an object to not experience drag in a certain situation 
         //      (eg. being on top of an object) then set the BASE velocity.
-        public void DragSimulate( float dt )
+        public void DragSimulate( float dt, bool GroundFriction )
         {
+            Vector Drag = new Vector();
 
+
+            //if the object is almost stopped, force it to stop.
+            //drag in this case commonly overshoots.
+            if ( Velocity.Length() < 0.1f )
+            {
+                Velocity = new Vector();
+                return;
+            }
+
+            Vector WindDir = -Velocity.Normalized();
+            //ground friction, only do on ground contact
+            if ( GroundFriction )
+                Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
+
+            Vector Areas = new Vector();
+            Vector Maxs = LinkedEnt.ent.AABB.maxs;
+            Vector Mins = LinkedEnt.ent.AABB.mins;
+            Areas.x = ( Maxs.y - Mins.y ) * ( Maxs.z - Mins.z );
+            Areas.y = ( Maxs.x - Mins.x ) * ( Maxs.z - Mins.z );
+            Areas.z = ( Maxs.x - Mins.x ) * ( Maxs.y - Mins.y );
+            for ( int i = 0; i < 3; ++i )
+            {
+                int iWindSign = WindDir[ i ] > 0 ? 1 : -1;
+                Drag[ i ] += .5f * AirDensity * Velocity[ i ] * Velocity[ i ] * AirDragCoeffs[ i ] * Areas[ i ] * iWindSign;
+            }
+            NetForce += Drag;
         }
 
 
         public EHandle LinkedEnt;
         public Vector Gravity;
         public Vector NetForce;
+        public Vector AirDragCoeffs;
         public Vector Velocity;
         public Vector BaseVelocity;
         public float Mass;
