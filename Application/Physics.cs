@@ -25,7 +25,7 @@ namespace PhysEngine
         
         public void Collide( EHandle OtherEnt, float ReflectValue = 0.0f )
         {
-            Plane collisionplane = OtherEnt.ent.AABB.GetCollisionPlane( LinkedEnt.ent.transform.Position, OtherEnt.ent.transform.Position );
+            Plane collisionplane = OtherEnt.AABB.GetCollisionPlane( LinkedEnt.Transform.Position, OtherEnt.Transform.Position );
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -33,10 +33,10 @@ namespace PhysEngine
             //reflect the velocity about the normal of the collision plane
             Velocity -= 2.0f * Vector.Dot( Velocity, collisionplane.Normal ) * collisionplane.Normal;
 
-            Vector NewPos = collisionplane.ClosestPointOnPlane( LinkedEnt.ent.transform.Position );
+            Vector NewPos = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.Position );
 
-            Vector Mins = LinkedEnt.ent.AABB.mins;
-            Vector Maxs = LinkedEnt.ent.AABB.maxs;
+            Vector Mins = LinkedEnt.AABB.Mins;
+            Vector Maxs = LinkedEnt.AABB.Maxs;
 
             // technically a lot of the "if"s in the "else if"s aren't neccesary, but they help with readability
             if ( Math.Abs( collisionplane.Normal.x ) > .9f )
@@ -66,7 +66,7 @@ namespace PhysEngine
 
                 Velocity.z *= ReflectValue;
             }
-            LinkedEnt.ent.transform.Position = NewPos;
+            LinkedEnt.Transform.Position = NewPos;
         }
         //returns true if there was a collision
         public void Simulate( float dt, World world )
@@ -77,8 +77,7 @@ namespace PhysEngine
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
 
-                
-                if ( WorldEnt.ent.AABB.TestCollisionAABB( LinkedEnt.ent.AABB, WorldEnt.ent.transform.Position, LinkedEnt.ent.transform.Position ) ) //if (collision)
+                if ( WorldEnt.AABB.TestCollision( WorldEnt.Transform.Position, LinkedEnt.AABB,  LinkedEnt.Transform.Position ) ) //if (collision)
                 {
                     Collide( WorldEnt );
                 }
@@ -93,7 +92,7 @@ namespace PhysEngine
             DragSimulate( dt, Collision );
 
             Velocity += NetForce / Mass * dt;
-            LinkedEnt.ent.transform.Position += Velocity * dt;
+            LinkedEnt.Transform.Position += Velocity * dt;
 
             //reset the net force each frame
             for ( int i = 0; i < 3; ++i )
@@ -111,10 +110,10 @@ namespace PhysEngine
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
 
-                if ( WorldEnt.ent.AABB.TestCollisionAABB( LinkedEnt.ent.AABB, WorldEnt.ent.transform.Position, LinkedEnt.ent.transform.Position ) ) //if (collision)
+                if ( WorldEnt.AABB.TestCollision( WorldEnt.Transform.Position, LinkedEnt.AABB,  LinkedEnt.Transform.Position ) ) //if (collision)
                 {
                     Collision = true;
-                    Vector vCollisionNormal = WorldEnt.ent.AABB.GetCollisionNormal( LinkedEnt.ent.transform.Position, WorldEnt.ent.transform.Position );
+                    Vector vCollisionNormal = WorldEnt.AABB.GetCollisionNormal( LinkedEnt.Transform.Position, WorldEnt.Transform.Position );
                     if ( vCollisionNormal.y > .9f )
                         TopCollision = true;
                 }
@@ -143,8 +142,8 @@ namespace PhysEngine
                 Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
 
             Vector Areas = new Vector();
-            Vector Maxs = LinkedEnt.ent.AABB.maxs;
-            Vector Mins = LinkedEnt.ent.AABB.mins;
+            Vector Maxs = LinkedEnt.AABB.Maxs;
+            Vector Mins = LinkedEnt.AABB.Mins;
             Areas.x = ( Maxs.y - Mins.y ) * ( Maxs.z - Mins.z );
             Areas.y = ( Maxs.x - Mins.x ) * ( Maxs.z - Mins.z );
             Areas.z = ( Maxs.x - Mins.x ) * ( Maxs.y - Mins.y );

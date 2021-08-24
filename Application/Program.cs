@@ -19,28 +19,43 @@ namespace PhysEngine
 
         const float Max_Player_Speed = 5.0f;
 
+        public static readonly BBox PLAYER_NORMAL_BBOX = new BBox( new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
+        public static readonly BBox PLAYER_CROUCH_BBOX = new BBox( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
+
 
         static void Main( string[] args )
         {
             Renderer.Init( out IntPtr window );
             Shader shader = new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
-            Texture[] texture = { new Texture( "themasterpiece.png" ) };
+            Texture[] dirt = { new Texture( "Textures/dirt.png" ) };
+            Texture[] grass = { new Texture( "Textures/grass.png" ) };
 
-            EHandle b1 = new EHandle( new Vector( -10, -10, -11 ), new Vector( 10, 10, -9 ), texture );
-            EHandle b2 = new EHandle( new Vector( -10, -11, -10 ), new Vector( 10, -9, 10 ), texture );
-            World world = new World( b1, b2 );
+            World world = new World();
+            world.Add
+            (
+                new EHandle(    new Vector( -10, -11, -10 ),   new Vector( 0, -10, 10 ),    dirt ),
+                new EHandle(    new Vector( 0, -12, -10 ),     new Vector( 20, -11, 10 ),   dirt ),
+
+                //walls
+                new EHandle(    new Vector( -10, -10, -12 ),    new Vector( 0, 0, -10 ),    grass ),
+                new EHandle(    new Vector( -10, -10, 10 ),     new Vector( 0, 0, 12 ),     grass ),
+                new EHandle(    new Vector( 0, -11, -12 ),      new Vector( 20, 0, -10 ),   grass ),
+                new EHandle(    new Vector( 0, -11, 10 ),       new Vector( 20, 0, 12 ),    grass ),
+                new EHandle(    new Vector( -12, -10, -10 ),    new Vector( -10, 0, 10 ),   grass ),
+                new EHandle(    new Vector( 10, -10, -10 ),     new Vector( 12, 0, 10 ),    grass ),
+                new EHandle(    new Vector( 20, -11, -10 ),     new Vector( 22, 0, 10 ),    grass )
+            );
 
             Renderer.GetWindowSize( window, out int width, out int height );
             Util.MakePerspective( fov, (float) width / height, 0.01f, 1000.0f, out Matrix persp );
             player = new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp );
-            Matrix PlayerYaw = Matrix.IdentityMatrix();
 
             InputHandle inptptr = Input;
             Renderer.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
             WindowHandle wndptr = WindowMove;
             Renderer.SetWindowMoveCallback( Marshal.GetFunctionPointerForDelegate( wndptr ) );
 
-            PhysicsObject CamPhys = new PhysicsObject( player.LinkedEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 50.0f );
+            PhysicsObject CamPhys = new PhysicsObject( player, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 50.0f );
 
             float lasttime = Renderer.GetTime();
 
@@ -58,15 +73,14 @@ namespace PhysEngine
                     Mouse.HideMouse( window );
                     const float LookSpeed = 10.0f;
                     Mouse.GetMouseOffset( window, out double x, out double y );
-                    Vector Up = player.LinkedEnt.ent.transform.InverseTransformDirection( new Vector( 0, 1, 0 ) );
+                    Vector Up = player.Transform.InverseTransformDirection( new Vector( 0, 1, 0 ) );
                     Vector Rt = new Vector( 1, 0, 0 );
                     Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -x ), new Vector( 0, -1, 0 ), out Matrix XRotGlobal );
                     Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -x ), Up, out Matrix XRot );
                     Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -y ), Rt, out Matrix YRot );
-                    Util.MultiplyMatrix( ref player.LinkedEnt.ent.transform.Rotation, XRot );
-                    Util.MultiplyMatrix( ref player.LinkedEnt.ent.transform.Rotation, YRot );
+                    player.Transform.Rotation = Util.MultiplyMatrix( player.Transform.Rotation, XRot );
+                    player.Transform.Rotation = Util.MultiplyMatrix( player.Transform.Rotation, YRot );
 
-                    Transform.UpdateTransform( ref player.LinkedEnt.ent.transform );
                     Mouse.MoveMouseToCenter( window );
 
                     Collision = CamPhys.TestCollision( world, out bool TopCollision );
@@ -74,13 +88,13 @@ namespace PhysEngine
                     float Movespeed = Collision ? Movespeed_Gnd : Movespeed_Air;
                     Vector Force = new Vector();
                     if ( ( MoveTracker & (uint) Move.MOVE_FORWARD ) != 0 )
-                        Force += player.LinkedEnt.ent.transform.TransformDirection( new Vector( 0, 0, -1 ) ) * Movespeed * CamPhys.Mass;
+                        Force += player.Transform.TransformDirection( new Vector( 0, 0, -1 ) ) * Movespeed * CamPhys.Mass;
                     if ( ( MoveTracker & (uint) Move.MOVE_BACKWARD ) != 0 )
-                        Force += player.LinkedEnt.ent.transform.TransformDirection( new Vector( 0, 0, 1 ) ) * Movespeed * CamPhys.Mass;
+                        Force += player.Transform.TransformDirection( new Vector( 0, 0, 1 ) ) * Movespeed * CamPhys.Mass;
                     if ( ( MoveTracker & (uint) Move.MOVE_LEFT ) != 0 )
-                        Force += player.LinkedEnt.ent.transform.TransformDirection( new Vector( -1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
+                        Force += player.Transform.TransformDirection( new Vector( -1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                     if ( ( MoveTracker & (uint) Move.MOVE_RIGHT ) != 0 )
-                        Force += player.LinkedEnt.ent.transform.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
+                        Force += player.Transform.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                     Force.y = 0;
                     CamPhys.NetForce += Force;
 
@@ -96,12 +110,11 @@ namespace PhysEngine
 
                     CamPhys.Simulate( frametime, world );
 
-                    Console.WriteLine( PlayerYaw.GetForward() );
                 }
                 else
                     Mouse.ShowMouse( window );
 
-                Renderer.RenderLoop( window, shader, player.LinkedEnt.ent, player.Perspective, world.GetEntList(), world.WorldEnts.Count );
+                Renderer.RenderLoop( window, shader, player.ent, player.Perspective, world.GetEntList(), world.WorldEnts.Count );
             }
             Renderer.Terminate();
         }
@@ -112,6 +125,15 @@ namespace PhysEngine
             if ( act == Actions.PRESSED && key == Keys.ESCAPE ) //pressed
             {
                 Paused = !Paused;
+            }
+
+            if ( ( act == Actions.PRESSED || act == Actions.HELD ) && key == Keys.LCONTROL ) //holding control
+            {
+                player.AABB = new BHandle( PLAYER_CROUCH_BBOX );
+            }
+            else if ( key == Keys.LCONTROL ) //not holding control
+            {
+                player.AABB = new BHandle( PLAYER_NORMAL_BBOX );
             }
 
             bool bSetToTrue = act == Actions.PRESSED || act == Actions.HELD;
@@ -152,6 +174,7 @@ namespace PhysEngine
         D = 68,
         SPACE = 32,
         ESCAPE = 256,
+        LCONTROL = 341,
     }
     public enum Actions
     {

@@ -60,20 +60,23 @@ namespace PhysEngine
         public static extern void MakePerspective( float fov, float aspect, float nearclip, float farclip, out Matrix persp );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void MultiplyMatrix( ref Matrix multiplied, Matrix multiplier );
+        public static Matrix MultiplyMatrix( Matrix multiplied, Matrix multiplier )
+        {
+            MultiplyMatrix( ref multiplied, multiplier );
+            return multiplied;
+        }
         public static byte[] ToCString( string s )
         {
             return Encoding.UTF8.GetBytes( s );
         }
     }
 
-    public class Player
+    public class Player : EHandle
     {
-        public Player( THandle transform, Matrix Perspective ) //persp is width/height
+        public Player( THandle transform, Matrix Perspective ) : base( new BaseFace[ 0 ], transform, new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) ) //persp is width/height
         {
-            LinkedEnt = new EHandle( new BaseFace[ 0 ], transform.TransformData, new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
             this.Perspective = Perspective;
         }
-        public EHandle LinkedEnt;
         public Matrix Perspective;
     }
 
@@ -383,6 +386,7 @@ namespace PhysEngine
         private IntPtr EntFaces;
         private uint FaceLength;
 
+        
         [MarshalAs( UnmanagedType.Struct )]
         public Transform transform;
         [MarshalAs( UnmanagedType.Struct )]
@@ -404,25 +408,42 @@ namespace PhysEngine
     }
     public class EHandle
     {
-        public EHandle( BaseFace[] EntFaces, Transform transform, Vector mins, Vector maxs )
+        public EHandle( BaseFace[] EntFaces, THandle transform, Vector mins, Vector maxs )
         {
-            ent = new BaseEntity( EntFaces, transform, mins, maxs );
+            _ent = new BaseEntity( EntFaces, transform.Data, mins, maxs );
+            this.Transform = transform;
+            this.AABB = new BHandle( mins, maxs );
         }
         public EHandle( Vector mins, Vector maxs, Texture[] textures )
         {
-            ent = new BaseEntity( mins, maxs, textures );
+            _ent = new BaseEntity( mins, maxs, textures );
+            this.Transform = new THandle( _ent.transform );
+            this.AABB = new BHandle( mins, maxs );
         }
         public EHandle( BaseEntity CloneEnt )
         {
-            ent = CloneEnt;
+            _ent = CloneEnt;
         }
 
         public BaseFace[] GetEntFaces()
         {
-            return ent.GetEntFaces();
+            return _ent.GetEntFaces();
         }
         
-        public BaseEntity ent;
+        private BaseEntity _ent;
+        public BaseEntity ent 
+        { 
+            get 
+            {
+                _ent.transform = Transform.Data;
+                _ent.AABB = AABB.Data;
+                return _ent; 
+            } 
+        }
+
+
+        public THandle Transform;
+        public BHandle AABB;
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -482,8 +503,13 @@ namespace PhysEngine
         {
             t = new Transform( position, scale, rotation );
         }
+        public THandle( Transform tCopy )
+        {
+            t = tCopy;
+        }
+
         private Transform t;
-        public Transform TransformData
+        public Transform Data
         { get => t; }
 
         public Vector Position
@@ -579,4 +605,26 @@ namespace PhysEngine
             return p.Normal;
         }
     }
+    public class BHandle
+    {
+        public BHandle( Vector mins, Vector maxs )
+        {
+            AABB = new BBox( mins, maxs );
+        }
+        public BHandle( BBox bCopy )
+        {
+            AABB = bCopy;
+        }
+        private BBox AABB;
+        public BBox Data { get { return AABB; } }
+        public Vector Mins
+        { get { return AABB.mins; } set { AABB.mins = value; } }
+        public Vector Maxs
+        { get { return AABB.maxs; } set { AABB.maxs = value; } }
+        public bool TestCollision( Vector ThisLocation, BHandle bOther,  Vector OtherLocation ) => AABB.TestCollisionAABB( bOther.AABB, ThisLocation, OtherLocation );
+        public bool TestCollision( Vector pt, Vector ThisLocation ) => AABB.TestCollisionPoint( pt, ThisLocation );
+        public Plane GetCollisionPlane( Vector pt, Vector ThisLocation ) => AABB.GetCollisionPlane( pt, ThisLocation );
+        public Vector GetCollisionNormal( Vector pt, Vector ThisLocation ) => AABB.GetCollisionNormal( pt, ThisLocation );
+    }
+
 }
