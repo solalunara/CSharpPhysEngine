@@ -43,17 +43,6 @@ namespace PhysEngine
     }
     public class Util
     {
-        public static void IntPtrToArray<T>( IntPtr unmanagedArray, uint length, out T[] mangagedArray )
-        {
-            int size = Marshal.SizeOf( typeof( T ) );
-            mangagedArray = new T[ length ];
-
-            for ( int i = 0; i < length; i++ )
-            {
-                IntPtr ins = new IntPtr( unmanagedArray.ToInt64() + i * size );
-                mangagedArray[ i ] = Marshal.PtrToStructure<T>( ins );
-            }
-        }
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void MakeRotMatrix( float degrees, Vector axis, out Matrix rot );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -83,42 +72,34 @@ namespace PhysEngine
     [StructLayout( LayoutKind.Sequential )]
     public struct BaseFace
     {
-        public BaseFace( float[] vertices, uint[] indices, Texture tex )
+        public BaseFace( float[] vertices, int[] indices, Texture tex )
         {
-            InitBaseFace( (uint) vertices.Length, vertices, (uint) indices.Length, indices, tex, out BaseFace face );
-            Verts = face.Verts;
-            VertLength = face.VertLength;
-            Inds = face.Inds;
-            IndLength = face.IndLength;
-            VBO = face.VBO;
-            VAO = face.VAO;
-            EBO = face.EBO;
+            InitBaseFace( vertices.Length, vertices, indices.Length, indices, tex, out this );
         }
 
-        private IntPtr Verts;
-        private uint VertLength;
-        private IntPtr Inds;
-        private uint IndLength;
+        public IntPtr Verts;
+        public int VertLength;
+        public IntPtr Inds;
+        public int IndLength;
 
         public uint VBO;
         public uint VAO;
         public uint EBO;
 
+        [MarshalAs(UnmanagedType.Struct)]
+        public Texture texture;
+
         //member methods
-        public float[] GetVerts()
-        {
-            Util.IntPtrToArray( Verts, VertLength, out float[] arr );
-            return arr;
-        }
-        public uint[] GetInds()
-        {
-            Util.IntPtrToArray( Inds, IndLength, out uint[] arr );
-            return arr;
-        }
+        public float GetVertAtIndex( int i ) => GetVertAtIndex( this, i );
+        public int GetIndAtIndex( int i ) => GetIndAtIndex( this, i );
 
         //api init
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void InitBaseFace( uint VertLength, float[] vertices, uint IndLength, uint[] indices, Texture textureptr, out BaseFace face );
+        public static extern void InitBaseFace( int VertLength, float[] vertices, int IndLength, int[] indices, Texture textureptr, out BaseFace face );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern float GetVertAtIndex( BaseFace face, int index );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern int GetIndAtIndex( BaseFace face, int index );
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Shader
@@ -154,6 +135,16 @@ namespace PhysEngine
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitTexture( byte[] FilePath, out Texture tex );
 
+    }
+    public class TextureHandle
+    {
+        public TextureHandle( string filepath )
+        {
+            this.TextureName = filepath;
+            this.texture = new Texture( filepath );
+        }
+        public Texture texture;
+        public string TextureName;
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Vector4
@@ -368,23 +359,15 @@ namespace PhysEngine
     {
         public BaseEntity( BaseFace[] EntFaces, Transform transform, Vector mins, Vector maxs )
         {
-            InitBaseEntity( EntFaces, (uint) EntFaces.Length, transform, mins, maxs, out BaseEntity b );
-            this.EntFaces = b.EntFaces;
-            this.FaceLength = b.FaceLength;
-            this.transform = b.transform;
-            this.AABB = b.AABB;
+            InitBaseEntity( EntFaces, EntFaces.Length, transform, mins, maxs, out this );
         }
         public BaseEntity( Vector mins, Vector maxs, Texture[] textures )
         {
-            InitBrush( mins, maxs, textures, (uint) textures.Length, out BaseEntity b );
-            EntFaces = b.EntFaces;
-            FaceLength = b.FaceLength;
-            transform = b.transform;
-            AABB = b.AABB;
+            InitBrush( mins, maxs, textures, textures.Length, out this );
         }
 
-        private IntPtr EntFaces;
-        private uint FaceLength;
+        public IntPtr EntFaces;
+        public int FaceLength;
 
         
         [MarshalAs( UnmanagedType.Struct )]
@@ -392,19 +375,25 @@ namespace PhysEngine
         [MarshalAs( UnmanagedType.Struct )]
         public BBox AABB;
 
-        //test member method
-        public BaseFace[] GetEntFaces()
+        
+        public BaseFace GetFaceAtIndex( int i )
         {
-            Util.IntPtrToArray( EntFaces, FaceLength, out BaseFace[] arr );
-            return arr;
+            GetBaseFaceAtIndex( this, out BaseFace ret, i );
+            return ret;
         }
+
+        public void Close() => DestructBaseEntity( this );
 
 
         //api methods
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        private static extern void InitBaseEntity( BaseFace[] EntFaces, uint FaceLength, Transform transform, Vector mins, Vector maxs, out BaseEntity b );
+        private static extern void InitBaseEntity( BaseFace[] EntFaces, int FaceLength, Transform transform, Vector mins, Vector maxs, out BaseEntity b );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        private static extern void InitBrush( Vector mins, Vector maxs, Texture[] textures, uint TextureLength, out BaseEntity b );
+        private static extern void InitBrush( Vector mins, Vector maxs, Texture[] textures, int TextureLength, out BaseEntity b );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void GetBaseFaceAtIndex( BaseEntity ent, out BaseFace face, int index );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void DestructBaseEntity( BaseEntity ent );
     }
     public class EHandle
     {
@@ -424,11 +413,6 @@ namespace PhysEngine
         {
             _ent = CloneEnt;
         }
-
-        public BaseFace[] GetEntFaces()
-        {
-            return _ent.GetEntFaces();
-        }
         
         private BaseEntity _ent;
         public BaseEntity ent 
@@ -441,7 +425,7 @@ namespace PhysEngine
             } 
         }
 
-
+        public TextureHandle[] Textures;
         public THandle Transform;
         public BHandle AABB;
     }

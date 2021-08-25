@@ -92,7 +92,7 @@ void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 pe
 		//tell the vertex shader about where the entity is in world space
 		SetMatrix( shader, "transform", enti.transform.m_ThisToWorld );
 		//traverse the entity for faces
-		for ( unsigned int i = 0; i < enti.FaceLength; ++i )
+		for ( int i = 0; i < enti.FaceLength; ++i )
 		{
 			BaseFace pFace = enti.EntFaces[ i ];
 			glBindVertexArray( pFace.VAO );

@@ -41,6 +41,10 @@ Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum Fi
 	glBindTexture( GL_TEXTURE_2D, 0 );
 
 }
+Texture::Texture() :
+	ID( 0 ), Unit( GL_TEXTURE0 )
+{
+}
 void InitTexture( const char *FilePath, Texture *pTex )
 {
 	if ( !pTex )

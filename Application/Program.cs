@@ -10,8 +10,11 @@ namespace PhysEngine
     class Program
     {
         static bool Paused = false;
+        static bool Save = false;
+        static bool Load = false;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
         static Player player;
+
 
         const float fov = 75.0f;
         const float Movespeed_Air = 5.0f;
@@ -27,16 +30,32 @@ namespace PhysEngine
         {
             Renderer.Init( out IntPtr window );
             Shader shader = new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
-            Texture[] dirt = { new Texture( "Textures/dirt.png" ) };
-            Texture[] grass = { new Texture( "Textures/grass.png" ) };
 
+            Renderer.GetWindowSize( window, out int width, out int height );
+            Util.MakePerspective( fov, (float) width / height, 0.01f, 1000.0f, out Matrix persp );
+
+            /*
             World world = new World();
+            //world needs a list of textures in it for saverestore
             world.Add
             (
+                new TextureHandle( "Textures/dirt.png" ),
+                new TextureHandle( "Textures/grass.png" )
+            );
+            Texture[] dirt = { world.Textures[ 0 ].texture };
+            Texture[] grass = { world.Textures[ 1 ].texture };
+            world.Add
+            (
+                //player
+                new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp )
+            );
+            world.Add
+            (
+                //dirt floors
                 new EHandle(    new Vector( -10, -11, -10 ),   new Vector( 0, -10, 10 ),    dirt ),
                 new EHandle(    new Vector( 0, -12, -10 ),     new Vector( 20, -11, 10 ),   dirt ),
 
-                //walls
+                //grass walls
                 new EHandle(    new Vector( -10, -10, -12 ),    new Vector( 0, 0, -10 ),    grass ),
                 new EHandle(    new Vector( -10, -10, 10 ),     new Vector( 0, 0, 12 ),     grass ),
                 new EHandle(    new Vector( 0, -11, -12 ),      new Vector( 20, 0, -10 ),   grass ),
@@ -45,10 +64,17 @@ namespace PhysEngine
                 new EHandle(    new Vector( 10, -10, -10 ),     new Vector( 12, 0, 10 ),    grass ),
                 new EHandle(    new Vector( 20, -11, -10 ),     new Vector( 22, 0, 10 ),    grass )
             );
+            */
+            
+            //World world = World.FromFile( "Worlds/world1.map" );
 
-            Renderer.GetWindowSize( window, out int width, out int height );
-            Util.MakePerspective( fov, (float) width / height, 0.01f, 1000.0f, out Matrix persp );
-            player = new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp );
+
+
+            //map is correctly loading for c# but not passing through to c++
+            //most likely an issue with needing to reinitialize gpu memory pointers
+            World world = World.FromFile( "Worlds/world1.map" );
+
+            player = world.Players[ 0 ];
 
             InputHandle inptptr = Input;
             Renderer.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
@@ -110,12 +136,26 @@ namespace PhysEngine
 
                     CamPhys.Simulate( frametime, world );
 
+                    if ( Save )
+                    {
+                        Save = false;
+                        world.ToFile( "Worlds/world1.map" );
+                    }
+                    if ( Load )
+                    {
+                        Load = false;
+                        world.Close();
+                        world = World.FromFile( "Worlds/world1.map" );
+                        player = world.Players[ 0 ];
+                        CamPhys.LinkedEnt = player;
+                    }
                 }
                 else
                     Mouse.ShowMouse( window );
 
                 Renderer.RenderLoop( window, shader, player.ent, player.Perspective, world.GetEntList(), world.WorldEnts.Count );
             }
+            world.ToFile( "Worlds/world1.map" );
             Renderer.Terminate();
         }
 
@@ -125,6 +165,15 @@ namespace PhysEngine
             if ( act == Actions.PRESSED && key == Keys.ESCAPE ) //pressed
             {
                 Paused = !Paused;
+            }
+
+            if ( act == Actions.PRESSED && key == Keys.F6 )
+            {
+                Save = true;
+            }
+            if ( act == Actions.PRESSED && key == Keys.F7 )
+            {
+                Load = true;
             }
 
             if ( ( act == Actions.PRESSED || act == Actions.HELD ) && key == Keys.LCONTROL ) //holding control
@@ -175,6 +224,8 @@ namespace PhysEngine
         SPACE = 32,
         ESCAPE = 256,
         LCONTROL = 341,
+        F6 = 295,
+        F7 = 296,
     }
     public enum Actions
     {

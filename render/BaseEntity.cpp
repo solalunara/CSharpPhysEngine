@@ -7,15 +7,11 @@
 
 
 //baseentity functions
-BaseEntity::BaseEntity( BaseFace *EntFaces, GLuint FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs ) :
-    AABB( BoundingBox( mins, maxs ) ), EntFaces( EntFaces ), FaceLength( FaceLength ), transform( transform )
+BaseEntity::BaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs ) :
+    AABB( BoundingBox( mins, maxs ) ), FaceLength( FaceLength ), transform( transform ), EntFaces( EntFaces )
 {
 }
-BaseEntity::BaseEntity():
-    EntFaces( NULL ), FaceLength( 0 )
-{
-}
-BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, GLuint TextureLength ) :
+BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength ) :
     AABB( BoundingBox( mins, maxs ) ), FaceLength( 6 ), transform( Transform( glm::vec3( 0 ), glm::vec3( 1 ), glm::mat4( 1 ) ) )
 {
     _ASSERTE( TextureLength == 1 || TextureLength == 6 );
@@ -78,7 +74,7 @@ BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, GLuin
         vertices5,
         vertices6,
     };
-    GLuint indices[] =
+    int indices[] =
     {
         0, 1, 3,
         1, 2, 3
@@ -93,19 +89,36 @@ BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, GLuin
         BaseFace( 20, vertices[ 4 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 4 ], GL_DYNAMIC_DRAW ),
         BaseFace( 20, vertices[ 5 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 5 ], GL_DYNAMIC_DRAW ),
     };
-}
-void InitBaseEntity( BaseFace *EntFaces, unsigned int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt )
+} //WARNING: vertices and indices go out of scope here, causing undefined behaviour
+void InitBaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt )
 {
     if ( !pEnt )
-        pEnt = new BaseEntity();
-    *pEnt = BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
+        pEnt = new BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
+    else
+        *pEnt = BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
 }
-void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, unsigned int TextureLength, BaseEntity *pEnt )
+void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength, BaseEntity *pEnt )
 {
     if ( !pEnt )
-        pEnt = new BaseEntity();
-    *pEnt = BaseEntity( mins, maxs, textures, TextureLength );
+        pEnt = new BaseEntity( mins, maxs, textures, TextureLength );
+    else
+        *pEnt = BaseEntity( mins, maxs, textures, TextureLength );
 }
+
+void GetBaseFaceAtIndex( BaseEntity ent, BaseFace *pFace, int index )
+{
+    if ( !pFace )
+        pFace = new BaseFace( ent.EntFaces[ index ] );
+    else
+        *pFace = ent.EntFaces[ index ];
+}
+
+void DestructBaseEntity( BaseEntity ent )
+{
+    for ( int i = 0; i < ent.FaceLength; ++i )
+        DestructBaseFace( ent.EntFaces[ i ] );
+}
+
 void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat )
 {
     if ( !pMat )
