@@ -9,6 +9,20 @@ using System.IO;
 
 namespace PhysEngine
 {
+    struct RayHitInfo
+    {
+        public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt )
+        {
+            this.bHit = true;
+            this.ptHit = ptHit;
+            this.vNormal = vNormal;
+            this.HitEnt = HitEnt;
+        }
+        public bool bHit;
+        public Vector ptHit;
+        public Vector vNormal;
+        public BaseEntity HitEnt;
+    }
     class World
     {
         public World()
@@ -67,6 +81,7 @@ namespace PhysEngine
         }
         public void Add( Player p )
         {
+            WorldEnts.Add( p );
             player = p;
         }
         public void Close()
@@ -78,7 +93,30 @@ namespace PhysEngine
             player.ent.Close();
         }
 
+        public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, int TraceFidelity = 100 )
+        {
+            Vector vDirection = ( ptEnd - ptStart ) / TraceFidelity;
+            return RecursiveTraceRay( ptStart, vDirection, TraceFidelity );
+        }
+        private RayHitInfo RecursiveTraceRay( Vector pt, Vector vDirection, int iMaxRecursions )
+        {
+            if ( iMaxRecursions == 0 )
+            {
+                return new RayHitInfo();
+            }
+            for ( int i = 0; i < WorldEnts.Count; ++i )
+            {
+                if ( WorldEnts[ i ] == player )
+                    continue;
 
+                if ( WorldEnts[ i ].AABB.TestCollision( pt, WorldEnts[ i ].Transform.Position ) )
+                {
+                    Plane plane = WorldEnts[ i ].AABB.GetCollisionPlane( pt, WorldEnts[ i ].Transform.Position );
+                    return new RayHitInfo( pt, plane.Normal, WorldEnts[ i ].ent );
+                }
+            }
+            return RecursiveTraceRay( pt + vDirection, vDirection, iMaxRecursions - 1 );
+        }
 
 
         public void ToFile( string filepath )
@@ -87,6 +125,9 @@ namespace PhysEngine
             BinaryWriter bw = new BinaryWriter( fs );
             BaseEntity[] entlist = GetEntList();
 
+            //player index (to skip in reconstruction)
+            int PlayerIndex = WorldEnts.IndexOf( player );
+            bw.Write( PlayerIndex );
 
             //save the player's ent to the file
             int bsize = Marshal.SizeOf( typeof( BaseEntity ) );
@@ -106,6 +147,8 @@ namespace PhysEngine
             bw.Write( entlist.Length );
             for ( int i = 0; i < entlist.Length; ++i )
             {
+                if ( i == PlayerIndex )
+                    continue;
                 //baseent stores a ptr to an array of basefaces
                 //we need to reconstruct that array and save it into the file
                 BaseFace[] faces = new BaseFace[ entlist[i].FaceLength ];
@@ -149,6 +192,8 @@ namespace PhysEngine
 
             World w = new World();
 
+            int PlayerIndex = br.ReadInt32();
+
             //old ent
             byte[] bbytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
             GCHandle phandle = GCHandle.Alloc( bbytes, GCHandleType.Pinned );
@@ -168,6 +213,9 @@ namespace PhysEngine
 
             for ( int i = 0; i < size; ++i )
             {
+                if ( i == PlayerIndex )
+                    continue;
+
                 //get how many faces are in this ent
                 int facesize = br.ReadInt32();
                 BaseFace[] faces = new BaseFace[ facesize ];

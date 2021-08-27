@@ -13,6 +13,7 @@ namespace PhysEngine
         
         public static readonly Vector Default_Gravity = new Vector( 0, -10, 0 );
         public static readonly Vector Default_Coeffs = new Vector( 1, 1, 1 );
+
         public PhysicsObject( EHandle LinkedEnt, Vector Gravity, Vector AirDragCoeffs, float Mass = 1.0f )
         {
             this.LinkedEnt = LinkedEnt;

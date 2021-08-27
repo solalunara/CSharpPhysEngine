@@ -63,7 +63,8 @@ void Init( intptr_t *window )
 	//callback function for key pressed
 	glfwSetKeyCallback( (GLFWwindow *) *window, InputMGR );
 
-	glEnable( GL_DEPTH_TEST );
+	glEnable( GL_DEPTH_TEST ); 
+	glEnable( GL_FRAMEBUFFER_SRGB );
 	glDepthFunc( GL_LESS );
 }
 

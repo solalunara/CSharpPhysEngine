@@ -62,11 +62,31 @@ namespace PhysEngine
 
     public class Player : EHandle
     {
-        public Player( THandle transform, Matrix Perspective ) : base( new BaseFace[ 0 ], transform, new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) ) //persp is width/height
+        public static readonly BBox PLAYER_NORMAL_BBOX = new BBox( new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
+        public static readonly BBox PLAYER_CROUCH_BBOX = new BBox( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
+        public Player( THandle transform, Matrix Perspective ) : base( new BaseFace[ 0 ], transform, PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs ) //persp is width/height
         {
             this.Perspective = Perspective;
+            _crouched = false;
         }
+        private bool _crouched;
         public Matrix Perspective;
+        public void Crouch()
+        {
+            if ( !_crouched )
+            {
+                _crouched = true;
+                this.AABB = new BHandle( PLAYER_CROUCH_BBOX );
+            }
+        }
+        public void UnCrouch()
+        {
+            if ( _crouched )
+            {
+                _crouched = false;
+                this.AABB = new BHandle( PLAYER_NORMAL_BBOX );
+            }
+        }
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -555,10 +575,10 @@ namespace PhysEngine
         }
         public bool TestCollisionPoint( Vector pt, Vector ptThis )
         {
-            bool bShouldCollide = false;
+            bool bShouldCollide = true;
             for ( int i = 0; i < 3; ++i )
-                if ( pt[ i ] > mins[ i ] + ptThis[ i ] && pt[ i ] < maxs[ i ] + ptThis[ i ] )
-                    bShouldCollide = true;
+                if ( !( pt[ i ] > mins[ i ] + ptThis[ i ] && pt[ i ] < maxs[ i ] + ptThis[ i ] ) )
+                    bShouldCollide = false;
             return bShouldCollide;
         }
         public Plane GetCollisionPlane( Vector pt, Vector ptB )

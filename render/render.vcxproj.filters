@@ -75,5 +75,7 @@
   <ItemGroup>
     <None Include="..\Application\bin\Debug\Shaders\FragmentShader.frag" />
     <None Include="..\Application\bin\Debug\Shaders\VertexShader.vert" />
+    <None Include="..\Application\bin\Debug\Shaders\GUIVert.vert" />
+    <None Include="..\Application\bin\Debug\Shaders\GUIFrag.frag" />
   </ItemGroup>
 </Project>

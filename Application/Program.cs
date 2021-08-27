@@ -12,6 +12,7 @@ namespace PhysEngine
         static bool Paused = false;
         static bool Save = false;
         static bool Load = false;
+        static bool Fire = false;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
         static Player player;
 
@@ -24,20 +25,18 @@ namespace PhysEngine
 
         const float Max_Player_Speed = 5.0f;
 
-        public static readonly BBox PLAYER_NORMAL_BBOX = new BBox( new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
-        public static readonly BBox PLAYER_CROUCH_BBOX = new BBox( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
-
 
         static void Main( string[] args )
         {
             Renderer.Init( out IntPtr window );
             Shader shader = new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
+            Shader GUI = new Shader( "Shaders/GUIVert.vert", "Shaders/GUIFrag.frag" );
             shader.SetAmbientLight( 0.0f );
 
             Light[] testlights = 
             { 
-                new Light( new Vector( 0, -5,-5 ), new Vector( 0.7f, 0.7f, 1 ), 50 ),
-                new Light( new Vector( 0, -5, 5 ), new Vector( 0.7f, 0.7f, 1 ), 50 )
+                new Light( new Vector( 0, -5,-5 ), new Vector( 0.7f, 0.7f, 1 ), 20 ),
+                new Light( new Vector( 0, -5, 5 ), new Vector( 0.7f, 0.7f, 1 ), 20 )
             };
             shader.SetLights( testlights );
 
@@ -138,7 +137,6 @@ namespace PhysEngine
                     {
                         CamPhys.Velocity.y = 5.0f;
                     }
-
                     if ( CamPhys.Velocity.Length() > Max_Player_Speed && Collision )
                     {
                         CamPhys.Velocity = CamPhys.Velocity.Normalized() * Max_Player_Speed;
@@ -164,6 +162,19 @@ namespace PhysEngine
                         CamPhys.LinkedEnt = player;
                         TestPhys.LinkedEnt = world.WorldEnts[ world.WorldEnts.Count - 1 ];
                     }
+
+                    if ( Fire )
+                    {
+                        Fire = false;
+                        Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Transform.Position + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
+                        if ( hit.bHit )
+                        {
+                            BaseEntity HitEnt = hit.HitEnt;
+                            Console.WriteLine( HitEnt.transform.Position );
+                        }
+                    }
                 }
                 else
                     Mouse.ShowMouse( window );
@@ -178,27 +189,20 @@ namespace PhysEngine
         public static void Input( IntPtr window, Keys key, int scancode, Actions act, int mods )
         {
             if ( act == Actions.PRESSED && key == Keys.ESCAPE ) //pressed
-            {
                 Paused = !Paused;
-            }
 
             if ( act == Actions.PRESSED && key == Keys.F6 )
-            {
                 Save = true;
-            }
             if ( act == Actions.PRESSED && key == Keys.F7 )
-            {
                 Load = true;
-            }
 
             if ( ( act == Actions.PRESSED || act == Actions.HELD ) && key == Keys.LCONTROL ) //holding control
-            {
-                player.AABB = new BHandle( PLAYER_CROUCH_BBOX );
-            }
+                player.Crouch();
             else if ( key == Keys.LCONTROL ) //not holding control
-            {
-                player.AABB = new BHandle( PLAYER_NORMAL_BBOX );
-            }
+                player.UnCrouch();
+
+            if ( act == Actions.PRESSED && key == Keys.Q )
+                Fire = true;
 
             bool bSetToTrue = act == Actions.PRESSED || act == Actions.HELD;
 
@@ -241,6 +245,8 @@ namespace PhysEngine
         LCONTROL = 341,
         F6 = 295,
         F7 = 296,
+        Q = 81,
+        E = 69,
     }
     public enum Actions
     {
