@@ -25,5 +25,6 @@ struct RENDER_API Texture
 	GLenum Unit;
 };
 extern "C" RENDER_API void InitTexture( const char *FilePath, Texture *pTex );
+extern "C" RENDER_API void DestructTexture( Texture *pTex );
 
 #endif

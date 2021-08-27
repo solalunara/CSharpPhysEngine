@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Shader.h"
+#include <vector>
 
 Shader::Shader( const char *VertPath, const char *FragPath )
 {
@@ -87,8 +88,7 @@ Shader::Shader()
 
 void InitShader( const char *VertPath, const char *FragPath, Shader *pShader )
 {
-	if ( !pShader )
-		pShader = new Shader();
+	_ASSERTE( pShader );
 	*pShader = Shader( VertPath, FragPath );
 }
 
@@ -112,4 +112,32 @@ void SetFloat( Shader s, const std::string &name, float value )
 void SetMatrix( Shader s, const std::string &name, glm::mat4 value )
 {
 	glUniformMatrix4fv( glGetUniformLocation( s.ID, name.c_str() ), 1, GL_FALSE, glm::value_ptr( value ) );
+}
+void SetVec4Array( Shader s, const std::string &name, std::vector<glm::vec4> values )
+{
+	std::vector<float> floatvalues;
+	for ( int i = 0; i < 100; ++i )
+	{
+		for ( int j = 0; j < 4; ++j )
+		{
+			if ( i < values.size() )
+				floatvalues.push_back( values[ i ][ j ] );
+			else
+				floatvalues.push_back( 0.0f );
+		}
+	}
+	_ASSERTE( floatvalues.size() == 400 );
+	glUniform4fv( glGetUniformLocation( s.ID, name.c_str() ), 100, floatvalues.data() );
+}
+void SetFloatArray( Shader s, const std::string &name, std::vector<float> values )
+{
+	if ( values.size() < 100 )
+	{
+		for ( int i = values.size(); i < 100; ++i )
+		{
+			values.push_back( 0.0f );
+		}
+	}
+	_ASSERTE( values.size() == 100 );
+	glUniform1fv( glGetUniformLocation( s.ID, name.c_str() ), 100, values.data() );
 }

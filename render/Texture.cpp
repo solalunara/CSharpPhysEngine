@@ -47,8 +47,11 @@ Texture::Texture() :
 }
 void InitTexture( const char *FilePath, Texture *pTex )
 {
-	if ( !pTex )
-		pTex = new Texture( FilePath );
-	else
-		*pTex = Texture( FilePath );
+	_ASSERTE( pTex );
+	*pTex = Texture( FilePath );
+}
+void DestructTexture( Texture *pTex )
+{
+	_ASSERTE( pTex );
+	glDeleteTextures( 1, &pTex->ID );
 }

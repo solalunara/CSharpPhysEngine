@@ -17,15 +17,19 @@
 
 #include "Texture.h"
 
+#define VRT_MAX_SIZE 100
+#define IND_MAX_SIZE 50
+
 
 struct RENDER_API BaseFace
 {
 	BaseFace( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, GLenum DrawType );
+	BaseFace();
 
-	float *vertices;
+	float vertices[ VRT_MAX_SIZE ];
 	int VertLength;
 
-	int *indices;
+	int indices[ IND_MAX_SIZE ];
 	int IndLength;
 
 	GLuint VBO;
@@ -36,7 +40,7 @@ struct RENDER_API BaseFace
 };
 extern "C" RENDER_API void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, BaseFace *pFace );
 
-extern "C" RENDER_API void DestructBaseFace( BaseFace face );
+extern "C" RENDER_API void DestructBaseFace( BaseFace *face );
 
 extern "C" RENDER_API float GetVertAtIndex( BaseFace face, int index );
 extern "C" RENDER_API int GetIndAtIndex( BaseFace face, int index );

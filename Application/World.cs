@@ -15,19 +15,15 @@ namespace PhysEngine
         {
             WorldEnts = new List<EHandle>();
             Textures = new List<TextureHandle>();
-            Players = new List<Player>();
-
-            PinnedHandles = new List<GCHandle>();
         }
         public World( params EHandle[] Ents )
         {
             WorldEnts = new List<EHandle>( Ents );
         }
         public List<EHandle> WorldEnts;
-        public List<Player> Players;
+        public Player player;
         public List<TextureHandle> Textures;
 
-        private List<GCHandle> PinnedHandles;
 
         public BaseEntity[] GetEntList()
         {
@@ -69,19 +65,21 @@ namespace PhysEngine
         {
             Textures.AddRange( tex );
         }
-        public void Add( params Player[] p )
+        public void Add( Player p )
         {
-            Players.AddRange( p );
+            player = p;
         }
         public void Close()
         {
             for ( int i = 0; i < WorldEnts.Count; ++i )
                 WorldEnts[ i ].ent.Close();
-            for ( int i = 0; i < Players.Count; ++i )
-                Players[ i ].ent.Close();
-            for ( int i = 0; i < PinnedHandles.Count; ++i )
-                PinnedHandles[ i ].Free();
+            for ( int i = 0; i < Textures.Count; ++i )
+                Textures[ i ].texture.Close();
+            player.ent.Close();
         }
+
+
+
 
         public void ToFile( string filepath )
         {
@@ -89,28 +87,15 @@ namespace PhysEngine
             BinaryWriter bw = new BinaryWriter( fs );
             BaseEntity[] entlist = GetEntList();
 
-            //tell the file how many players are in the world
-            bw.Write( Players.Count );
-            for ( int i = 0; i < Players.Count; ++i )
-            {
-                //save the player's ent to the file
-                int bsize = Marshal.SizeOf( typeof( BaseEntity ) );
-                byte[] bbytes = new byte[ bsize ];
-                IntPtr bptr = Marshal.AllocHGlobal( bsize );
-                Marshal.StructureToPtr( Players[ i ].ent, bptr, false );
-                Marshal.Copy( bptr, bbytes, 0, bsize );
-                Marshal.FreeHGlobal( bptr );
-                bw.Write( bbytes );
 
-                //save the player's perspective matrix
-                int msize = Marshal.SizeOf( typeof( Matrix ) );
-                byte[] mbytes = new byte[ msize ];
-                IntPtr mptr = Marshal.AllocHGlobal( msize );
-                Marshal.StructureToPtr( Players[ i ].Perspective, mptr, false );
-                Marshal.Copy( mptr, mbytes, 0, msize );
-                Marshal.FreeHGlobal( mptr );
-                bw.Write( mbytes );
-            }
+            //save the player's ent to the file
+            int bsize = Marshal.SizeOf( typeof( BaseEntity ) );
+            byte[] bbytes = new byte[ bsize ];
+            IntPtr bptr = Marshal.AllocHGlobal( bsize );
+            Marshal.StructureToPtr( player.ent, bptr, false );
+            Marshal.Copy( bptr, bbytes, 0, bsize );
+            Marshal.FreeHGlobal( bptr );
+            bw.Write( bbytes );
 
             //save the names of the textures in this world
             bw.Write( Textures.Count );
@@ -144,14 +129,6 @@ namespace PhysEngine
                     bw.Write( faces[j].IndLength );
                     for ( int z = 0; z < faces[ j ].IndLength; ++z )
                         bw.Write( faces[ j ].GetIndAtIndex( z ) );
-
-                    int facesize = Marshal.SizeOf( typeof( BaseFace ) );
-                    byte[] facebytes = new byte[ facesize ];
-                    IntPtr faceptr = Marshal.AllocHGlobal( facesize );
-                    Marshal.StructureToPtr( faces[ j ], faceptr, true );
-                    Marshal.Copy( faceptr, facebytes, 0, facesize );
-                    Marshal.FreeHGlobal( faceptr );
-                    bw.Write( facebytes );
                 }
                 int entsize = Marshal.SizeOf( typeof( BaseEntity ) );
                 byte[] bytes = new byte[ entsize ];
@@ -172,24 +149,13 @@ namespace PhysEngine
 
             World w = new World();
 
-            //read the players in the world from the file
-            int PlayerCount = br.ReadInt32();
-            for ( int i = 0; i < PlayerCount; ++i )
-            {
-                //old ent
-                byte[] bbytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
-                GCHandle phandle = GCHandle.Alloc( bbytes, GCHandleType.Pinned );
-                BaseEntity bOld = (BaseEntity) Marshal.PtrToStructure( phandle.AddrOfPinnedObject(), typeof( BaseEntity ) );
-                phandle.Free();
+            //old ent
+            byte[] bbytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
+            GCHandle phandle = GCHandle.Alloc( bbytes, GCHandleType.Pinned );
+            BaseEntity bOld = (BaseEntity) Marshal.PtrToStructure( phandle.AddrOfPinnedObject(), typeof( BaseEntity ) );
+            phandle.Free();
 
-                //old perspective
-                byte[] mbytes = br.ReadBytes( Marshal.SizeOf( typeof( Matrix ) ) );
-                GCHandle mhandle = GCHandle.Alloc( mbytes, GCHandleType.Pinned );
-                Matrix mOld = (Matrix) Marshal.PtrToStructure( mhandle.AddrOfPinnedObject(), typeof( Matrix ) );
-                mhandle.Free();
-
-                w.Add( new Player( new THandle( bOld.transform ), mOld ) );
-            }
+            w.Add( new Player( new THandle( bOld.transform ), Matrix.IdentityMatrix() ) );
 
             //get all the textures used in the world for reconstruction
             int TexLength = br.ReadInt32();
@@ -199,68 +165,48 @@ namespace PhysEngine
             //get how many entities are in this world
             int size = br.ReadInt32();
             BaseEntity[] entlist = new BaseEntity[ size ];
-            try
+
+            for ( int i = 0; i < size; ++i )
             {
-                for ( int i = 0; i < size; ++i )
+                //get how many faces are in this ent
+                int facesize = br.ReadInt32();
+                BaseFace[] faces = new BaseFace[ facesize ];
+                for ( int j = 0; j < facesize; ++j )
                 {
-                    //get how many faces are in this ent
-                    int facesize = br.ReadInt32();
-                    BaseFace[] faces = new BaseFace[ facesize ];
-                    for ( int j = 0; j < facesize; ++j )
-                    {
+                    //point the texture of the face to the texture it should point to out of the world textures
+                    TextureHandle FaceTex = w.Textures[ w.TextureIndex( br.ReadString() ) ];
+                    faces[ j ].texture = FaceTex.texture;
 
-                        //point the texture of the face to the texture it should point to out of the world textures
-                        TextureHandle FaceTex = w.Textures[ w.TextureIndex( br.ReadString() ) ];
-                        faces[ j ].texture = FaceTex.texture;
+                    int vertsize = br.ReadInt32();
+                    float[] vertices = new float[ vertsize ];
+                    for ( int z = 0; z < vertsize; ++z )
+                         vertices[ z ] = br.ReadSingle();
 
-                        int vertsize = br.ReadInt32();
-                        float[] vertices = new float[ vertsize ];
-                        for ( int z = 0; z < vertsize; ++z )
-                            vertices[ z ] = br.ReadSingle();
+                    int indsize = br.ReadInt32();
+                    int[] indices = new int[ indsize ];
+                    for ( int z = 0; z < indsize; ++z )
+                        indices[ z ] = br.ReadInt32();
 
-                        int indsize = br.ReadInt32();
-                        int[] indices = new int[ indsize ];
-                        for ( int z = 0; z < indsize; ++z )
-                            indices[ z ] = br.ReadInt32();
-
-
-                        byte[] facebytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseFace ) ) );
-                        faces[ j ] = new BaseFace( vertices, indices, FaceTex.texture );
-
-                        //pin the arrays so they don't dissapear
-                        GCHandle verthandle = GCHandle.Alloc( vertices, GCHandleType.Pinned );
-                        GCHandle indhandle = GCHandle.Alloc( indices, GCHandleType.Pinned );
-                        w.PinnedHandles.Add( verthandle );
-                        w.PinnedHandles.Add( indhandle );
-                        faces[ j ].Verts = verthandle.AddrOfPinnedObject();
-                        faces[ j ].Inds = indhandle.AddrOfPinnedObject();
-                    }
-                    byte[] bytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
-                    GCHandle handle = GCHandle.Alloc( bytes, GCHandleType.Pinned );
-                    entlist[ i ] = (BaseEntity) Marshal.PtrToStructure( handle.AddrOfPinnedObject(), typeof( BaseEntity ) );
-                    handle.Free();
-                    entlist[ i ] = new BaseEntity( faces, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
-                    //again pin the array so it doesn't dissappear
-                    GCHandle facehandle = GCHandle.Alloc( faces, GCHandleType.Pinned );
-                    entlist[ i ].EntFaces = facehandle.AddrOfPinnedObject();
-                    w.PinnedHandles.Add( facehandle );
+                    faces[ j ] = new BaseFace( vertices, indices, FaceTex.texture );
                 }
+                byte[] bytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
+                GCHandle handle = GCHandle.Alloc( bytes, GCHandleType.Pinned );
+                entlist[ i ] = (BaseEntity) Marshal.PtrToStructure( handle.AddrOfPinnedObject(), typeof( BaseEntity ) );
+                handle.Free();
+                entlist[ i ] = new BaseEntity( faces, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
             }
-            catch ( Exception e )
-            {
-                Console.WriteLine( e );
-            }
-            finally
-            {
-                sr.Close();
-                br.Close();
-            }
+
+            sr.Close();
+            br.Close();
+
             EHandle[] handles = new EHandle[ entlist.Length ];
             for ( int i = 0; i < entlist.Length; ++i )
             {
-                handles[ i ] = new EHandle( entlist[ i ] );
-                handles[ i ].AABB = new BHandle( entlist[ i ].AABB );
-                handles[ i ].Transform = new THandle( entlist[ i ].transform );
+                handles[ i ] = new EHandle( entlist[ i ] )
+                {
+                    AABB = new BHandle( entlist[ i ].AABB ),
+                    Transform = new THandle( entlist[ i ].transform )
+                };
             }
             w.Add( handles );
             return w;

@@ -17,6 +17,8 @@ namespace PhysEngine
 
 
         const float fov = 75.0f;
+        const float nearclip = 0.01f;
+        const float farclip = 1000.0f;
         const float Movespeed_Air = 5.0f;
         const float Movespeed_Gnd = 20.0f;
 
@@ -30,11 +32,19 @@ namespace PhysEngine
         {
             Renderer.Init( out IntPtr window );
             Shader shader = new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
+            shader.SetAmbientLight( 0.0f );
+
+            Light[] testlights = 
+            { 
+                new Light( new Vector( 0, -5,-5 ), new Vector( 0.7f, 0.7f, 1 ), 50 ),
+                new Light( new Vector( 0, -5, 5 ), new Vector( 0.7f, 0.7f, 1 ), 50 )
+            };
+            shader.SetLights( testlights );
 
             Renderer.GetWindowSize( window, out int width, out int height );
-            Util.MakePerspective( fov, (float) width / height, 0.01f, 1000.0f, out Matrix persp );
+            Util.MakePerspective( fov, (float) width / height, nearclip, farclip, out Matrix persp );
 
-            /*
+            
             World world = new World();
             //world needs a list of textures in it for saverestore
             world.Add
@@ -49,6 +59,7 @@ namespace PhysEngine
                 //player
                 new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp )
             );
+            EHandle TestPhysObj = new EHandle( new Vector( -1, -5, -1 ), new Vector( 1, -4, 1 ), grass );
             world.Add
             (
                 //dirt floors
@@ -62,19 +73,17 @@ namespace PhysEngine
                 new EHandle(    new Vector( 0, -11, 10 ),       new Vector( 20, 0, 12 ),    grass ),
                 new EHandle(    new Vector( -12, -10, -10 ),    new Vector( -10, 0, 10 ),   grass ),
                 new EHandle(    new Vector( 10, -10, -10 ),     new Vector( 12, 0, 10 ),    grass ),
-                new EHandle(    new Vector( 20, -11, -10 ),     new Vector( 22, 0, 10 ),    grass )
+                new EHandle(    new Vector( 20, -11, -10 ),     new Vector( 22, 0, 10 ),    grass ),
+
+                //physics object
+                TestPhysObj  
             );
-            */
+            
             
             //World world = World.FromFile( "Worlds/world1.map" );
 
 
-
-            //map is correctly loading for c# but not passing through to c++
-            //most likely an issue with needing to reinitialize gpu memory pointers
-            World world = World.FromFile( "Worlds/world1.map" );
-
-            player = world.Players[ 0 ];
+            player = world.player;
 
             InputHandle inptptr = Input;
             Renderer.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
@@ -82,6 +91,7 @@ namespace PhysEngine
             Renderer.SetWindowMoveCallback( Marshal.GetFunctionPointerForDelegate( wndptr ) );
 
             PhysicsObject CamPhys = new PhysicsObject( player, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 50.0f );
+            PhysicsObject TestPhys = new PhysicsObject( TestPhysObj, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 5.0f );
 
             float lasttime = Renderer.GetTime();
 
@@ -121,7 +131,7 @@ namespace PhysEngine
                         Force += player.Transform.TransformDirection( new Vector( -1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                     if ( ( MoveTracker & (uint) Move.MOVE_RIGHT ) != 0 )
                         Force += player.Transform.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
-                    Force.y = 0;
+                    //Force.y = 0;
                     CamPhys.NetForce += Force;
 
                     if ( ( MoveTracker & (uint) Move.MOVE_JUMP ) != 0 && TopCollision )
@@ -135,6 +145,7 @@ namespace PhysEngine
                     }
 
                     CamPhys.Simulate( frametime, world );
+                    TestPhys.Simulate( frametime, world );
 
                     if ( Save )
                     {
@@ -146,8 +157,12 @@ namespace PhysEngine
                         Load = false;
                         world.Close();
                         world = World.FromFile( "Worlds/world1.map" );
-                        player = world.Players[ 0 ];
+                        Renderer.GetWindowSize( window, out width, out height );
+                        Util.MakePerspective( fov, (float) width / height, nearclip, farclip, out persp );
+                        world.player.Perspective = persp;
+                        player = world.player;
                         CamPhys.LinkedEnt = player;
+                        TestPhys.LinkedEnt = world.WorldEnts[ world.WorldEnts.Count - 1 ];
                     }
                 }
                 else

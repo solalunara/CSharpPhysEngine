@@ -4,6 +4,7 @@
 #include "Texture.h"
 #include "Transform.h"
 #include "BaseFace.h"
+#include <vector>
 
 #define INITIAL_WIDTH 1000
 #define INITIAL_HEIGHT 720
@@ -25,7 +26,7 @@ void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods )
 	if ( Callback )
 		Callback( (intptr_t) window, key, scancode, action, mods );
 }
-void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
+void SetFlag( uint *ToSet, unsigned int val, bool bVal )
 {
 	if ( bVal )
 		*ToSet |= val;
@@ -34,8 +35,7 @@ void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal )
 }
 void Init( intptr_t *window )
 {
-	if ( !window )
-		window = new intptr_t();
+	_ASSERTE( window );
 
 	glfwInit();
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
@@ -67,6 +67,32 @@ void Init( intptr_t *window )
 	glDepthFunc( GL_LESS );
 }
 
+void SetLights( Shader shader, Light *PointLights, int LightLength )
+{
+	UseShader( shader );
+
+	std::vector<glm::vec4> LightLocations;
+	for ( int i = 0; i < LightLength; ++i )
+		LightLocations.push_back( PointLights[ i ].Position );
+
+	std::vector<glm::vec4> LightColors;
+	for ( int i = 0; i < LightLength; ++i )
+		LightColors.push_back( PointLights[ i ].Color );
+
+	std::vector<float> LightIntensities;
+	for ( int i = 0; i < LightLength; ++i )
+		LightIntensities.push_back( PointLights[ i ].Intensity );
+
+	SetVec4Array( shader, "PointLights", LightLocations );
+	SetVec4Array( shader, "LightColors", LightColors );
+	SetFloatArray( shader, "LightIntensities", LightIntensities );
+}
+void SetAmbientLight( Shader shader, float value )
+{
+	UseShader( shader );
+
+	SetFloat( shader, "AmbientLight", value );
+}
 
 void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength )
 {
@@ -82,7 +108,6 @@ void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 pe
 	SetMatrix( shader, "CameraTransform", camera.transform.m_WorldToThis );
 	SetMatrix( shader, "Perspective", perspective );
 
-	bool bCameraCollision = false;
 	//traverse the world for entities
 	for ( int i = 0; i < iRenderEntLength; ++i )
 	{
@@ -120,10 +145,7 @@ float GetTime()
 
 void GetWindowSize( intptr_t window, int *x, int *y )
 {
-	if ( !x )
-		x = new int();
-	if ( !y )
-		y = new int();
+	_ASSERTE( x && y );
 	glfwGetWindowSize( (GLFWwindow *) window, x, y );
 }
 
@@ -132,10 +154,7 @@ void GetMouseOffset( intptr_t window, double *x, double *y )
 	int width, height;
 	glfwGetWindowSize( (GLFWwindow *) window, &width, &height );
 
-	if ( !x )
-		x = new double();
-	if ( !y )
-		y = new double();
+	_ASSERTE( x && y );
 	//get the distance from the center of the screen and create a 
 	double xpos, ypos;
 	glfwGetCursorPos( (GLFWwindow *) window, &xpos, &ypos );
@@ -159,8 +178,7 @@ void ShowMouse( intptr_t window )
 
 void MakeRotMatrix( float degrees, glm::vec3 axis, glm::mat4 *pMat )
 {
-	if ( !pMat )
-		pMat = new glm::mat4( 1 );
+	_ASSERTE( pMat );
 	*pMat = glm::rotate( glm::mat4( 1 ), glm::radians( degrees ), axis );
 }
 

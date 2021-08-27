@@ -1,21 +1,29 @@
 #include "pch.h"
 #include "BaseEntity.h"
 
-#include <algorithm>
-#include <iterator>
-#include <vector>
-
 
 //baseentity functions
 BaseEntity::BaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs ) :
-    AABB( BoundingBox( mins, maxs ) ), FaceLength( FaceLength ), transform( transform ), EntFaces( EntFaces )
+    AABB( BoundingBox( mins, maxs ) ), FaceLength( FaceLength ), transform( transform ), EntFaces()
 {
+    for ( int i = 0; i < FaceLength; ++i )
+        this->EntFaces[ i ] = EntFaces[ i ];
 }
 BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength ) :
-    AABB( BoundingBox( mins, maxs ) ), FaceLength( 6 ), transform( Transform( glm::vec3( 0 ), glm::vec3( 1 ), glm::mat4( 1 ) ) )
+    AABB( BoundingBox( mins, maxs ) ), FaceLength( 6 ), transform( Transform( glm::vec3( 0 ), glm::vec3( 1 ), glm::mat4( 1 ) ) ), EntFaces()
 {
     _ASSERTE( TextureLength == 1 || TextureLength == 6 );
     bool bSameTexture = TextureLength == 1;
+
+    glm::vec3 ptCenter = ( mins + maxs ) / 2.0f;
+    transform.m_Position = ptCenter;
+    UpdateTransform( &transform );
+
+    mins -= ptCenter;
+    maxs -= ptCenter;
+
+    AABB = BoundingBox( mins, maxs );
+
     //have to declare the vertices for each side seperately since they have different UV coords (mins has 0,0 in xz but 1,0 in yz)
     //yz xmins
     float vertices1[] =
@@ -80,49 +88,35 @@ BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int T
         1, 2, 3
     };
 
-    EntFaces = new BaseFace[ 6 ]
-    {
-        BaseFace( 20, vertices[ 0 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 0 ], GL_DYNAMIC_DRAW ),
-        BaseFace( 20, vertices[ 1 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 1 ], GL_DYNAMIC_DRAW ),
-        BaseFace( 20, vertices[ 2 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 2 ], GL_DYNAMIC_DRAW ),
-        BaseFace( 20, vertices[ 3 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 3 ], GL_DYNAMIC_DRAW ),
-        BaseFace( 20, vertices[ 4 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 4 ], GL_DYNAMIC_DRAW ),
-        BaseFace( 20, vertices[ 5 ], 6, indices, bSameTexture?textures[ 0 ]:textures[ 5 ], GL_DYNAMIC_DRAW ),
-    };
-} //WARNING: vertices and indices go out of scope here, causing undefined behaviour
+    for ( int i = 0; i < FaceLength; ++i )
+        EntFaces[ i ] = BaseFace( 20, vertices[ i ], 6, indices, bSameTexture?textures[ 0 ]:textures[ i ], GL_DYNAMIC_DRAW );
+}
 void InitBaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt )
 {
-    if ( !pEnt )
-        pEnt = new BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
-    else
-        *pEnt = BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
+    _ASSERTE( pEnt );
+    *pEnt = BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
 }
 void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength, BaseEntity *pEnt )
 {
-    if ( !pEnt )
-        pEnt = new BaseEntity( mins, maxs, textures, TextureLength );
-    else
-        *pEnt = BaseEntity( mins, maxs, textures, TextureLength );
+    _ASSERTE( pEnt );
+    *pEnt = BaseEntity( mins, maxs, textures, TextureLength );
 }
 
 void GetBaseFaceAtIndex( BaseEntity ent, BaseFace *pFace, int index )
 {
-    if ( !pFace )
-        pFace = new BaseFace( ent.EntFaces[ index ] );
-    else
-        *pFace = ent.EntFaces[ index ];
+    _ASSERTE( pFace );
+    *pFace = ent.EntFaces[ index ];
 }
 
-void DestructBaseEntity( BaseEntity ent )
+void DestructBaseEntity( BaseEntity *ent )
 {
-    for ( int i = 0; i < ent.FaceLength; ++i )
-        DestructBaseFace( ent.EntFaces[ i ] );
+    for ( int i = 0; i < ent->FaceLength; ++i )
+        DestructBaseFace( &ent->EntFaces[ i ] );
 }
 
 void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat )
 {
-    if ( !pMat )
-        pMat = new glm::mat4();
+    _ASSERTE( pMat );
     *pMat = glm::mat4( glm::perspective( glm::radians( fov ), aspect, nearclip, farclip ) );
 }
 void MultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier )

@@ -57,7 +57,7 @@ public:
 	BaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs );
 	BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength ); //brush init
 
-	BaseFace *EntFaces;
+	BaseFace EntFaces[ 20 ];
 	int FaceLength;
 
 	Transform transform;
@@ -69,7 +69,7 @@ extern "C" RENDER_API void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *t
 
 extern "C" RENDER_API void GetBaseFaceAtIndex( BaseEntity ent, BaseFace *pFace, int index );
 
-extern "C" RENDER_API void DestructBaseEntity( BaseEntity ent );
+extern "C" RENDER_API void DestructBaseEntity( BaseEntity *ent );
 
 //matrix utils
 extern "C" RENDER_API void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat );

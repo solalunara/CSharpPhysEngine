@@ -77,9 +77,11 @@ namespace PhysEngine
             InitBaseFace( vertices.Length, vertices, indices.Length, indices, tex, out this );
         }
 
-        public IntPtr Verts;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 100)]
+        public float[] Verts;
         public int VertLength;
-        public IntPtr Inds;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 50)]
+        public int[] Inds;
         public int IndLength;
 
         public uint VBO;
@@ -115,8 +117,16 @@ namespace PhysEngine
         }
         public uint ID;
 
+        public void SetAmbientLight( float f ) => SetAmbientLight( this, f );
+        public void SetLights( Light[] pointlights ) => SetLights( this, pointlights, pointlights.Length );
+
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitShader( byte[] VertPath, byte[] FragPath, out Shader s );
+
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void SetLights( Shader s, Light[] pointlights, int lightlength );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void SetAmbientLight( Shader shader, float value );
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -132,8 +142,12 @@ namespace PhysEngine
         public uint ID;
         public uint Unit;
 
+        public void Close() => DestructTexture( ref this );
+
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitTexture( byte[] FilePath, out Texture tex );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void DestructTexture( ref Texture pTex );
 
     }
     public class TextureHandle
@@ -215,6 +229,8 @@ namespace PhysEngine
                 }
             }
         }
+
+        public static implicit operator Vector4 ( Vector v ) => new Vector4( v.x, v.y, v.z, 1.0f );
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Matrix
@@ -366,7 +382,8 @@ namespace PhysEngine
             InitBrush( mins, maxs, textures, textures.Length, out this );
         }
 
-        public IntPtr EntFaces;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20, ArraySubType = UnmanagedType.Struct)]
+        public BaseFace[] EntFaces;
         public int FaceLength;
 
         
@@ -382,7 +399,7 @@ namespace PhysEngine
             return ret;
         }
 
-        public void Close() => DestructBaseEntity( this );
+        public void Close() => DestructBaseEntity( ref this );
 
 
         //api methods
@@ -393,7 +410,7 @@ namespace PhysEngine
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void GetBaseFaceAtIndex( BaseEntity ent, out BaseFace face, int index );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        private static extern void DestructBaseEntity( BaseEntity ent );
+        private static extern void DestructBaseEntity( ref BaseEntity ent );
     }
     public class EHandle
     {
@@ -401,13 +418,13 @@ namespace PhysEngine
         {
             _ent = new BaseEntity( EntFaces, transform.Data, mins, maxs );
             this.Transform = transform;
-            this.AABB = new BHandle( mins, maxs );
+            this.AABB = new BHandle( _ent.AABB );
         }
         public EHandle( Vector mins, Vector maxs, Texture[] textures )
         {
             _ent = new BaseEntity( mins, maxs, textures );
             this.Transform = new THandle( _ent.transform );
-            this.AABB = new BHandle( mins, maxs );
+            this.AABB = new BHandle( _ent.AABB );
         }
         public EHandle( BaseEntity CloneEnt )
         {
@@ -425,7 +442,6 @@ namespace PhysEngine
             } 
         }
 
-        public TextureHandle[] Textures;
         public THandle Transform;
         public BHandle AABB;
     }
@@ -609,6 +625,20 @@ namespace PhysEngine
         public bool TestCollision( Vector pt, Vector ThisLocation ) => AABB.TestCollisionPoint( pt, ThisLocation );
         public Plane GetCollisionPlane( Vector pt, Vector ThisLocation ) => AABB.GetCollisionPlane( pt, ThisLocation );
         public Vector GetCollisionNormal( Vector pt, Vector ThisLocation ) => AABB.GetCollisionNormal( pt, ThisLocation );
+    }
+
+    [StructLayout( LayoutKind.Sequential )]
+    public struct Light
+    {
+        public Light( Vector4 Position, Vector4 Color, float Intensity )
+        {
+            this.Position = Position;
+            this.Color = Color;
+            this.Intensity = Intensity;
+        }
+        public Vector4 Position;
+        public Vector4 Color;
+        public float Intensity;
     }
 
 }

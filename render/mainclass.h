@@ -19,14 +19,27 @@
 #include "Shader.h"
 #include "BaseEntity.h"
 
+typedef unsigned int uint;
+
+struct RENDER_API Light
+{
+	glm::vec4 Position;
+	glm::vec4 Color;
+	float Intensity;
+};
+
 
 //callback functions
 extern "C" RENDER_API void WindowSizeChanged( GLFWwindow *window, int width, int height );
 extern "C" RENDER_API void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods );
-extern "C" RENDER_API void SetFlag( unsigned int *ToSet, unsigned int val, bool bVal );
+extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
 
 //render related functions
 extern "C" RENDER_API void Init( intptr_t *window );
+//extern "C" RENDER_API void SetCamera( intptr_t window, Shader shader, Transform camera, glm::mat4 perspective );
+//extern "C" RENDER_API void RenderObject( intptr_t window, Transform ObjectTransform, uint VAO, uint EBO, uint TextureID )
+extern "C" RENDER_API void SetLights( Shader shader, Light *PointLights, int LightLength );
+extern "C" RENDER_API void SetAmbientLight( Shader shader, float value );
 extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
 extern "C" RENDER_API void Terminate();
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );

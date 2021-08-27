@@ -13,20 +13,17 @@ Transform::Transform():
 }
 void InitTransform( glm::vec3 position, glm::vec3 scale, glm::mat4 rotation, Transform *pTransform )
 {
-	if ( !pTransform )
-		pTransform = new Transform();
+	_ASSERTE( pTransform );
 	*pTransform = Transform( position, scale, rotation );
 }
 void GetThisToWorld( Transform transform, glm::mat4 *pMat )
 {
-	if ( !pMat )
-		pMat = new glm::mat4();
+	_ASSERTE( pMat );
 	*pMat = glm::mat4( transform.m_ThisToWorld );
 }
 void GetWorldToThis( Transform transform, glm::mat4 *pMat )
 {
-	if ( !pMat )
-		pMat = new glm::mat4();
+	_ASSERTE( pMat );
 	*pMat = glm::mat4( transform.m_WorldToThis );
 }
 void UpdateTransform( Transform *tptr )
@@ -37,24 +34,21 @@ void UpdateTransform( Transform *tptr )
 }
 void GetRight( Transform tptr, glm::vec3 *v )
 {
-	if ( !v )
-		v = new glm::vec3();
+	_ASSERTE( v );
 	v->x = tptr.m_ThisToWorld[ 0 ][ 0 ];
 	v->y = tptr.m_ThisToWorld[ 0 ][ 1 ];
 	v->z = tptr.m_ThisToWorld[ 0 ][ 2 ];
 }
 void GetUp( Transform tptr, glm::vec3 *v )
 {
-	if ( !v )
-		v = new glm::vec3();
+	_ASSERTE( v );
 	v->x = tptr.m_ThisToWorld[ 1 ][ 0 ];
 	v->y = tptr.m_ThisToWorld[ 1 ][ 1 ];
 	v->z = tptr.m_ThisToWorld[ 1 ][ 2 ];
 }
 void GetForward( Transform tptr, glm::vec3 *v )
 {
-	if ( !v )
-		v = new glm::vec3();
+	_ASSERTE( v );
 	v->x = -tptr.m_ThisToWorld[ 2 ][ 0 ];
 	v->y = -tptr.m_ThisToWorld[ 2 ][ 1 ];
 	v->z = -tptr.m_ThisToWorld[ 2 ][ 2 ];

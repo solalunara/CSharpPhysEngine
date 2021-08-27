@@ -9,10 +9,8 @@ BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices
 	VertLength( VertLength ), IndLength( IndLength ), texture( texture ),
 	VBO( 0 ), VAO( 0 ), EBO( 0 )
 {
-	this->vertices = new float[ VertLength ] { 0.0f };
 	for ( int i = 0; i < VertLength; ++i )
 		this->vertices[ i ] = vertices[ i ];
-	this->indices = new int[IndLength] { 0 };
 	for ( int i = 0; i < IndLength; ++i )
 		this->indices[ i ] = indices[ i ];
 
@@ -38,20 +36,22 @@ BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 }
-
-void DestructBaseFace( BaseFace face )
+BaseFace::BaseFace() :
+	VertLength( 0 ), IndLength( 0 ), VBO( 0 ), VAO( 0 ), EBO( 0 ), texture(), vertices(), indices()
 {
-	glDeleteBuffers( 1, &face.VBO );
-	glDeleteBuffers( 1, &face.VAO );
-	glDeleteBuffers( 1, &face.EBO );
+}
+
+void DestructBaseFace( BaseFace *face )
+{
+	glDeleteBuffers( 1, &face->VBO );
+	glDeleteBuffers( 1, &face->VAO );
+	glDeleteBuffers( 1, &face->EBO );
 }
 
 void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, BaseFace *pFace )
 {
-	if ( !pFace )
-		pFace = new BaseFace( Vertlength, vertices, IndLength, indices, texture, GL_DYNAMIC_DRAW );
-	else
-		*pFace = BaseFace( Vertlength, vertices, IndLength, indices, texture, GL_DYNAMIC_DRAW );
+	_ASSERTE( pFace );
+	*pFace = BaseFace( Vertlength, vertices, IndLength, indices, texture, GL_DYNAMIC_DRAW );
 }
 
 float GetVertAtIndex( BaseFace face, int index )

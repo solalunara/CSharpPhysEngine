@@ -82,6 +82,11 @@ namespace PhysEngine
                     Collide( WorldEnt );
                 }
             }
+            Player p = world.player;
+            if ( p != LinkedEnt && p.AABB.TestCollision( p.Transform.Position, LinkedEnt.AABB, LinkedEnt.Transform.Position ) )
+            {
+                Collide( p );
+            }
 
             bool Collision = TestCollision( world, out bool TopCollision );
             //if there is a (top) collision, a normal force acts on the object that cancels the gravitational force
@@ -117,6 +122,11 @@ namespace PhysEngine
                     if ( vCollisionNormal.y > .9f )
                         TopCollision = true;
                 }
+            }
+            Player p = world.player;
+            if ( p != LinkedEnt && p.AABB.TestCollision( p.Transform.Position, LinkedEnt.AABB, LinkedEnt.Transform.Position ) )
+            {
+                Collision = true;
             }
             return Collision;
         }
