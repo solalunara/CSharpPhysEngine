@@ -104,6 +104,11 @@ namespace PhysEngine
             for ( int i = 0; i < 3; ++i )
                 NetForce[ i ] = 0;
         }
+        public static void SimulateWorld( float dt, World world )
+        {
+            for ( int i = 0; i < world.PhysicsObjects.Count; ++i )
+                world.PhysicsObjects[ i ].Simulate( dt, world );
+        }
 
         //checks to see if this entity should collide with any entities in the world given it's current position
         public bool TestCollision( World world, out bool TopCollision )

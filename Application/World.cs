@@ -11,7 +11,7 @@ namespace PhysEngine
 {
     struct RayHitInfo
     {
-        public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt )
+        public RayHitInfo( Vector ptHit, Vector vNormal, EHandle HitEnt )
         {
             this.bHit = true;
             this.ptHit = ptHit;
@@ -21,13 +21,14 @@ namespace PhysEngine
         public bool bHit;
         public Vector ptHit;
         public Vector vNormal;
-        public BaseEntity HitEnt;
+        public EHandle HitEnt;
     }
     class World
     {
         public World()
         {
             WorldEnts = new List<EHandle>();
+            PhysicsObjects = new List<PhysicsObject>();
             Textures = new List<TextureHandle>();
         }
         public World( params EHandle[] Ents )
@@ -35,8 +36,19 @@ namespace PhysEngine
             WorldEnts = new List<EHandle>( Ents );
         }
         public List<EHandle> WorldEnts;
+        public List<PhysicsObject> PhysicsObjects;
         public Player player;
         public List<TextureHandle> Textures;
+
+        public PhysicsObject GetPlayerPhysics()
+        {
+            for ( int i = 0; i < PhysicsObjects.Count; ++i )
+            {
+                if ( PhysicsObjects[ i ].LinkedEnt == player )
+                    return PhysicsObjects[ i ];
+            }
+            return null;
+        }
 
 
         public BaseEntity[] GetEntList()
@@ -75,6 +87,15 @@ namespace PhysEngine
         {
             WorldEnts.AddRange( ent );
         }
+        public void Add( bool AddToWorld, params PhysicsObject[] pobjs )
+        {
+            if ( AddToWorld )
+            {
+                for ( int i = 0; i < pobjs.Length; ++i )
+                    WorldEnts.Add( pobjs[ i ].LinkedEnt );
+            }
+            PhysicsObjects.AddRange( pobjs );
+        }
         public void Add( params TextureHandle[] tex )
         {
             Textures.AddRange( tex );
@@ -93,7 +114,7 @@ namespace PhysEngine
             player.ent.Close();
         }
 
-        public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, int TraceFidelity = 100 )
+        public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, int TraceFidelity = 300 )
         {
             Vector vDirection = ( ptEnd - ptStart ) / TraceFidelity;
             return RecursiveTraceRay( ptStart, vDirection, TraceFidelity );
@@ -112,7 +133,7 @@ namespace PhysEngine
                 if ( WorldEnts[ i ].AABB.TestCollision( pt, WorldEnts[ i ].Transform.Position ) )
                 {
                     Plane plane = WorldEnts[ i ].AABB.GetCollisionPlane( pt, WorldEnts[ i ].Transform.Position );
-                    return new RayHitInfo( pt, plane.Normal, WorldEnts[ i ].ent );
+                    return new RayHitInfo( pt, plane.Normal, WorldEnts[ i ] );
                 }
             }
             return RecursiveTraceRay( pt + vDirection, vDirection, iMaxRecursions - 1 );
@@ -181,6 +202,20 @@ namespace PhysEngine
                 Marshal.FreeHGlobal( ptr );
                 bw.Write( bytes );
             }
+            //write physics objects to file
+            bw.Write( PhysicsObjects.Count );
+            for ( int i = 0; i < PhysicsObjects.Count; ++i )
+            {
+                bw.Write( WorldEnts.IndexOf( PhysicsObjects[ i ].LinkedEnt ) );
+                for ( int j = 0; j < 3; ++j )
+                {
+                    bw.Write( PhysicsObjects[ i ].Gravity[ j ] );
+                    bw.Write( PhysicsObjects[ i ].AirDragCoeffs[ j ] );
+                    bw.Write( PhysicsObjects[ i ].Velocity[ j ] );
+                    bw.Write( PhysicsObjects[ i ].BaseVelocity[ j ] );
+                }
+                bw.Write( PhysicsObjects[ i ].Mass );
+            }
             fs.Close();
             bw.Close();
         }
@@ -244,9 +279,6 @@ namespace PhysEngine
                 entlist[ i ] = new BaseEntity( faces, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
             }
 
-            sr.Close();
-            br.Close();
-
             EHandle[] handles = new EHandle[ entlist.Length ];
             for ( int i = 0; i < entlist.Length; ++i )
             {
@@ -256,7 +288,37 @@ namespace PhysEngine
                     Transform = new THandle( entlist[ i ].transform )
                 };
             }
+
+            //reconstruct physics objects
+            int PhysObjCount = br.ReadInt32();
+            PhysicsObject[] pObjs = new PhysicsObject[ PhysObjCount ];
+            for ( int i = 0; i < PhysObjCount; ++i )
+            {
+                int EntIndex = br.ReadInt32();
+                Vector Gravity, AirDragCoeffs, Velocity, BaseVelocity;
+                Gravity = AirDragCoeffs = Velocity = BaseVelocity = new Vector();
+                for ( int j = 0; j < 3; ++j )
+                {
+                    Gravity[ j ] = br.ReadSingle();
+                    AirDragCoeffs[ j ] = br.ReadSingle();
+                    Velocity[ j ] = br.ReadSingle();
+                    BaseVelocity[ j ] = br.ReadSingle();
+                }
+                float Mass = br.ReadSingle();
+                if ( EntIndex != PlayerIndex )
+                    pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass );
+                else
+                    pObjs[ i ] = new PhysicsObject( w.player, Gravity, AirDragCoeffs, Mass );
+                pObjs[ i ].Velocity = Velocity;
+                pObjs[ i ].BaseVelocity = BaseVelocity;
+            }
+
             w.Add( handles );
+            w.Add( false, pObjs );
+
+            sr.Close();
+            br.Close();
+
             return w;
         }
     }

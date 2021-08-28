@@ -361,6 +361,7 @@ namespace PhysEngine
         public static Vector operator *( float b, Vector a ) => a * b;
         public static Vector operator /( Vector a, float b ) => new Vector( a.x / b, a.y / b, a.z / b );
         public static Vector operator /( float b, Vector a ) => a / b;
+        public static Vector operator *( Vector a, Vector b ) => new Vector( a.x * b.x, a.y * b.y, a.z * b.z );
         public static float Dot( Vector a, Vector b ) => a.x * b.x + a.y * b.y + a.z * b.z;
         public float LengthSqr() => x * x + y * y + z * z;
         public float Length() => (float) Math.Sqrt( LengthSqr() );

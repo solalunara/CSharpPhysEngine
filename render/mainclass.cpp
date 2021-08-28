@@ -143,13 +143,11 @@ float GetTime()
 {
 	return (float) glfwGetTime();
 }
-
 void GetWindowSize( intptr_t window, int *x, int *y )
 {
 	_ASSERTE( x && y );
 	glfwGetWindowSize( (GLFWwindow *) window, x, y );
 }
-
 void GetMouseOffset( intptr_t window, double *x, double *y )
 {
 	int width, height;

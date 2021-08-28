@@ -36,15 +36,12 @@ extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
 
 //render related functions
 extern "C" RENDER_API void Init( intptr_t *window );
-//extern "C" RENDER_API void SetCamera( intptr_t window, Shader shader, Transform camera, glm::mat4 perspective );
-//extern "C" RENDER_API void RenderObject( intptr_t window, Transform ObjectTransform, uint VAO, uint EBO, uint TextureID )
 extern "C" RENDER_API void SetLights( Shader shader, Light *PointLights, int LightLength );
 extern "C" RENDER_API void SetAmbientLight( Shader shader, float value );
 extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
 extern "C" RENDER_API void Terminate();
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );
 extern "C" RENDER_API float GetTime();
-
 extern "C" RENDER_API void GetWindowSize( intptr_t window, int *x, int *y );
 
 //input callback
@@ -54,6 +51,7 @@ extern "C" RENDER_API void SetInputCallback( intptr_t fn );
 //window move callback
 typedef intptr_t (*fptrw)( intptr_t window, int width, int height );
 extern "C" RENDER_API void SetWindowMoveCallback( intptr_t fn );
+
 
 //mouse related functions
 extern "C" RENDER_API void GetMouseOffset( intptr_t window, double *x, double *y );

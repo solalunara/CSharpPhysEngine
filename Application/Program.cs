@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.IO;
+using System.Reflection;
 
 namespace PhysEngine
 {
@@ -12,7 +14,11 @@ namespace PhysEngine
         static bool Paused = false;
         static bool Save = false;
         static bool Load = false;
-        static bool Fire = false;
+        static bool FireQ = false;
+        static bool FireE = false;
+        static bool FireZ = false;
+        static bool FireX = false;
+        static bool FireF = false;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
         static Player player;
 
@@ -28,9 +34,12 @@ namespace PhysEngine
 
         static void Main( string[] args )
         {
+            string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
+            bool bMakeNewMap = args.Length != 1;
+
             Renderer.Init( out IntPtr window );
-            Shader shader = new Shader( "Shaders/VertexShader.vert", "Shaders/FragmentShader.frag" );
-            Shader GUI = new Shader( "Shaders/GUIVert.vert", "Shaders/GUIFrag.frag" );
+            Shader shader = new Shader( DirName + "/Shaders/VertexShader.vert", DirName + "/Shaders/FragmentShader.frag" );
+            Shader GUI = new Shader( DirName + "/Shaders/GUIVert.vert", DirName + "/Shaders/GUIFrag.frag" );
             shader.SetAmbientLight( 0.0f );
 
             Light[] testlights = 
@@ -45,41 +54,51 @@ namespace PhysEngine
 
             
             World world = new World();
-            //world needs a list of textures in it for saverestore
-            world.Add
-            (
-                new TextureHandle( "Textures/dirt.png" ),
-                new TextureHandle( "Textures/grass.png" )
-            );
-            Texture[] dirt = { world.Textures[ 0 ].texture };
-            Texture[] grass = { world.Textures[ 1 ].texture };
-            world.Add
-            (
-                //player
-                new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp )
-            );
-            EHandle TestPhysObj = new EHandle( new Vector( -1, -5, -1 ), new Vector( 1, -4, 1 ), grass );
-            world.Add
-            (
-                //dirt floors
-                new EHandle(    new Vector( -10, -11, -10 ),   new Vector( 0, -10, 10 ),    dirt ),
-                new EHandle(    new Vector( 0, -12, -10 ),     new Vector( 20, -11, 10 ),   dirt ),
+            if ( bMakeNewMap )
+            {
+                //world needs a list of textures in it for saverestore
+                world.Add
+                (
+                    new TextureHandle( DirName + "/Textures/dirt.png" ),
+                    new TextureHandle( DirName + "/Textures/grass.png" )
+                );
+                Texture[] dirt = { world.Textures[ 0 ].texture };
+                Texture[] grass = { world.Textures[ 1 ].texture };
+                world.Add
+                (
+                    //player
+                    player = new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp )
+                );
+                world.Add
+                (
+                    true, new PhysicsObject( new EHandle( new Vector( -1, -5, -1 ), new Vector( 1, -4, 1 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 5.0f )
+                );
+                world.Add
+                (
+                    false, new PhysicsObject( player, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 50.0f )
+                );
+                world.Add
+                (
+                    //dirt floors
+                    new EHandle( new Vector( -10, -11, -10 ), new Vector( 0, -10, 10 ), dirt ),
+                    new EHandle( new Vector( 0, -12, -10 ), new Vector( 20, -11, 10 ), dirt ),
 
-                //grass walls
-                new EHandle(    new Vector( -10, -10, -12 ),    new Vector( 0, 0, -10 ),    grass ),
-                new EHandle(    new Vector( -10, -10, 10 ),     new Vector( 0, 0, 12 ),     grass ),
-                new EHandle(    new Vector( 0, -11, -12 ),      new Vector( 20, 0, -10 ),   grass ),
-                new EHandle(    new Vector( 0, -11, 10 ),       new Vector( 20, 0, 12 ),    grass ),
-                new EHandle(    new Vector( -12, -10, -10 ),    new Vector( -10, 0, 10 ),   grass ),
-                new EHandle(    new Vector( 10, -10, -10 ),     new Vector( 12, 0, 10 ),    grass ),
-                new EHandle(    new Vector( 20, -11, -10 ),     new Vector( 22, 0, 10 ),    grass ),
-
-                //physics object
-                TestPhysObj  
-            );
-            
-            
-            //World world = World.FromFile( "Worlds/world1.map" );
+                    //grass walls
+                    new EHandle( new Vector( -10, -10, -12 ), new Vector( 0, 0, -10 ), grass ),
+                    new EHandle( new Vector( -10, -10, 10 ), new Vector( 0, 0, 12 ), grass ),
+                    new EHandle( new Vector( 0, -11, -12 ), new Vector( 20, 0, -10 ), grass ),
+                    new EHandle( new Vector( 0, -11, 10 ), new Vector( 20, 0, 12 ), grass ),
+                    new EHandle( new Vector( -12, -10, -10 ), new Vector( -10, 0, 10 ), grass ),
+                    new EHandle( new Vector( 10, -10, -10 ), new Vector( 12, 0, 10 ), grass ),
+                    new EHandle( new Vector( 20, -11, -10 ), new Vector( 22, 0, 10 ), grass )
+                );
+            }
+            else //load map from arg
+            {
+                Console.WriteLine( "attempting to create from file..." );
+                world = World.FromFile( args[ 0 ] );
+                world.player.Perspective = persp;
+            }
 
 
             player = world.player;
@@ -88,9 +107,6 @@ namespace PhysEngine
             Renderer.SetInputCallback( Marshal.GetFunctionPointerForDelegate( inptptr ) );
             WindowHandle wndptr = WindowMove;
             Renderer.SetWindowMoveCallback( Marshal.GetFunctionPointerForDelegate( wndptr ) );
-
-            PhysicsObject CamPhys = new PhysicsObject( player, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 50.0f );
-            PhysicsObject TestPhys = new PhysicsObject( TestPhysObj, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 5.0f );
 
             float lasttime = Renderer.GetTime();
 
@@ -105,6 +121,8 @@ namespace PhysEngine
                 bool Collision = false;
                 if ( !Paused )
                 {
+                    PhysicsObject CamPhys = world.GetPlayerPhysics();
+
                     Mouse.HideMouse( window );
                     const float LookSpeed = 10.0f;
                     Mouse.GetMouseOffset( window, out double x, out double y );
@@ -142,38 +160,94 @@ namespace PhysEngine
                         CamPhys.Velocity = CamPhys.Velocity.Normalized() * Max_Player_Speed;
                     }
 
-                    CamPhys.Simulate( frametime, world );
-                    TestPhys.Simulate( frametime, world );
+                    PhysicsObject.SimulateWorld( frametime, world );
 
                     if ( Save )
                     {
                         Save = false;
-                        world.ToFile( "Worlds/world1.map" );
+                        world.ToFile( DirName + "/Worlds/world1.worldmap" );
                     }
                     if ( Load )
                     {
                         Load = false;
                         world.Close();
-                        world = World.FromFile( "Worlds/world1.map" );
+                        world = World.FromFile( DirName + "/Worlds/world1.worldmap" );
                         Renderer.GetWindowSize( window, out width, out height );
                         Util.MakePerspective( fov, (float) width / height, nearclip, farclip, out persp );
                         world.player.Perspective = persp;
                         player = world.player;
-                        CamPhys.LinkedEnt = player;
-                        TestPhys.LinkedEnt = world.WorldEnts[ world.WorldEnts.Count - 1 ];
                     }
 
-                    if ( Fire )
+                    if ( FireQ )
                     {
-                        Fire = false;
+                        FireQ = false;
                         Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
                         Vector EntPt = player.Transform.Position + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
                         if ( hit.bHit )
                         {
-                            BaseEntity HitEnt = hit.HitEnt;
-                            Console.WriteLine( HitEnt.transform.Position );
+                            EHandle HitEnt = hit.HitEnt;
+                            HitEnt.Transform.Scale *= new Vector( 1.1f, 1.1f, 1.1f );
+                            HitEnt.AABB.Mins *= 1.1f;
+                            HitEnt.AABB.Maxs *= 1.1f;
                         }
+                    }
+                    if ( FireE )
+                    {
+                        FireE = false;
+                        Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Transform.Position + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
+                        if ( hit.bHit )
+                        {
+                            EHandle HitEnt = hit.HitEnt;
+                            HitEnt.Transform.Scale *= new Vector( 0.9f, 0.9f, 0.9f );
+                            HitEnt.AABB.Mins *= 0.9f;
+                            HitEnt.AABB.Maxs *= 0.9f;
+                        }
+                    }
+                    if ( FireX )
+                    {
+                        FireX = false;
+                        Texture[] dirt = { world.Textures[ 0 ].texture };
+                        Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Transform.Position + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
+                        Vector ptCenter = new Vector();
+                        if ( hit.bHit )
+                            ptCenter = hit.ptHit + hit.vNormal * 0.5f;
+                        else
+                            ptCenter = player.Transform.Position + TransformedForward / 10;
+
+                        Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
+                        Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
+                        world.Add( new EHandle( mins, maxs, dirt ) );
+                    }
+                    if ( FireZ )
+                    {
+                        FireZ = false;
+                        Texture[] grass = { world.Textures[ 1 ].texture };
+                        Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Transform.Position + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
+                        Vector ptCenter = new Vector();
+                        if ( hit.bHit )
+                            ptCenter = hit.ptHit + hit.vNormal * 0.5f;
+                        else
+                            ptCenter = player.Transform.Position + TransformedForward / 10;
+
+                        Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
+                        Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
+                        world.Add( new EHandle( mins, maxs, grass ) );
+                    }
+                    if ( FireF )
+                    {
+                        FireF = false;
+                        Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Transform.Position + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
+                        if ( hit.bHit )
+                            world.WorldEnts.Remove( hit.HitEnt );
                     }
                 }
                 else
@@ -181,7 +255,7 @@ namespace PhysEngine
 
                 Renderer.RenderLoop( window, shader, player.ent, player.Perspective, world.GetEntList(), world.WorldEnts.Count );
             }
-            world.ToFile( "Worlds/world1.map" );
+            world.ToFile( DirName + "/Worlds/world1.worldmap" );
             Renderer.Terminate();
         }
 
@@ -191,18 +265,31 @@ namespace PhysEngine
             if ( act == Actions.PRESSED && key == Keys.ESCAPE ) //pressed
                 Paused = !Paused;
 
-            if ( act == Actions.PRESSED && key == Keys.F6 )
-                Save = true;
-            if ( act == Actions.PRESSED && key == Keys.F7 )
-                Load = true;
+            if ( act == Actions.PRESSED )
+            {
+                if ( key == Keys.F6 )
+                    Save = true;
+                if ( key == Keys.F7 )
+                    Load = true;
+                if ( key == Keys.Q )
+                    FireQ = true;
+                if ( key == Keys.E )
+                    FireE = true;
+                if ( key == Keys.Z )
+                    FireZ = true;
+                if ( key == Keys.X )
+                    FireX = true;
+                if ( key == Keys.F )
+                    FireF = true;
+            }
+
 
             if ( ( act == Actions.PRESSED || act == Actions.HELD ) && key == Keys.LCONTROL ) //holding control
                 player.Crouch();
             else if ( key == Keys.LCONTROL ) //not holding control
                 player.UnCrouch();
 
-            if ( act == Actions.PRESSED && key == Keys.Q )
-                Fire = true;
+
 
             bool bSetToTrue = act == Actions.PRESSED || act == Actions.HELD;
 
@@ -247,6 +334,11 @@ namespace PhysEngine
         F7 = 296,
         Q = 81,
         E = 69,
+        Z = 90,
+        X = 88,
+        C = 67,
+        V = 86,
+        F = 70,
     }
     public enum Actions
     {
