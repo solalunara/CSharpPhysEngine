@@ -19,6 +19,7 @@ namespace PhysEngine
         static bool FireZ = false;
         static bool FireX = false;
         static bool FireF = false;
+        static bool FireR = false;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
         static Player player;
 
@@ -249,6 +250,15 @@ namespace PhysEngine
                         if ( hit.bHit )
                             world.WorldEnts.Remove( hit.HitEnt );
                     }
+                    if ( FireR )
+                    {
+                        FireR = false;
+                        Vector TransformedForward = player.Transform.TransformDirection( new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Transform.Position + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
+                        if ( hit.bHit )
+                            world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 5 ) );
+                    }
                 }
                 else
                     Mouse.ShowMouse( window );
@@ -281,6 +291,8 @@ namespace PhysEngine
                     FireX = true;
                 if ( key == Keys.F )
                     FireF = true;
+                if ( key == Keys.R )
+                    FireR = true;
             }
 
 
@@ -339,6 +351,7 @@ namespace PhysEngine
         C = 67,
         V = 86,
         F = 70,
+        R = 82,
     }
     public enum Actions
     {
