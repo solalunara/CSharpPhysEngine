@@ -113,7 +113,7 @@ void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 pe
 	for ( int i = 0; i < iRenderEntLength; ++i )
 	{
 		BaseEntity enti = pRenderEnts[i];
-		if ( enti.FaceLength == 0 )
+		if ( enti.FaceLength == 0 || !enti.EntFaces[0].texture.bInitialized )
 			continue; //nothing to render
 		//tell the vertex shader about where the entity is in world space
 		SetMatrix( shader, "transform", enti.transform.m_ThisToWorld );

@@ -7,7 +7,7 @@
 #include "stb_image.h"
 
 Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum FilterStyleMin, GLenum FilterStyleMag, float *BorderColor ) :
-	Unit( Unit )
+	Unit( Unit ), bInitialized( true )
 {
 	stbi_set_flip_vertically_on_load( true );
 
@@ -41,7 +41,7 @@ Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum Fi
 
 }
 Texture::Texture() :
-	ID( 0 ), Unit( GL_TEXTURE0 )
+	ID( 0 ), Unit( GL_TEXTURE0 ), bInitialized( false )
 {
 }
 void InitTexture( const char *FilePath, Texture *pTex )

@@ -42,9 +42,13 @@ namespace PhysEngine
 
         public PhysicsObject GetPlayerPhysics()
         {
+            return GetEntPhysics( player );
+        }
+        public PhysicsObject GetEntPhysics( EHandle ent )
+        {
             for ( int i = 0; i < PhysicsObjects.Count; ++i )
             {
-                if ( PhysicsObjects[ i ].LinkedEnt == player )
+                if ( PhysicsObjects[ i ].LinkedEnt == ent )
                     return PhysicsObjects[ i ];
             }
             return null;
@@ -55,11 +59,7 @@ namespace PhysEngine
         {
             BaseEntity[] ret = new BaseEntity[ WorldEnts.Count ];
             for ( int i = 0; i < ret.Length; ++i )
-            {
                 ret[ i ] = WorldEnts[ i ].ent;
-                ret[ i ].AABB = WorldEnts[ i ].AABB.Data;
-                ret[ i ].transform = WorldEnts[ i ].Transform.Data;
-            }
             return ret;
         }
         public int TextureIndex( string tex )
@@ -92,7 +92,9 @@ namespace PhysEngine
             if ( AddToWorld )
             {
                 for ( int i = 0; i < pobjs.Length; ++i )
+                {
                     WorldEnts.Add( pobjs[ i ].LinkedEnt );
+                }
             }
             PhysicsObjects.AddRange( pobjs );
         }
@@ -117,26 +119,33 @@ namespace PhysEngine
         public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, int TraceFidelity = 300 )
         {
             Vector vDirection = ( ptEnd - ptStart ) / TraceFidelity;
-            return RecursiveTraceRay( ptStart, vDirection, TraceFidelity );
-        }
-        private RayHitInfo RecursiveTraceRay( Vector pt, Vector vDirection, int iMaxRecursions )
-        {
-            if ( iMaxRecursions == 0 )
+            while ( TraceFidelity > 0 )
             {
-                return new RayHitInfo();
-            }
-            for ( int i = 0; i < WorldEnts.Count; ++i )
-            {
-                if ( WorldEnts[ i ] == player )
-                    continue;
-
-                if ( WorldEnts[ i ].AABB.TestCollision( pt, WorldEnts[ i ].Transform.Position ) )
+                for ( int i = 0; i < WorldEnts.Count; ++i )
                 {
-                    Plane plane = WorldEnts[ i ].AABB.GetCollisionPlane( pt, WorldEnts[ i ].Transform.Position );
-                    return new RayHitInfo( pt, plane.Normal, WorldEnts[ i ] );
+                    if ( WorldEnts[ i ] == player )
+                        continue;
+
+                    if ( WorldEnts[ i ].AABB.TestCollision( ptStart, WorldEnts[ i ].Transform.Position ) )
+                    {
+                        Plane plane = WorldEnts[ i ].AABB.GetCollisionPlane( ptStart, WorldEnts[ i ].Transform.Position );
+                        return new RayHitInfo( ptStart, plane.Normal, WorldEnts[ i ] );
+                    }
                 }
+                ptStart += vDirection;
+                --TraceFidelity;
             }
-            return RecursiveTraceRay( pt + vDirection, vDirection, iMaxRecursions - 1 );
+            return new RayHitInfo();
+        }
+        public void Simulate( float dt )
+        {
+            List<PhysicsObject[]> PhysCollisionPairs = PhysicsObject.GetCollisionPairs( this );
+            for ( int i = 0; i < PhysCollisionPairs.Count; ++i )
+            {
+                PhysicsObject.Collide( PhysCollisionPairs[ i ][ 0 ], PhysCollisionPairs[ i ][ 1 ], dt );
+            }
+            foreach ( PhysicsObject p in PhysicsObjects )
+                p.Simulate( dt, this );
         }
 
 
@@ -193,6 +202,9 @@ namespace PhysEngine
                     bw.Write( faces[j].IndLength );
                     for ( int z = 0; z < faces[ j ].IndLength; ++z )
                         bw.Write( faces[ j ].GetIndAtIndex( z ) );
+
+                    for ( int z = 0; z < 3; ++z )
+                        bw.Write( faces[ j ].Normal[ z ] );
                 }
                 int entsize = Marshal.SizeOf( typeof( BaseEntity ) );
                 byte[] bytes = new byte[ entsize ];
@@ -235,7 +247,11 @@ namespace PhysEngine
             BaseEntity bOld = (BaseEntity) Marshal.PtrToStructure( phandle.AddrOfPinnedObject(), typeof( BaseEntity ) );
             phandle.Free();
 
-            w.Add( new Player( new THandle( bOld.transform ), Matrix.IdentityMatrix() ) );
+            Player p = new Player( Matrix.IdentityMatrix() )
+            {
+                Transform = new THandle( bOld.transform )
+            };
+            w.Add( p );
 
             //get all the textures used in the world for reconstruction
             int TexLength = br.ReadInt32();
@@ -270,7 +286,11 @@ namespace PhysEngine
                     for ( int z = 0; z < indsize; ++z )
                         indices[ z ] = br.ReadInt32();
 
-                    faces[ j ] = new BaseFace( vertices, indices, FaceTex.texture );
+                    Vector Normal = new Vector();
+                    for ( int z = 0; z < 3; ++z )
+                        Normal[ z ] = br.ReadSingle();
+
+                    faces[ j ] = new BaseFace( vertices, indices, FaceTex.texture, Normal );
                 }
                 byte[] bytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
                 GCHandle handle = GCHandle.Alloc( bytes, GCHandleType.Pinned );
@@ -318,6 +338,12 @@ namespace PhysEngine
 
             sr.Close();
             br.Close();
+
+            for ( int i = 0; i < w.WorldEnts.Count; ++i )
+            {
+                if ( w.WorldEnts[ i ].ent.FaceLength == 0 )
+                    w.WorldEnts.RemoveAt( i );
+            }
 
             return w;
         }

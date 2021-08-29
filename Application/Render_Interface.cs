@@ -49,10 +49,18 @@ namespace PhysEngine
         public static extern void MakePerspective( float fov, float aspect, float nearclip, float farclip, out Matrix persp );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void MultiplyMatrix( ref Matrix multiplied, Matrix multiplier );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void MultiplyVector( Matrix matrix, ref Vector vector );
+
         public static Matrix MultiplyMatrix( Matrix multiplied, Matrix multiplier )
         {
             MultiplyMatrix( ref multiplied, multiplier );
             return multiplied;
+        }
+        public static Vector MultiplyVector( Matrix matrix, Vector vector )
+        {
+            MultiplyVector( matrix, ref vector );
+            return vector;
         }
         public static byte[] ToCString( string s )
         {
@@ -64,7 +72,8 @@ namespace PhysEngine
     {
         public static readonly BBox PLAYER_NORMAL_BBOX = new BBox( new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
         public static readonly BBox PLAYER_CROUCH_BBOX = new BBox( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
-        public Player( THandle transform, Matrix Perspective ) : base( new BaseFace[ 0 ], transform, PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs ) //persp is width/height
+        public static readonly Texture[] BLANK_TEXTURE = { new Texture() };
+        public Player( Matrix Perspective ) : base( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ) //persp is width/height
         {
             this.Perspective = Perspective;
             _crouched = false;
@@ -92,15 +101,15 @@ namespace PhysEngine
     [StructLayout( LayoutKind.Sequential )]
     public struct BaseFace
     {
-        public BaseFace( float[] vertices, int[] indices, Texture tex )
+        public BaseFace( float[] vertices, int[] indices, Texture tex, Vector Normal )
         {
-            InitBaseFace( vertices.Length, vertices, indices.Length, indices, tex, out this );
+            InitBaseFace( vertices.Length, vertices, indices.Length, indices, tex, Normal, out this );
         }
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 100)]
+        [MarshalAs( UnmanagedType.ByValArray, SizeConst = 100 )]
         public float[] Verts;
         public int VertLength;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 50)]
+        [MarshalAs( UnmanagedType.ByValArray, SizeConst = 50 )]
         public int[] Inds;
         public int IndLength;
 
@@ -108,16 +117,30 @@ namespace PhysEngine
         public uint VAO;
         public uint EBO;
 
-        [MarshalAs(UnmanagedType.Struct)]
+        [MarshalAs( UnmanagedType.Struct )]
         public Texture texture;
+
+        [MarshalAs( UnmanagedType.Struct )]
+        public Vector Normal;
 
         //member methods
         public float GetVertAtIndex( int i ) => GetVertAtIndex( this, i );
         public int GetIndAtIndex( int i ) => GetIndAtIndex( this, i );
+        public Vector[] GetVerts()
+        {
+            Vector[] ret = new Vector[ VertLength / 5 ];
+            int j = 0;
+            for ( int i = 0; i < ret.Length; ++i )
+            {
+                ret[ i ] = new Vector( Verts[ j ], Verts[ j + 1 ], Verts[ j + 2 ] );
+                j += 5;
+            }
+            return ret;
+        }
 
         //api init
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void InitBaseFace( int VertLength, float[] vertices, int IndLength, int[] indices, Texture textureptr, out BaseFace face );
+        public static extern void InitBaseFace( int VertLength, float[] vertices, int IndLength, int[] indices, Texture textureptr, Vector Normal, out BaseFace face );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern float GetVertAtIndex( BaseFace face, int index );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -154,13 +177,13 @@ namespace PhysEngine
     {
         public Texture( string filepath )
         {
-            InitTexture( Util.ToCString( filepath ), out Texture tex );
-            ID = tex.ID;
-            Unit = tex.Unit;
+            InitTexture( Util.ToCString( filepath ), out this );
         }
 
+        public bool Initialized;
         public uint ID;
         public uint Unit;
+        
 
         public void Close() => DestructTexture( ref this );
 
@@ -317,6 +340,8 @@ namespace PhysEngine
         public float z;
 
         public override string ToString() => "x: " + x + " y: " + y + " z: " + z;
+        public override bool Equals( object obj ) => obj.GetType() == typeof( Vector ) && (Vector) obj == this;
+        public override int GetHashCode() => Tuple.Create( x, y, z ).GetHashCode();
         public float this[ int i ]
         {
             get
@@ -362,6 +387,8 @@ namespace PhysEngine
         public static Vector operator /( Vector a, float b ) => new Vector( a.x / b, a.y / b, a.z / b );
         public static Vector operator /( float b, Vector a ) => a / b;
         public static Vector operator *( Vector a, Vector b ) => new Vector( a.x * b.x, a.y * b.y, a.z * b.z );
+        public static bool operator ==( Vector a, Vector b ) => a.x == b.x && a.y == b.y && a.z == b.z;
+        public static bool operator !=( Vector a, Vector b ) => !( a == b );
         public static float Dot( Vector a, Vector b ) => a.x * b.x + a.y * b.y + a.z * b.z;
         public float LengthSqr() => x * x + y * y + z * z;
         public float Length() => (float) Math.Sqrt( LengthSqr() );
@@ -462,9 +489,101 @@ namespace PhysEngine
                 return _ent; 
             } 
         }
+        public Vector Center
+        { get => Transform.Position + ( ( AABB.Maxs + AABB.Mins ) / 2 ); }
 
         public THandle Transform;
         public BHandle AABB;
+
+        public Plane GetCollisionPlane( Vector pt )
+        {
+            Plane[] planes = new Plane[ _ent.FaceLength ];
+            for ( int i = 0; i < planes.Length; ++i )
+            {
+                Vector WorldPoint = Center + ( new Vector( _ent.EntFaces[ i ].Verts[ 0 ], _ent.EntFaces[ i ].Verts[ 1 ], _ent.EntFaces[ i ].Verts[ 2 ] ) ) * Transform.Scale;
+                planes[ i ] = new Plane( _ent.EntFaces[ i ].Normal, Vector.Dot( _ent.EntFaces[ i ].Normal, WorldPoint ) );
+            }
+
+            float[] PlaneDists = new float[ planes.Length ];
+            for ( int i = 0; i < PlaneDists.Length; ++i )
+            {
+                PlaneDists[ i ] = Vector.Dot( planes[ i ].Normal, pt ) - planes[ i ].Dist;
+            }
+
+            float MaxDist = PlaneDists[ 0 ];
+            int MaxIndex = 0;
+            for ( int i = 0; i < PlaneDists.Length; ++i )
+            {
+                if ( PlaneDists[ i ] > MaxDist )
+                {
+                    MaxIndex = i;
+                    MaxDist = PlaneDists[ i ];
+                }
+            }
+
+            return planes[ MaxIndex ];
+        }
+        public Vector GetCollisionNormal( Vector pt )
+        {
+            return GetCollisionPlane( pt ).Normal;
+        }
+        public Vector[] GetVerts()
+        {
+            HashSet<Vector> Verts = new HashSet<Vector>();
+            for ( int i = 0; i < _ent.FaceLength; ++i )
+            {
+                Verts.UnionWith( _ent.EntFaces[ i ].GetVerts() );
+            }
+            return Verts.ToArray();
+        }
+        public Vector[] GetWorldVerts()
+        {
+            Vector[] ret = GetVerts();
+            for ( int i = 0; i < ret.Length; ++i )
+            {
+                ret[i] = Transform.TransformPoint( ret[ i ] );
+            }
+            return ret;
+        }
+
+        public static bool TestCollision( params EHandle[] ents )
+        {
+            System.Diagnostics.Debug.Assert( ents.Length == 2 );
+
+            Vector[] Points1 = ents[ 0 ].GetWorldVerts();
+            Vector[] Points2 = ents[ 1 ].GetWorldVerts();
+            for ( int EntIndex = 0; EntIndex < 2; ++EntIndex )
+            {
+                EHandle Ent = ents[ EntIndex ];
+                for ( int i = 0; i < Ent.ent.FaceLength; ++i )
+                {
+                    if ( !TestCollision( Ent.ent.EntFaces[ i ].Normal, Points1, Points2 ) )
+                        return false;
+                }
+            }
+            return true;
+        }
+        private static bool TestCollision( Vector Normal, Vector[] Points1, Vector[] Points2 )
+        {
+            float[] ProjectedPoints1 = new float[ Points1.Length ];
+            float[] ProjectedPoints2 = new float[ Points2.Length ];
+
+            for ( int i = 0; i < Points1.Length; ++i )
+                ProjectedPoints1[ i ] = Vector.Dot( Points1[ i ], Normal );
+            for ( int i = 0; i < Points2.Length; ++i )
+                ProjectedPoints2[ i ] = Vector.Dot( Points2[ i ], Normal );
+
+            float Small1 = ProjectedPoints1.Min();
+            float Large1 = ProjectedPoints1.Max();
+
+            float Small2 = ProjectedPoints2.Min();
+            float Large2 = ProjectedPoints2.Max();
+
+            if ( Small1 > Large2 || Small2 > Large1 )
+                return false;
+
+            return true;
+        }
     }
 
     [StructLayout( LayoutKind.Sequential )]

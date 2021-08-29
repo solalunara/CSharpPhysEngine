@@ -23,7 +23,7 @@
 
 struct RENDER_API BaseFace
 {
-	BaseFace( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, GLenum DrawType );
+	BaseFace( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, GLenum DrawType );
 	BaseFace();
 
 	float vertices[ VRT_MAX_SIZE ];
@@ -37,8 +37,10 @@ struct RENDER_API BaseFace
 	GLuint EBO;
 
 	Texture texture;
+
+	glm::vec3 vNormal;
 };
-extern "C" RENDER_API void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, BaseFace *pFace );
+extern "C" RENDER_API void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, BaseFace *pFace );
 
 extern "C" RENDER_API void DestructBaseFace( BaseFace *face );
 

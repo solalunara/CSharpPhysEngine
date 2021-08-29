@@ -21,6 +21,8 @@ struct RENDER_API Texture
 	Texture( const char *FilePath, GLenum Unit = GL_TEXTURE0, GLenum WrapStyle = 0, GLenum FilterStyleMin = 0, GLenum FilterStyleMag = 0, float *BorderColor = 0 );
 	Texture();
 
+	bool bInitialized;
+
 	GLuint ID;
 	GLenum Unit;
 };

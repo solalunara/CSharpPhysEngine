@@ -88,8 +88,18 @@ BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int T
         1, 2, 3
     };
 
+    glm::vec3 normals[] =
+    {
+        glm::vec3(-1, 0, 0 ),
+        glm::vec3( 1, 0, 0 ),
+        glm::vec3( 0, 0,-1 ),
+        glm::vec3( 0, 0, 1 ),
+        glm::vec3( 0,-1, 0 ),
+        glm::vec3( 0, 1, 0 )
+    };
+
     for ( int i = 0; i < FaceLength; ++i )
-        EntFaces[ i ] = BaseFace( 20, vertices[ i ], 6, indices, bSameTexture?textures[ 0 ]:textures[ i ], GL_DYNAMIC_DRAW );
+        EntFaces[ i ] = BaseFace( 20, vertices[ i ], 6, indices, bSameTexture?textures[ 0 ]:textures[ i ], normals[i], GL_DYNAMIC_DRAW );
 }
 void InitBaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt )
 {

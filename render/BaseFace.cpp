@@ -5,8 +5,8 @@
 #include <vector>
 
 
-BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, GLenum DrawType ) :
-	VertLength( VertLength ), IndLength( IndLength ), texture( texture ),
+BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, GLenum DrawType ) :
+	VertLength( VertLength ), IndLength( IndLength ), texture( texture ), vNormal( vNormal ),
 	VBO( 0 ), VAO( 0 ), EBO( 0 )
 {
 	for ( int i = 0; i < VertLength; ++i )
@@ -34,7 +34,7 @@ BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices
 	glEnableVertexAttribArray( 1 );
 }
 BaseFace::BaseFace() :
-	VertLength( 0 ), IndLength( 0 ), VBO( 0 ), VAO( 0 ), EBO( 0 ), texture(), vertices(), indices()
+	VertLength( 0 ), IndLength( 0 ), VBO( 0 ), VAO( 0 ), EBO( 0 ), texture(), vNormal(), vertices(), indices()
 {
 }
 
@@ -45,10 +45,10 @@ void DestructBaseFace( BaseFace *face )
 	glDeleteBuffers( 1, &face->EBO );
 }
 
-void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, BaseFace *pFace )
+void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, BaseFace *pFace )
 {
 	_ASSERTE( pFace );
-	*pFace = BaseFace( Vertlength, vertices, IndLength, indices, texture, GL_DYNAMIC_DRAW );
+	*pFace = BaseFace( Vertlength, vertices, IndLength, indices, texture, vNormal, GL_DYNAMIC_DRAW );
 }
 
 float GetVertAtIndex( BaseFace face, int index )

@@ -24,9 +24,10 @@ namespace PhysEngine
             this.BaseVelocity = new Vector();
         }
         
-        public void Collide( EHandle OtherEnt, float ReflectValue = 0.0f )
+        //collide a physics object with the world
+        public void Collide( EHandle OtherEnt )
         {
-            Plane collisionplane = OtherEnt.AABB.GetCollisionPlane( LinkedEnt.Transform.Position, OtherEnt.Transform.Position );
+            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.Center );
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -39,37 +40,25 @@ namespace PhysEngine
             Vector Mins = LinkedEnt.AABB.Mins;
             Vector Maxs = LinkedEnt.AABB.Maxs;
 
-            // technically a lot of the "if"s in the "else if"s aren't neccesary, but they help with readability
-            if ( Math.Abs( collisionplane.Normal.x ) > .9f )
+            // technically the "if"s in the "else if"s aren't neccesary, but they help with readability
+            for ( int i = 0; i < 3; ++i )
             {
-                if ( collisionplane.Normal.x > .9f )
-                    NewPos.x -= Mins.x;
-                else if ( collisionplane.Normal.x < -.9f )
-                    NewPos.x -= Maxs.x;
+                if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
+                {
+                    if ( collisionplane.Normal[ i ] > .9f )
+                        NewPos[ i ] -= Mins[ i ];
+                    else if ( collisionplane.Normal[ i ] < -.9f )
+                        NewPos[ i ] -= Maxs[ i ];
 
-                Velocity.x *= ReflectValue;
-            }
-            else if ( Math.Abs( collisionplane.Normal.y ) > .9f )
-            {
-                if ( collisionplane.Normal.y > .9f )
-                    NewPos.y -= Mins.y;
-                else if ( collisionplane.Normal.y < -.9f )
-                    NewPos.y -= Maxs.y;
+                    Velocity[ i ] = 0;
 
-                Velocity.y *= ReflectValue;
-            }
-            else if ( Math.Abs( collisionplane.Normal.z ) > .9f )
-            {
-                if ( collisionplane.Normal.z > .9f )
-                    NewPos.z -= Mins.z;
-                else if ( collisionplane.Normal.z < -.9f )
-                    NewPos.z -= Maxs.z;
-
-                Velocity.z *= ReflectValue;
+                    break;
+                }
             }
             LinkedEnt.Transform.Position = NewPos;
         }
-        //returns true if there was a collision
+
+
         public void Simulate( float dt, World world )
         {
             for( int i = 0; i < world.WorldEnts.Count; ++i )
@@ -77,19 +66,16 @@ namespace PhysEngine
                 EHandle WorldEnt = world.WorldEnts[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
+                if ( world.GetEntPhysics( WorldEnt ) != null )
+                    continue; //physics objects have their own collision resolution
 
-                if ( WorldEnt.AABB.TestCollision( WorldEnt.Transform.Position, LinkedEnt.AABB,  LinkedEnt.Transform.Position ) ) //if (collision)
+                if ( EHandle.TestCollision( WorldEnt, LinkedEnt ) ) //if (collision)
                 {
                     Collide( WorldEnt );
                 }
             }
-            Player p = world.player;
-            if ( p != LinkedEnt && p.AABB.TestCollision( p.Transform.Position, LinkedEnt.AABB, LinkedEnt.Transform.Position ) )
-            {
-                Collide( p );
-            }
 
-            bool Collision = TestCollision( world, out bool TopCollision );
+            TestCollision( world, out bool Collision, out bool TopCollision );
             //if there is a (top) collision, a normal force acts on the object that cancels the gravitational force
             //this is mathematically equivalent to not doing the gravitational force (for simple newtonian mechanics)
             if ( !TopCollision )
@@ -104,37 +90,32 @@ namespace PhysEngine
             for ( int i = 0; i < 3; ++i )
                 NetForce[ i ] = 0;
         }
-        public static void SimulateWorld( float dt, World world )
-        {
-            for ( int i = 0; i < world.PhysicsObjects.Count; ++i )
-                world.PhysicsObjects[ i ].Simulate( dt, world );
-        }
 
         //checks to see if this entity should collide with any entities in the world given it's current position
-        public bool TestCollision( World world, out bool TopCollision )
+        public void TestCollision( World world, out bool Collision, out bool TopCollision )
         {
-            bool Collision = false;
+            Collision = false;
             TopCollision = false;
+
+            if ( LinkedEnt.ent.FaceLength == 0 )
+                return;
+
             for ( int i = 0; i < world.WorldEnts.Count; ++i )
             {
                 EHandle WorldEnt = world.WorldEnts[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
 
-                if ( WorldEnt.AABB.TestCollision( WorldEnt.Transform.Position, LinkedEnt.AABB,  LinkedEnt.Transform.Position ) ) //if (collision)
+                if ( EHandle.TestCollision( WorldEnt, LinkedEnt ) )
                 {
                     Collision = true;
-                    Vector vCollisionNormal = WorldEnt.AABB.GetCollisionNormal( LinkedEnt.Transform.Position, WorldEnt.Transform.Position );
+                    if ( WorldEnt == world.player )
+                        continue; //player doesn't have faces, so don't check for collision normal
+                    Vector vCollisionNormal = WorldEnt.GetCollisionNormal( LinkedEnt.Center );
                     if ( vCollisionNormal.y > .9f )
                         TopCollision = true;
                 }
             }
-            Player p = world.player;
-            if ( p != LinkedEnt && p.AABB.TestCollision( p.Transform.Position, LinkedEnt.AABB, LinkedEnt.Transform.Position ) )
-            {
-                Collision = true;
-            }
-            return Collision;
         }
 
         //NOTE: Drag uses LOCAL velocity. If you want an object to not experience drag in a certain situation 
@@ -169,6 +150,46 @@ namespace PhysEngine
                 Drag[ i ] += .5f * AirDensity * Velocity[ i ] * Velocity[ i ] * AirDragCoeffs[ i ] * Areas[ i ] * iWindSign;
             }
             NetForce += Drag;
+        }
+
+        public static List<PhysicsObject[]> GetCollisionPairs( World world )
+        {
+            List<PhysicsObject[]> Pairs = new List<PhysicsObject[]>();
+            for ( int i = 0; i < world.PhysicsObjects.Count; ++i )
+            {
+                for ( int j = i + 1; j < world.PhysicsObjects.Count; ++j )
+                {
+                    BHandle bThis = world.PhysicsObjects[ i ].LinkedEnt.AABB;
+                    BHandle bOther = world.PhysicsObjects[ j ].LinkedEnt.AABB;
+                    if ( EHandle.TestCollision( world.PhysicsObjects[ i ].LinkedEnt, world.PhysicsObjects[ j ].LinkedEnt ) )
+                    {
+                        PhysicsObject[] pair = { world.PhysicsObjects[ i ], world.PhysicsObjects[ j ] };
+                        Pairs.Add( pair );
+                    }
+                }
+            }
+            return Pairs;
+        }
+        public static void Collide( PhysicsObject Obj1, PhysicsObject Obj2, float dt )
+        {
+            float m1 = Obj1.Mass;
+            float m2 = Obj2.Mass;
+
+            //a normal vector of collision pointing out of obj1
+            Vector Normal = Obj1.LinkedEnt.GetCollisionNormal( Obj2.LinkedEnt.Center );
+
+            Vector Vel1 = ( Obj1.Velocity * ( m1 - m2 ) / ( m1 + m2 ) ) + ( Obj2.Velocity * 2 * m2 / ( m1 + m2 ) );
+            Vector Vel2 = ( Obj1.Velocity * 2 * m2 / ( m1 + m2 ) ) + ( Obj2.Velocity * ( m2 - m1 ) / ( m1 + m2 ) );
+
+            Obj1.Velocity = Vel1;
+            Obj2.Velocity = Vel2;
+
+            //anti-penetration
+            if ( EHandle.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
+            {
+                Obj1.LinkedEnt.Transform.Position -= Normal / 100;
+                Obj2.LinkedEnt.Transform.Position += Normal / 100;
+            }
         }
 
 

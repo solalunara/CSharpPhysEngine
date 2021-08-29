@@ -30,7 +30,7 @@ namespace PhysEngine
         const float Movespeed_Air = 5.0f;
         const float Movespeed_Gnd = 20.0f;
 
-        const float Max_Player_Speed = 5.0f;
+        const float Max_Player_Speed = 50.0f;
 
 
         static void Main( string[] args )
@@ -55,6 +55,20 @@ namespace PhysEngine
 
             
             World world = new World();
+            if ( !bMakeNewMap ) //load map from arg
+            {
+                Console.WriteLine( "Attempting to create from file " + args[ 0 ] + "..." );
+                try
+                {
+                    world = World.FromFile( args[ 0 ] );
+                }
+                catch ( Exception e )
+                {
+                    Console.WriteLine( "Failed to create map from file: \n" + e + "\nThis is probably an indication of a corrupted world file." );
+                    bMakeNewMap = true;
+                }
+                world.player.Perspective = persp;
+            }
             if ( bMakeNewMap )
             {
                 //world needs a list of textures in it for saverestore
@@ -68,11 +82,11 @@ namespace PhysEngine
                 world.Add
                 (
                     //player
-                    player = new Player( new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), persp )
+                    player = new Player( persp )
                 );
                 world.Add
                 (
-                    true, new PhysicsObject( new EHandle( new Vector( -1, -5, -1 ), new Vector( 1, -4, 1 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 5.0f )
+                    true, new PhysicsObject( new EHandle( new Vector( 2, -5, -1 ), new Vector( 4, -4, 1 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25 )
                 );
                 world.Add
                 (
@@ -94,12 +108,7 @@ namespace PhysEngine
                     new EHandle( new Vector( 20, -11, -10 ), new Vector( 22, 0, 10 ), grass )
                 );
             }
-            else //load map from arg
-            {
-                Console.WriteLine( "attempting to create from file..." );
-                world = World.FromFile( args[ 0 ] );
-                world.player.Perspective = persp;
-            }
+
 
 
             player = world.player;
@@ -119,7 +128,6 @@ namespace PhysEngine
                 if ( frametime > 1.0f )
                     frametime = 0; //most likely debugging
 
-                bool Collision = false;
                 if ( !Paused )
                 {
                     PhysicsObject CamPhys = world.GetPlayerPhysics();
@@ -137,7 +145,7 @@ namespace PhysEngine
 
                     Mouse.MoveMouseToCenter( window );
 
-                    Collision = CamPhys.TestCollision( world, out bool TopCollision );
+                    CamPhys.TestCollision( world, out bool Collision, out bool TopCollision );
 
                     float Movespeed = Collision ? Movespeed_Gnd : Movespeed_Air;
                     Vector Force = new Vector();
@@ -161,7 +169,7 @@ namespace PhysEngine
                         CamPhys.Velocity = CamPhys.Velocity.Normalized() * Max_Player_Speed;
                     }
 
-                    PhysicsObject.SimulateWorld( frametime, world );
+                    world.Simulate( frametime );
 
                     if ( Save )
                     {
@@ -257,7 +265,7 @@ namespace PhysEngine
                         Vector EntPt = player.Transform.Position + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.Transform.Position, EntPt );
                         if ( hit.bHit )
-                            world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 5 ) );
+                            world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25 ) );
                     }
                 }
                 else
