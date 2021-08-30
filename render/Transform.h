@@ -27,7 +27,6 @@ struct RENDER_API Transform
 	glm::vec3 m_Position;
 	glm::vec3 m_Scale;
 	glm::mat4 m_Rotation;
-
 };
 extern "C" RENDER_API void InitTransform( glm::vec3 position, glm::vec3 scale, glm::mat4 rotation, Transform *pTransform );
 extern "C" RENDER_API void GetThisToWorld(Transform transform, glm::mat4 * pMat);

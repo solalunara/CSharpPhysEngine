@@ -9,7 +9,7 @@ using System.IO;
 
 namespace PhysEngine
 {
-    struct RayHitInfo
+    public struct RayHitInfo
     {
         public RayHitInfo( Vector ptHit, Vector vNormal, EHandle HitEnt )
         {
@@ -23,7 +23,7 @@ namespace PhysEngine
         public Vector vNormal;
         public EHandle HitEnt;
     }
-    class World
+    public class World
     {
         public World()
         {
@@ -37,13 +37,34 @@ namespace PhysEngine
         }
         public List<EHandle> WorldEnts;
         public List<PhysicsObject> PhysicsObjects;
-        public Player player;
         public List<TextureHandle> Textures;
 
-        public PhysicsObject GetPlayerPhysics()
+
+        private Player _player;
+        public Player player
         {
-            return GetEntPhysics( player );
+            get
+            {
+                return _player;
+            }
+            set
+            {
+                if ( _player != null )
+                {
+                    PhysicsObjects.Remove( _player.Body );
+                    WorldEnts.Remove( _player.Body.LinkedEnt );
+                    WorldEnts.Remove( _player.Head );
+                    _player.Body.LinkedEnt.ent.Close();
+                    _player.Head.ent.Close();
+                }
+                if ( !PhysicsObjects.Contains( value.Body ) )
+                    Add( !WorldEnts.Contains( value.Body.LinkedEnt ), value.Body );
+                if ( !WorldEnts.Contains( value.Head ) )
+                    Add( value.Head );
+                _player = value;
+            }
         }
+
         public PhysicsObject GetEntPhysics( EHandle ent )
         {
             for ( int i = 0; i < PhysicsObjects.Count; ++i )
@@ -72,7 +93,7 @@ namespace PhysEngine
             }
             return index;
         }
-        public int TextureIndex( int ID )
+        public int TextureIndex( uint ID )
         {
             int index = -1;
             for ( int i = 0; i < Textures.Count; ++i )
@@ -102,18 +123,12 @@ namespace PhysEngine
         {
             Textures.AddRange( tex );
         }
-        public void Add( Player p )
-        {
-            WorldEnts.Add( p );
-            player = p;
-        }
         public void Close()
         {
             for ( int i = 0; i < WorldEnts.Count; ++i )
                 WorldEnts[ i ].ent.Close();
             for ( int i = 0; i < Textures.Count; ++i )
                 Textures[ i ].texture.Close();
-            player.ent.Close();
         }
 
         public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, int TraceFidelity = 300 )
@@ -123,12 +138,12 @@ namespace PhysEngine
             {
                 for ( int i = 0; i < WorldEnts.Count; ++i )
                 {
-                    if ( WorldEnts[ i ] == player )
+                    if ( WorldEnts[ i ] == player.Body.LinkedEnt || WorldEnts[ i ] == player.Head )
                         continue;
 
-                    if ( WorldEnts[ i ].AABB.TestCollision( ptStart, WorldEnts[ i ].Transform.Position ) )
+                    if ( WorldEnts[ i ].TestCollision( ptStart ) )
                     {
-                        Plane plane = WorldEnts[ i ].AABB.GetCollisionPlane( ptStart, WorldEnts[ i ].Transform.Position );
+                        Plane plane = WorldEnts[ i ].GetCollisionPlane( ptStart );
                         return new RayHitInfo( ptStart, plane.Normal, WorldEnts[ i ] );
                     }
                 }
@@ -155,18 +170,11 @@ namespace PhysEngine
             BinaryWriter bw = new BinaryWriter( fs );
             BaseEntity[] entlist = GetEntList();
 
-            //player index (to skip in reconstruction)
-            int PlayerIndex = WorldEnts.IndexOf( player );
-            bw.Write( PlayerIndex );
-
-            //save the player's ent to the file
-            int bsize = Marshal.SizeOf( typeof( BaseEntity ) );
-            byte[] bbytes = new byte[ bsize ];
-            IntPtr bptr = Marshal.AllocHGlobal( bsize );
-            Marshal.StructureToPtr( player.ent, bptr, false );
-            Marshal.Copy( bptr, bbytes, 0, bsize );
-            Marshal.FreeHGlobal( bptr );
-            bw.Write( bbytes );
+            //player indexes (to point player to in reconstruction)
+            int PlayerHeadIndex = WorldEnts.IndexOf( player.Head );
+            bw.Write( PlayerHeadIndex );
+            int PlayerBodyIndex = PhysicsObjects.IndexOf( player.Body );
+            bw.Write( PlayerBodyIndex );
 
             //save the names of the textures in this world
             bw.Write( Textures.Count );
@@ -177,35 +185,25 @@ namespace PhysEngine
             bw.Write( entlist.Length );
             for ( int i = 0; i < entlist.Length; ++i )
             {
-                if ( i == PlayerIndex )
-                    continue;
-                //baseent stores a ptr to an array of basefaces
-                //we need to reconstruct that array and save it into the file
-                BaseFace[] faces = new BaseFace[ entlist[i].FaceLength ];
-                for ( int z = 0; z < faces.Length; ++z )
-                    faces[ z ] = entlist[ i ].GetFaceAtIndex( z );
-                
-                //tell the file how long the facelist is
-                bw.Write( faces.Length );
-                for ( int j = 0; j < faces.Length; ++j )
+                bw.Write( WorldEnts.IndexOf( WorldEnts[ i ].Parent ) ); //write the world index of the parent to the file
+
+                bw.Write( WorldEnts[ i ].ent.FaceLength );
+                for ( int f = 0; f < WorldEnts[i].ent.FaceLength; ++f )
                 {
-                    //we want to write the string that represents the texture of this face to the file
-                    TextureHandle FaceTexture = Textures[ TextureIndex( (int) faces[ j ].texture.ID ) ];
-                    bw.Write( FaceTexture.TextureName );
+                    int TexIndex = TextureIndex( WorldEnts[ i ].ent.EntFaces[ f ].texture.ID );
+                    bw.Write( TexIndex != -1 );
+                    if ( TexIndex != -1 )
+                        bw.Write( Textures[ TexIndex ].TextureName );
 
-                    //baseface stores a ptr to verts and inds, so we need to store those both in the file
-                    //luckily, since floats and inds are primitive types, this bit's pretty simple (ba dum tssss)
-                    bw.Write( faces[ j ].VertLength );
-                    for ( int z = 0; z < faces[ j ].VertLength; ++z )
-                        bw.Write( faces[ j ].GetVertAtIndex( z ) );
-
-                    bw.Write( faces[j].IndLength );
-                    for ( int z = 0; z < faces[ j ].IndLength; ++z )
-                        bw.Write( faces[ j ].GetIndAtIndex( z ) );
-
-                    for ( int z = 0; z < 3; ++z )
-                        bw.Write( faces[ j ].Normal[ z ] );
+                    int facesize = Marshal.SizeOf( typeof( BaseFace ) );
+                    byte[] facebytes = new byte[ facesize ];
+                    IntPtr faceptr = Marshal.AllocHGlobal( facesize );
+                    Marshal.StructureToPtr( entlist[ i ].EntFaces[ f ], faceptr, false );
+                    Marshal.Copy( faceptr, facebytes, 0, facesize );
+                    Marshal.FreeHGlobal( faceptr );
+                    bw.Write( facebytes );
                 }
+
                 int entsize = Marshal.SizeOf( typeof( BaseEntity ) );
                 byte[] bytes = new byte[ entsize ];
                 IntPtr ptr = Marshal.AllocHGlobal( entsize );
@@ -239,19 +237,10 @@ namespace PhysEngine
 
             World w = new World();
 
-            int PlayerIndex = br.ReadInt32();
+            int PlayerHeadIndex = br.ReadInt32();
+            int PlayerBodyIndex = br.ReadInt32();
 
-            //old ent
-            byte[] bbytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
-            GCHandle phandle = GCHandle.Alloc( bbytes, GCHandleType.Pinned );
-            BaseEntity bOld = (BaseEntity) Marshal.PtrToStructure( phandle.AddrOfPinnedObject(), typeof( BaseEntity ) );
-            phandle.Free();
-
-            Player p = new Player( Matrix.IdentityMatrix() )
-            {
-                Transform = new THandle( bOld.transform )
-            };
-            w.Add( p );
+            Player p = new Player( Matrix.IdentityMatrix(), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS );
 
             //get all the textures used in the world for reconstruction
             int TexLength = br.ReadInt32();
@@ -261,42 +250,38 @@ namespace PhysEngine
             //get how many entities are in this world
             int size = br.ReadInt32();
             BaseEntity[] entlist = new BaseEntity[ size ];
+            //can't do it during the loop, because if it has a parent for one at a later index it hasn't been init'd
+            int[] ParentIndexes = new int[ size ];
 
             for ( int i = 0; i < size; ++i )
             {
-                if ( i == PlayerIndex )
-                    continue;
+                ParentIndexes[ i ] = br.ReadInt32();
 
-                //get how many faces are in this ent
-                int facesize = br.ReadInt32();
-                BaseFace[] faces = new BaseFace[ facesize ];
-                for ( int j = 0; j < facesize; ++j )
+                int FaceSize = br.ReadInt32();
+                BaseFace[] Faces = new BaseFace[ FaceSize ];
+                for ( int f = 0; f < FaceSize; ++f )
                 {
-                    //point the texture of the face to the texture it should point to out of the world textures
-                    TextureHandle FaceTex = w.Textures[ w.TextureIndex( br.ReadString() ) ];
-                    faces[ j ].texture = FaceTex.texture;
+                    string TextureName = "";
+                    if ( br.ReadBoolean() )
+                        TextureName = br.ReadString();
 
-                    int vertsize = br.ReadInt32();
-                    float[] vertices = new float[ vertsize ];
-                    for ( int z = 0; z < vertsize; ++z )
-                         vertices[ z ] = br.ReadSingle();
-
-                    int indsize = br.ReadInt32();
-                    int[] indices = new int[ indsize ];
-                    for ( int z = 0; z < indsize; ++z )
-                        indices[ z ] = br.ReadInt32();
-
-                    Vector Normal = new Vector();
-                    for ( int z = 0; z < 3; ++z )
-                        Normal[ z ] = br.ReadSingle();
-
-                    faces[ j ] = new BaseFace( vertices, indices, FaceTex.texture, Normal );
+                    byte[] facebytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseFace ) ) );
+                    GCHandle facehandle = GCHandle.Alloc( facebytes, GCHandleType.Pinned );
+                    Faces[ f ] = (BaseFace) Marshal.PtrToStructure( facehandle.AddrOfPinnedObject(), typeof( BaseFace ) );
+                    facehandle.Free();
+                    //we need to call the constructor to init in native code
+                    if ( TextureName != "" )
+                        Faces[ f ] = new BaseFace( Faces[ f ].Verts, Faces[ f ].VertLength, Faces[ f ].Inds, Faces[ f ].IndLength, w.Textures[ w.TextureIndex( TextureName ) ].texture, Faces[ f ].Normal );
+                    else
+                        Faces[ f ] = new BaseFace( Faces[ f ].Verts, Faces[ f ].VertLength, Faces[ f ].Inds, Faces[ f ].IndLength, new Texture(), Faces[ f ].Normal );
                 }
+
                 byte[] bytes = br.ReadBytes( Marshal.SizeOf( typeof( BaseEntity ) ) );
                 GCHandle handle = GCHandle.Alloc( bytes, GCHandleType.Pinned );
                 entlist[ i ] = (BaseEntity) Marshal.PtrToStructure( handle.AddrOfPinnedObject(), typeof( BaseEntity ) );
                 handle.Free();
-                entlist[ i ] = new BaseEntity( faces, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
+                //we need to call the constructor to init in native code
+                entlist[ i ] = new BaseEntity( entlist[ i ].EntFaces, entlist[ i ].FaceLength, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
             }
 
             EHandle[] handles = new EHandle[ entlist.Length ];
@@ -304,9 +289,13 @@ namespace PhysEngine
             {
                 handles[ i ] = new EHandle( entlist[ i ] )
                 {
-                    AABB = new BHandle( entlist[ i ].AABB ),
                     Transform = new THandle( entlist[ i ].transform )
                 };
+            }
+            for ( int i = 0; i < entlist.Length; ++i )
+            {
+                if ( ParentIndexes[ i ] != -1 )
+                    handles[ i ].Parent = handles[ ParentIndexes[ i ] ];
             }
 
             //reconstruct physics objects
@@ -325,16 +314,18 @@ namespace PhysEngine
                     BaseVelocity[ j ] = br.ReadSingle();
                 }
                 float Mass = br.ReadSingle();
-                if ( EntIndex != PlayerIndex )
-                    pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass );
-                else
-                    pObjs[ i ] = new PhysicsObject( w.player, Gravity, AirDragCoeffs, Mass );
+                pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass );
                 pObjs[ i ].Velocity = Velocity;
                 pObjs[ i ].BaseVelocity = BaseVelocity;
             }
 
             w.Add( handles );
             w.Add( false, pObjs );
+
+            p.Head = handles[ PlayerHeadIndex ];
+            p.Body = pObjs[ PlayerBodyIndex ];
+
+            w.player = p;
 
             sr.Close();
             br.Close();

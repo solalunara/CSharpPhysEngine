@@ -14,21 +14,21 @@ namespace PhysEngine
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void Init( out IntPtr window );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void RenderLoop( IntPtr window, Shader shader, BaseEntity camera, Matrix perspective, BaseEntity[] EntsToRender, int EntToRenderLength );
+        public static extern void RenderLoop( IntPtr window, Shader shader, Transform camera, Matrix perspective, BaseEntity[] EntsToRender, int EntToRenderLength );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void Terminate();
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern bool ShouldTerminate( IntPtr window );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void GetWindowSize( IntPtr window, out int x, out int y );
-   
+
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern float GetTime();
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void SetInputCallback( IntPtr fn );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void SetWindowMoveCallback( IntPtr fn );
-        
+
     }
     public class Mouse
     {
@@ -51,6 +51,8 @@ namespace PhysEngine
         public static extern void MultiplyMatrix( ref Matrix multiplied, Matrix multiplier );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void MultiplyVector( Matrix matrix, ref Vector vector );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void InvertMatrix( ref Matrix matrix );
 
         public static Matrix MultiplyMatrix( Matrix multiplied, Matrix multiplier )
         {
@@ -62,30 +64,48 @@ namespace PhysEngine
             MultiplyVector( matrix, ref vector );
             return vector;
         }
+        public static Matrix InvertMatrix( Matrix matrix )
+        {
+            InvertMatrix( ref matrix );
+            return matrix;
+        }
         public static byte[] ToCString( string s )
         {
             return Encoding.UTF8.GetBytes( s );
         }
     }
 
-    public class Player : EHandle
+    public class Player
     {
-        public static readonly BBox PLAYER_NORMAL_BBOX = new BBox( new Vector( -.5f, -1.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
-        public static readonly BBox PLAYER_CROUCH_BBOX = new BBox( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, .5f, .5f ) );
+        public static readonly Vector EYE_CENTER_OFFSET = new Vector( 0, 0.5f, 0 );
+        public static readonly BBox PLAYER_NORMAL_BBOX = new BBox( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
+        public static readonly BBox PLAYER_CROUCH_BBOX = new BBox( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, 0.5f, .5f ) );
         public static readonly Texture[] BLANK_TEXTURE = { new Texture() };
-        public Player( Matrix Perspective ) : base( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ) //persp is width/height
+        //depending on how the compiler works, this may cause a memory leak. Prob won't though
+        public static readonly BaseFace[] PLAYER_NORMAL_FACES = new EHandle( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ).ent.EntFaces;
+        public static readonly BaseFace[] PLAYER_CROUCH_FACES = new EHandle( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, BLANK_TEXTURE ).ent.EntFaces;
+        public const float PLAYER_MASS = 50.0f;
+        public Player( Matrix Perspective, Vector Gravity, Vector Coeffs, float Mass )
         {
             this.Perspective = Perspective;
             _crouched = false;
+            Body = new PhysicsObject( new EHandle( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ), Gravity, Coeffs, Mass );
+            Head = new EHandle( new BaseFace[ 0 ], new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), new Vector(), new Vector() );
+            Head.Parent = Body.LinkedEnt;
+            Head.Transform.SetLocalPos( EYE_CENTER_OFFSET );
         }
         private bool _crouched;
         public Matrix Perspective;
+        public PhysicsObject Body;
+        public EHandle Head;
         public void Crouch()
         {
             if ( !_crouched )
             {
                 _crouched = true;
-                this.AABB = new BHandle( PLAYER_CROUCH_BBOX );
+                Body.LinkedEnt.SetEntFaces( PLAYER_CROUCH_FACES );
+                Body.LinkedEnt.SetEntBBox( PLAYER_CROUCH_BBOX );
+                Head.Transform.SetLocalPos( new Vector() );
             }
         }
         public void UnCrouch()
@@ -93,7 +113,9 @@ namespace PhysEngine
             if ( _crouched )
             {
                 _crouched = false;
-                this.AABB = new BHandle( PLAYER_NORMAL_BBOX );
+                Body.LinkedEnt.SetEntFaces( PLAYER_NORMAL_FACES );
+                Body.LinkedEnt.SetEntBBox( PLAYER_NORMAL_BBOX );
+                Head.Transform.SetLocalPos( EYE_CENTER_OFFSET );
             }
         }
     }
@@ -101,9 +123,13 @@ namespace PhysEngine
     [StructLayout( LayoutKind.Sequential )]
     public struct BaseFace
     {
-        public BaseFace( float[] vertices, int[] indices, Texture tex, Vector Normal )
+        public BaseFace( float[] vertices, int[] indices, Texture tex, Vector Normal ) :
+            this( vertices, vertices.Length, indices, indices.Length, tex, Normal )
         {
-            InitBaseFace( vertices.Length, vertices, indices.Length, indices, tex, Normal, out this );
+        }
+        public BaseFace( float[] vertices, int vertlength, int[] indices, int indlength, Texture tex, Vector Normal )
+        {
+            InitBaseFace( vertlength, vertices, indlength, indices, tex, Normal, out this );
         }
 
         [MarshalAs( UnmanagedType.ByValArray, SizeConst = 100 )]
@@ -183,7 +209,7 @@ namespace PhysEngine
         public bool Initialized;
         public uint ID;
         public uint Unit;
-        
+
 
         public void Close() => DestructTexture( ref this );
 
@@ -273,7 +299,7 @@ namespace PhysEngine
             }
         }
 
-        public static implicit operator Vector4 ( Vector v ) => new Vector4( v.x, v.y, v.z, 1.0f );
+        public static implicit operator Vector4( Vector v ) => new Vector4( v.x, v.y, v.z, 1.0f );
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Matrix
@@ -300,6 +326,17 @@ namespace PhysEngine
                 { 1, 0, 0, 0 },
                 { 0, 1, 0, 0 },
                 { 0, 0, 1, 0 },
+                { 0, 0, 0, 1 }
+            };
+            return new Matrix( values );
+        }
+        public static Matrix InvertZMatrix()
+        {
+            float[,] values =
+            {
+                { 1, 0, 0, 0 },
+                { 0, 1, 0, 0 },
+                { 0, 0,-1, 0 },
                 { 0, 0, 0, 1 }
             };
             return new Matrix( values );
@@ -421,26 +458,30 @@ namespace PhysEngine
     [StructLayout( LayoutKind.Sequential )]
     public struct BaseEntity
     {
-        public BaseEntity( BaseFace[] EntFaces, Transform transform, Vector mins, Vector maxs )
+        public BaseEntity( BaseFace[] EntFaces, Transform transform, Vector mins, Vector maxs ) :
+            this( EntFaces, EntFaces.Length, transform, mins, maxs )
         {
-            InitBaseEntity( EntFaces, EntFaces.Length, transform, mins, maxs, out this );
+        }
+        public BaseEntity( BaseFace[] EntFaces, int FaceLength, Transform transform, Vector mins, Vector maxs )
+        {
+            InitBaseEntity( EntFaces, FaceLength, transform, mins, maxs, out this );
         }
         public BaseEntity( Vector mins, Vector maxs, Texture[] textures )
         {
             InitBrush( mins, maxs, textures, textures.Length, out this );
         }
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20, ArraySubType = UnmanagedType.Struct)]
+        [MarshalAs( UnmanagedType.ByValArray, SizeConst = 20, ArraySubType = UnmanagedType.Struct )]
         public BaseFace[] EntFaces;
         public int FaceLength;
 
-        
+
         [MarshalAs( UnmanagedType.Struct )]
         public Transform transform;
         [MarshalAs( UnmanagedType.Struct )]
         public BBox AABB;
 
-        
+
         public BaseFace GetFaceAtIndex( int i )
         {
             GetBaseFaceAtIndex( this, out BaseFace ret, i );
@@ -466,41 +507,39 @@ namespace PhysEngine
         {
             _ent = new BaseEntity( EntFaces, transform.Data, mins, maxs );
             this.Transform = transform;
-            this.AABB = new BHandle( _ent.AABB );
         }
         public EHandle( Vector mins, Vector maxs, Texture[] textures )
         {
             _ent = new BaseEntity( mins, maxs, textures );
             this.Transform = new THandle( _ent.transform );
-            this.AABB = new BHandle( _ent.AABB );
         }
         public EHandle( BaseEntity CloneEnt )
         {
             _ent = CloneEnt;
         }
-        
-        private BaseEntity _ent;
-        public BaseEntity ent 
-        { 
-            get 
+
+
+        protected BaseEntity _ent;
+        public BaseEntity ent
+        {
+            get
             {
                 _ent.transform = Transform.Data;
-                _ent.AABB = AABB.Data;
-                return _ent; 
-            } 
+                return _ent;
+            }
         }
-        public Vector Center
-        { get => Transform.Position + ( ( AABB.Maxs + AABB.Mins ) / 2 ); }
 
+        private EHandle _Parent;
+        public EHandle Parent
+        { get { return _Parent; } set { Transform.Parent = value.Transform; _Parent = value; } }
         public THandle Transform;
-        public BHandle AABB;
 
         public Plane GetCollisionPlane( Vector pt )
         {
             Plane[] planes = new Plane[ _ent.FaceLength ];
             for ( int i = 0; i < planes.Length; ++i )
             {
-                Vector WorldPoint = Center + ( new Vector( _ent.EntFaces[ i ].Verts[ 0 ], _ent.EntFaces[ i ].Verts[ 1 ], _ent.EntFaces[ i ].Verts[ 2 ] ) ) * Transform.Scale;
+                Vector WorldPoint = Transform.Position + ( new Vector( _ent.EntFaces[ i ].Verts[ 0 ], _ent.EntFaces[ i ].Verts[ 1 ], _ent.EntFaces[ i ].Verts[ 2 ] ) ) * Transform.Scale;
                 planes[ i ] = new Plane( _ent.EntFaces[ i ].Normal, Vector.Dot( _ent.EntFaces[ i ].Normal, WorldPoint ) );
             }
 
@@ -546,12 +585,34 @@ namespace PhysEngine
             return ret;
         }
 
+        public void SetEntFaces( BaseFace[] Faces )
+        {
+            System.Diagnostics.Debug.Assert( Faces.Length == 20 );
+            _ent.EntFaces = Faces;
+        }
+        public void SetEntBBox( BBox b )
+        {
+            _ent.AABB = b;
+        }
+
+        public bool TestCollision( Vector pt )
+        {
+            Vector[] Points1 = GetWorldVerts();
+            Vector[] Points2 = { pt };
+            for ( int i = 0; i < ent.FaceLength; ++i )
+            {
+                if ( !TestCollision( ent.EntFaces[ i ].Normal, Points1, Points2 ) )
+                    return false;
+            }
+            return true;
+        }
         public static bool TestCollision( params EHandle[] ents )
         {
             System.Diagnostics.Debug.Assert( ents.Length == 2 );
 
             Vector[] Points1 = ents[ 0 ].GetWorldVerts();
             Vector[] Points2 = ents[ 1 ].GetWorldVerts();
+
             for ( int EntIndex = 0; EntIndex < 2; ++EntIndex )
             {
                 EHandle Ent = ents[ EntIndex ];
@@ -565,6 +626,9 @@ namespace PhysEngine
         }
         private static bool TestCollision( Vector Normal, Vector[] Points1, Vector[] Points2 )
         {
+            if ( Points1.Length == 0 || Points2.Length == 0 )
+                return false;
+
             float[] ProjectedPoints1 = new float[ Points1.Length ];
             float[] ProjectedPoints2 = new float[ Points2.Length ];
 
@@ -650,14 +714,73 @@ namespace PhysEngine
 
         private Transform t;
         public Transform Data
-        { get => t; }
+        { 
+            get
+            {
+                return new Transform( Position, Scale, Rotation );
+            }
+        }
+
+        public THandle Parent;
 
         public Vector Position
-        { get { return t.Position; } set { t.Position = value; Transform.UpdateTransform( ref t ); } }
+        { 
+            get 
+            {
+                if ( Parent != null )
+                    return Parent.TransformPoint( t.Position );
+                else
+                    return t.Position; 
+            } 
+            set 
+            {
+                if ( Parent != null )
+                    t.Position = Parent.InverseTransformPoint( value );
+                else
+                    t.Position = value; 
+                Transform.UpdateTransform( ref t ); 
+            } 
+        }
+        public void SetLocalPos( Vector pt )
+        {
+            t.Position = pt;
+        }
+        public Vector GetLocalPos() => t.Position;
         public Vector Scale
-        { get { return t.Scale; } set { t.Scale = value; Transform.UpdateTransform( ref t ); } }
+        { 
+            get 
+            {
+                return t.Scale; 
+            } 
+            set 
+            { 
+                t.Scale = value; 
+                Transform.UpdateTransform( ref t ); 
+            } 
+        }
         public Matrix Rotation
-        { get { return t.Rotation; } set { t.Rotation = value; Transform.UpdateTransform( ref t ); } }
+        { 
+            get 
+            {
+                if ( Parent != null )
+                    return Util.MultiplyMatrix( Parent.Rotation, t.Rotation );
+                else
+                    return t.Rotation; 
+            } 
+            set 
+            {
+                if ( Parent != null )
+                    t.Rotation = Util.MultiplyMatrix( value, Util.InvertMatrix( Parent.Rotation ) );
+                else
+                    t.Rotation = value;
+                Transform.UpdateTransform( ref t );
+            } 
+        }
+        public void SetLocalRot( Matrix r )
+        {
+            t.Rotation = r;
+        }
+        public Matrix GetLocalRot() => t.Rotation;
 
         public Vector GetRight() => t.GetRight();
         public Vector GetUp() => t.GetUp();

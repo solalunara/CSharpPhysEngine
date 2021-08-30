@@ -132,5 +132,5 @@ void MakePerspective( float fov, float aspect, float nearclip, float farclip, gl
 void MultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier )
 {
     _ASSERTE( pMultiply );
-    *pMultiply *= multiplier;
+    *pMultiply = *pMultiply * multiplier;
 }

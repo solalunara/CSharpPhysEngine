@@ -95,7 +95,7 @@ void SetAmbientLight( Shader shader, float value )
 	SetFloat( shader, "AmbientLight", value );
 }
 
-void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength )
+void RenderLoop( intptr_t window, Shader shader, Transform camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength )
 {
 	glClearColor( .1f, .2f, .7f, 1.0f );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -106,7 +106,7 @@ void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 pe
 	UseShader( shader );
 
 	//tell the vertex shader about the camera position and perspective matrix
-	SetMatrix( shader, "CameraTransform", camera.transform.m_WorldToThis );
+	SetMatrix( shader, "CameraTransform", camera.m_WorldToThis );
 	SetMatrix( shader, "Perspective", perspective );
 
 	//traverse the world for entities
@@ -188,4 +188,13 @@ void SetInputCallback( intptr_t fn )
 void SetWindowMoveCallback( intptr_t fn )
 {
 	WindowMoveCallback = (fptrw) fn;
+}
+
+void InvertMatrix( glm::mat4 *matrix )
+{
+	*matrix = glm::inverse( *matrix );
+}
+void MultiplyVector( glm::mat4 matrix, glm::vec3 *vector )
+{
+	*vector = matrix * glm::vec4( *vector, 0.0f );
 }

@@ -38,7 +38,7 @@ extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
 extern "C" RENDER_API void Init( intptr_t *window );
 extern "C" RENDER_API void SetLights( Shader shader, Light *PointLights, int LightLength );
 extern "C" RENDER_API void SetAmbientLight( Shader shader, float value );
-extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, BaseEntity camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
+extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, Transform camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
 extern "C" RENDER_API void Terminate();
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );
 extern "C" RENDER_API float GetTime();
@@ -58,5 +58,8 @@ extern "C" RENDER_API void GetMouseOffset( intptr_t window, double *x, double *y
 extern "C" RENDER_API void MoveMouseToCenter( intptr_t window );
 extern "C" RENDER_API void HideMouse( intptr_t window );
 extern "C" RENDER_API void ShowMouse( intptr_t window );
+
+extern "C" RENDER_API void InvertMatrix( glm::mat4 *matrix );
+extern "C" RENDER_API void MultiplyVector( glm::mat4 matrix, glm::vec3 *vector );
 
 #endif

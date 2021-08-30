@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PhysEngine
 {
-    class PhysicsObject
+    public class PhysicsObject
     {
         const float GroundDragCoeff = 0.6f;
         const float AirDensity = 1.255f; //kg/m^3
@@ -27,7 +27,7 @@ namespace PhysEngine
         //collide a physics object with the world
         public void Collide( EHandle OtherEnt )
         {
-            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.Center );
+            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.Transform.Position );
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -35,27 +35,34 @@ namespace PhysEngine
             //reflect the velocity about the normal of the collision plane
             Velocity -= 2.0f * Vector.Dot( Velocity, collisionplane.Normal ) * collisionplane.Normal;
 
-            Vector NewPos = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.Position );
+            Vector CollisionPoint = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.Position );
+            //anti-penetration
+            if ( LinkedEnt.ent.AABB.TestCollisionPoint( CollisionPoint, LinkedEnt.Transform.Position ) )
+            {
+                Vector Mins = LinkedEnt.ent.AABB.mins;
+                Vector Maxs = LinkedEnt.ent.AABB.maxs;
+                for ( int i = 0; i < 3; ++i )
+                {
+                    if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
+                    {
+                        if ( collisionplane.Normal[ i ] > .9f )
+                            CollisionPoint[ i ] -= Mins[ i ];
+                        else //if normal[i] < -.9f
+                            CollisionPoint[ i ] -= Maxs[ i ];
+                        break;
+                    }
+                }
+                LinkedEnt.Transform.Position = CollisionPoint;
+            }
 
-            Vector Mins = LinkedEnt.AABB.Mins;
-            Vector Maxs = LinkedEnt.AABB.Maxs;
-
-            // technically the "if"s in the "else if"s aren't neccesary, but they help with readability
             for ( int i = 0; i < 3; ++i )
             {
                 if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
                 {
-                    if ( collisionplane.Normal[ i ] > .9f )
-                        NewPos[ i ] -= Mins[ i ];
-                    else if ( collisionplane.Normal[ i ] < -.9f )
-                        NewPos[ i ] -= Maxs[ i ];
-
                     Velocity[ i ] = 0;
-
                     break;
                 }
             }
-            LinkedEnt.Transform.Position = NewPos;
         }
 
 
@@ -109,9 +116,9 @@ namespace PhysEngine
                 if ( EHandle.TestCollision( WorldEnt, LinkedEnt ) )
                 {
                     Collision = true;
-                    if ( WorldEnt == world.player )
+                    if ( WorldEnt == world.player.Head || WorldEnt == world.player.Body.LinkedEnt )
                         continue; //player doesn't have faces, so don't check for collision normal
-                    Vector vCollisionNormal = WorldEnt.GetCollisionNormal( LinkedEnt.Center );
+                    Vector vCollisionNormal = WorldEnt.GetCollisionNormal( LinkedEnt.Transform.Position );
                     if ( vCollisionNormal.y > .9f )
                         TopCollision = true;
                 }
@@ -139,8 +146,8 @@ namespace PhysEngine
                 Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
 
             Vector Areas = new Vector();
-            Vector Maxs = LinkedEnt.AABB.Maxs;
-            Vector Mins = LinkedEnt.AABB.Mins;
+            Vector Maxs = LinkedEnt.ent.AABB.maxs;
+            Vector Mins = LinkedEnt.ent.AABB.mins;
             Areas.x = ( Maxs.y - Mins.y ) * ( Maxs.z - Mins.z );
             Areas.y = ( Maxs.x - Mins.x ) * ( Maxs.z - Mins.z );
             Areas.z = ( Maxs.x - Mins.x ) * ( Maxs.y - Mins.y );
@@ -159,8 +166,6 @@ namespace PhysEngine
             {
                 for ( int j = i + 1; j < world.PhysicsObjects.Count; ++j )
                 {
-                    BHandle bThis = world.PhysicsObjects[ i ].LinkedEnt.AABB;
-                    BHandle bOther = world.PhysicsObjects[ j ].LinkedEnt.AABB;
                     if ( EHandle.TestCollision( world.PhysicsObjects[ i ].LinkedEnt, world.PhysicsObjects[ j ].LinkedEnt ) )
                     {
                         PhysicsObject[] pair = { world.PhysicsObjects[ i ], world.PhysicsObjects[ j ] };
@@ -176,7 +181,7 @@ namespace PhysEngine
             float m2 = Obj2.Mass;
 
             //a normal vector of collision pointing out of obj1
-            Vector Normal = Obj1.LinkedEnt.GetCollisionNormal( Obj2.LinkedEnt.Center );
+            Vector Normal = Obj1.LinkedEnt.GetCollisionNormal( Obj2.LinkedEnt.Transform.Position );
 
             Vector Vel1 = ( Obj1.Velocity * ( m1 - m2 ) / ( m1 + m2 ) ) + ( Obj2.Velocity * 2 * m2 / ( m1 + m2 ) );
             Vector Vel2 = ( Obj1.Velocity * 2 * m2 / ( m1 + m2 ) ) + ( Obj2.Velocity * ( m2 - m1 ) / ( m1 + m2 ) );
