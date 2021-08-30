@@ -281,7 +281,7 @@ namespace PhysEngine
                 entlist[ i ] = (BaseEntity) Marshal.PtrToStructure( handle.AddrOfPinnedObject(), typeof( BaseEntity ) );
                 handle.Free();
                 //we need to call the constructor to init in native code
-                entlist[ i ] = new BaseEntity( entlist[ i ].EntFaces, entlist[ i ].FaceLength, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
+                entlist[ i ] = new BaseEntity( Faces, entlist[ i ].transform, entlist[ i ].AABB.mins, entlist[ i ].AABB.maxs );
             }
 
             EHandle[] handles = new EHandle[ entlist.Length ];
@@ -314,9 +314,11 @@ namespace PhysEngine
                     BaseVelocity[ j ] = br.ReadSingle();
                 }
                 float Mass = br.ReadSingle();
-                pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass );
-                pObjs[ i ].Velocity = Velocity;
-                pObjs[ i ].BaseVelocity = BaseVelocity;
+                pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass )
+                {
+                    Velocity = Velocity,
+                    BaseVelocity = BaseVelocity
+                };
             }
 
             w.Add( handles );
@@ -324,17 +326,13 @@ namespace PhysEngine
 
             p.Head = handles[ PlayerHeadIndex ];
             p.Body = pObjs[ PlayerBodyIndex ];
+            p.Head.Parent = p.Body.LinkedEnt;
+            p.Head.Transform.SetLocalPos( Player.EYE_CENTER_OFFSET );
 
             w.player = p;
 
             sr.Close();
             br.Close();
-
-            for ( int i = 0; i < w.WorldEnts.Count; ++i )
-            {
-                if ( w.WorldEnts[ i ].ent.FaceLength == 0 )
-                    w.WorldEnts.RemoveAt( i );
-            }
 
             return w;
         }

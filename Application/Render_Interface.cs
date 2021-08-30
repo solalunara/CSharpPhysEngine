@@ -531,7 +531,19 @@ namespace PhysEngine
 
         private EHandle _Parent;
         public EHandle Parent
-        { get { return _Parent; } set { Transform.Parent = value.Transform; _Parent = value; } }
+        { 
+            get 
+            { 
+                return _Parent; 
+            } 
+            set 
+            {
+                Vector AbsPos = Transform.Position;
+                Transform.Parent = value.Transform;
+                Transform.Position = AbsPos;
+                _Parent = value; 
+            } 
+        }
         public THandle Transform;
 
         public Plane GetCollisionPlane( Vector pt )
