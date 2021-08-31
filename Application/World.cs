@@ -225,6 +225,7 @@ namespace PhysEngine
                     bw.Write( PhysicsObjects[ i ].BaseVelocity[ j ] );
                 }
                 bw.Write( PhysicsObjects[ i ].Mass );
+                bw.Write( PhysicsObjects[ i ].RotInertia );
             }
             fs.Close();
             bw.Close();
@@ -240,7 +241,7 @@ namespace PhysEngine
             int PlayerHeadIndex = br.ReadInt32();
             int PlayerBodyIndex = br.ReadInt32();
 
-            Player p = new Player( Matrix.IdentityMatrix(), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS );
+            Player p = new Player( Matrix.IdentityMatrix(), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
 
             //get all the textures used in the world for reconstruction
             int TexLength = br.ReadInt32();
@@ -314,7 +315,8 @@ namespace PhysEngine
                     BaseVelocity[ j ] = br.ReadSingle();
                 }
                 float Mass = br.ReadSingle();
-                pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass )
+                float RotInertia = br.ReadSingle();
+                pObjs[ i ] = new PhysicsObject( handles[ EntIndex ], Gravity, AirDragCoeffs, Mass, RotInertia )
                 {
                     Velocity = Velocity,
                     BaseVelocity = BaseVelocity

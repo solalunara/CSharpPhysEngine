@@ -85,11 +85,12 @@ namespace PhysEngine
         public static readonly BaseFace[] PLAYER_NORMAL_FACES = new EHandle( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ).ent.EntFaces;
         public static readonly BaseFace[] PLAYER_CROUCH_FACES = new EHandle( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, BLANK_TEXTURE ).ent.EntFaces;
         public const float PLAYER_MASS = 50.0f;
-        public Player( Matrix Perspective, Vector Gravity, Vector Coeffs, float Mass )
+        public const float PLAYER_ROTI = 1.0f;
+        public Player( Matrix Perspective, Vector Gravity, Vector Coeffs, float Mass, float RotI )
         {
             this.Perspective = Perspective;
             _crouched = false;
-            Body = new PhysicsObject( new EHandle( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ), Gravity, Coeffs, Mass );
+            Body = new PhysicsObject( new EHandle( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ), Gravity, Coeffs, Mass, RotI );
             Head = new EHandle( new BaseFace[ 0 ], new THandle( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ), new Vector(), new Vector() );
             Head.Parent = Body.LinkedEnt;
             Head.Transform.SetLocalPos( EYE_CENTER_OFFSET );
@@ -98,6 +99,7 @@ namespace PhysEngine
         public Matrix Perspective;
         public PhysicsObject Body;
         public EHandle Head;
+        public EHandle HeldEnt;
         public void Crouch()
         {
             if ( !_crouched )
@@ -428,8 +430,20 @@ namespace PhysEngine
         public static bool operator !=( Vector a, Vector b ) => !( a == b );
         public static float Dot( Vector a, Vector b ) => a.x * b.x + a.y * b.y + a.z * b.z;
         public float LengthSqr() => x * x + y * y + z * z;
-        public float Length() => (float) Math.Sqrt( LengthSqr() );
-        public Vector Normalized() => this / Length();
+        public float Length() => 1 / FastInvSqrt( LengthSqr() );
+        public Vector Normalized() => this * FastInvSqrt( LengthSqr() );
+        private static unsafe float FastInvSqrt( float n )
+        {
+            int i;
+            float x2, y;
+            x2 = n * 0.5f;
+            y = n;
+            i = *(int*) &y;
+            i = 0x5f3759df - ( i >> 1 );
+            y = *(float*) &i;
+            y *= ( 1.5f - ( x2 * y * y ) );
+            return y;
+        }
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -538,10 +552,22 @@ namespace PhysEngine
             } 
             set 
             {
-                Vector AbsPos = Transform.Position;
-                Transform.Parent = value.Transform;
-                Transform.Position = AbsPos;
-                _Parent = value; 
+                Vector AbsPos;
+                Matrix AbsRot;
+                AbsPos = Transform.GetAbsPos();
+                AbsRot = Transform.GetAbsRot();
+                if ( value == null )
+                {
+                    Transform.Parent = null;
+                    _Parent = null;
+                }
+                else
+                {
+                    Transform.Parent = value.Transform;
+                    _Parent = value;
+                }
+                Transform.SetAbsPos( AbsPos );
+                Transform.SetAbsRot( AbsRot );
             } 
         }
         public THandle Transform;
@@ -551,7 +577,7 @@ namespace PhysEngine
             Plane[] planes = new Plane[ _ent.FaceLength ];
             for ( int i = 0; i < planes.Length; ++i )
             {
-                Vector WorldPoint = Transform.Position + ( new Vector( _ent.EntFaces[ i ].Verts[ 0 ], _ent.EntFaces[ i ].Verts[ 1 ], _ent.EntFaces[ i ].Verts[ 2 ] ) ) * Transform.Scale;
+                Vector WorldPoint = Transform.GetAbsPos() + ( new Vector( _ent.EntFaces[ i ].Verts[ 0 ], _ent.EntFaces[ i ].Verts[ 1 ], _ent.EntFaces[ i ].Verts[ 2 ] ) ) * Transform.Scale;
                 planes[ i ] = new Plane( _ent.EntFaces[ i ].Normal, Vector.Dot( _ent.EntFaces[ i ].Normal, WorldPoint ) );
             }
 
@@ -618,6 +644,27 @@ namespace PhysEngine
             }
             return true;
         }
+        public static bool TestCollision( EHandle ent1, EHandle ent2, Vector offset1, Vector offset2 )
+        {
+            Vector[] Points1 = ent1.GetWorldVerts();
+            Vector[] Points2 = ent2.GetWorldVerts();
+            for ( int i = 0; i < Points1.Length; ++i )
+                Points1[ i ] += offset1;
+            for ( int i = 0; i < Points2.Length; ++i )
+                Points2[ i ] += offset2;
+
+            for ( int i = 0; i < ent1.ent.FaceLength; ++i )
+            {
+                if ( !TestCollision( ent1.Transform.TransformDirection( ent1.ent.EntFaces[ i ].Normal ), Points1, Points2 ) )
+                    return false;
+            }
+            for ( int i = 0; i < ent2.ent.FaceLength; ++i )
+            {
+                if ( !TestCollision( ent2.Transform.TransformDirection( ent2.ent.EntFaces[ i ].Normal ), Points1, Points2 ) )
+                    return false;
+            }
+            return true;
+        }
         public static bool TestCollision( params EHandle[] ents )
         {
             System.Diagnostics.Debug.Assert( ents.Length == 2 );
@@ -630,7 +677,7 @@ namespace PhysEngine
                 EHandle Ent = ents[ EntIndex ];
                 for ( int i = 0; i < Ent.ent.FaceLength; ++i )
                 {
-                    if ( !TestCollision( Ent.ent.EntFaces[ i ].Normal, Points1, Points2 ) )
+                    if ( !TestCollision( Ent.Transform.TransformDirection( Ent.ent.EntFaces[ i ].Normal ), Points1, Points2 ) )
                         return false;
                 }
             }
@@ -673,6 +720,13 @@ namespace PhysEngine
             Position = t.Position;
             Scale = t.Scale;
             Rotation = t.Rotation;
+        }
+        public Transform( Matrix ThisToWorld )
+        {
+            Position = Scale = new Vector();
+            Rotation = new Matrix();
+            this.ThisToWorld = ThisToWorld;
+            WorldToThis = Util.InvertMatrix( ThisToWorld );
         }
         [MarshalAs( UnmanagedType.Struct )]
         public Matrix ThisToWorld;
@@ -719,6 +773,10 @@ namespace PhysEngine
         {
             t = new Transform( position, scale, rotation );
         }
+        public THandle( Matrix ThisToWorld )
+        {
+            t = new Transform( ThisToWorld );
+        }
         public THandle( Transform tCopy )
         {
             t = tCopy;
@@ -726,81 +784,102 @@ namespace PhysEngine
 
         private Transform t;
         public Transform Data
-        { 
+        {
             get
             {
-                return new Transform( Position, Scale, Rotation );
+                if ( Parent != null )
+                    return new Transform( Util.MultiplyMatrix( Parent.Data.ThisToWorld, t.ThisToWorld ) );
+                else
+                    return new Transform( t.ThisToWorld );
             }
         }
 
         public THandle Parent;
 
-        public Vector Position
-        { 
-            get 
-            {
-                if ( Parent != null )
-                    return Parent.TransformPoint( t.Position );
-                else
-                    return t.Position; 
-            } 
-            set 
-            {
-                if ( Parent != null )
-                    t.Position = Parent.InverseTransformPoint( value );
-                else
-                    t.Position = value; 
-                Transform.UpdateTransform( ref t ); 
-            } 
-        }
         public void SetLocalPos( Vector pt )
         {
             t.Position = pt;
+            Transform.UpdateTransform( ref t );
         }
         public Vector GetLocalPos() => t.Position;
-        public Vector Scale
-        { 
-            get 
-            {
-                return t.Scale; 
-            } 
-            set 
-            { 
-                t.Scale = value; 
-                Transform.UpdateTransform( ref t ); 
-            } 
+        public void SetAbsPos( Vector pt )
+        {
+            if ( Parent != null )
+                t.Position = Parent.InverseTransformPoint( pt );
+            else
+                t.Position = pt;
+            Transform.UpdateTransform( ref t );
         }
-        public Matrix Rotation
-        { 
-            get 
+        public Vector GetAbsPos()
+        {
+            if ( Parent != null )
+                return Parent.TransformPoint( t.Position );
+            else
+                return t.Position;
+        }
+        public Vector Scale
+        {
+            get
             {
-                if ( Parent != null )
-                    return Util.MultiplyMatrix( Parent.Rotation, t.Rotation );
-                else
-                    return t.Rotation; 
-            } 
-            set 
+                return t.Scale;
+            }
+            set
             {
-                if ( Parent != null )
-                    t.Rotation = Util.MultiplyMatrix( value, Util.InvertMatrix( Parent.Rotation ) );
-                else
-                    t.Rotation = value;
+                t.Scale = value;
                 Transform.UpdateTransform( ref t );
-            } 
+            }
         }
         public void SetLocalRot( Matrix r )
         {
             t.Rotation = r;
+            Transform.UpdateTransform( ref t );
         }
         public Matrix GetLocalRot() => t.Rotation;
+        public void SetAbsRot( Matrix r )
+        {
+            if ( Parent != null )
+                t.Rotation = Util.MultiplyMatrix( Util.InvertMatrix( Parent.GetAbsRot() ), r  );
+            else
+                t.Rotation = r;
+            Transform.UpdateTransform( ref t );
+        }
+        public Matrix GetAbsRot()
+        {
+            if ( Parent != null )
+                return Util.MultiplyMatrix( Parent.GetAbsRot(), t.Rotation );
+            else
+                return t.Rotation;
+        }
 
         public Vector GetRight() => t.GetRight();
         public Vector GetUp() => t.GetUp();
         public Vector GetForward() => t.GetForward();
-        public Vector TransformDirection( Vector v ) => t.TransformDirection( v );
-        public Vector TransformPoint( Vector pt ) => t.TransformPoint( pt );
-        public Vector InverseTransformDirection( Vector v ) => t.InverseTransformDirection( v );
-        public Vector InverseTransformPoint( Vector pt ) => t.InverseTransformPoint( pt );
+        public Vector TransformDirection( Vector v )
+        {
+            if ( Parent != null )
+                v = Parent.TransformDirection( v );
+            return t.TransformDirection( v );
+        }
+        public Vector TransformPoint( Vector pt )
+        {
+            pt = t.TransformPoint( pt );
+            if ( Parent != null )
+                return Parent.TransformPoint( pt );
+            else
+                return pt;
+        }
+        public Vector InverseTransformDirection( Vector v )
+        {
+            if ( Parent != null )
+                v = Parent.InverseTransformDirection( v );
+            return t.InverseTransformDirection( v );
+        }
+        public Vector InverseTransformPoint( Vector pt )
+        {
+            if ( Parent != null )
+                pt = Parent.InverseTransformPoint( pt );
+            return t.InverseTransformPoint( pt );
+        }
     }
 
     [StructLayout( LayoutKind.Sequential )]

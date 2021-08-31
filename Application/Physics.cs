@@ -14,20 +14,32 @@ namespace PhysEngine
         public static readonly Vector Default_Gravity = new Vector( 0, -10, 0 );
         public static readonly Vector Default_Coeffs = new Vector( 1, 1, 1 );
 
-        public PhysicsObject( EHandle LinkedEnt, Vector Gravity, Vector AirDragCoeffs, float Mass = 1.0f )
+        public PhysicsObject( EHandle LinkedEnt, Vector Gravity, Vector AirDragCoeffs, float Mass, float RotInertia )
         {
             this.LinkedEnt = LinkedEnt;
             this.Gravity = Gravity;
             this.Mass = Mass;
             this.AirDragCoeffs = AirDragCoeffs;
+            this.RotInertia = RotInertia;
 
             this.BaseVelocity = new Vector();
         }
-        
+
+        public EHandle LinkedEnt;
+        public Vector Gravity;
+        public Vector NetForce;
+        public Vector AirDragCoeffs;
+        public Vector Velocity;
+        public Vector BaseVelocity;
+        public Vector AngularMomentum;
+        public Vector Torque;
+        public float RotInertia;
+        public float Mass;
+
         //collide a physics object with the world
         public void Collide( EHandle OtherEnt )
         {
-            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.Transform.Position );
+            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.Transform.GetAbsPos() );
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -35,9 +47,9 @@ namespace PhysEngine
             //reflect the velocity about the normal of the collision plane
             Velocity -= 2.0f * Vector.Dot( Velocity, collisionplane.Normal ) * collisionplane.Normal;
 
-            Vector CollisionPoint = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.Position );
+            Vector CollisionPoint = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.GetAbsPos() );
             //anti-penetration
-            if ( LinkedEnt.ent.AABB.TestCollisionPoint( CollisionPoint, LinkedEnt.Transform.Position ) )
+            if ( LinkedEnt.ent.AABB.TestCollisionPoint( CollisionPoint, LinkedEnt.Transform.GetAbsPos() ) )
             {
                 Vector Mins = LinkedEnt.ent.AABB.mins;
                 Vector Maxs = LinkedEnt.ent.AABB.maxs;
@@ -52,7 +64,7 @@ namespace PhysEngine
                         break;
                     }
                 }
-                LinkedEnt.Transform.Position = CollisionPoint;
+                LinkedEnt.Transform.SetAbsPos( CollisionPoint );
             }
 
             for ( int i = 0; i < 3; ++i )
@@ -63,11 +75,17 @@ namespace PhysEngine
                     break;
                 }
             }
+
+            if ( EHandle.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
+                LinkedEnt.Transform.SetAbsPos( LinkedEnt.Transform.GetAbsPos() + collisionplane.Normal / 100 );
         }
 
 
         public void Simulate( float dt, World world )
         {
+            if ( LinkedEnt.Parent != null )
+                return;
+
             for( int i = 0; i < world.WorldEnts.Count; ++i )
             {
                 EHandle WorldEnt = world.WorldEnts[ i ];
@@ -91,11 +109,21 @@ namespace PhysEngine
             DragSimulate( dt, Collision );
 
             Velocity += NetForce / Mass * dt;
-            LinkedEnt.Transform.Position += Velocity * dt;
+            LinkedEnt.Transform.SetAbsPos( LinkedEnt.Transform.GetAbsPos() + Velocity * dt );
+
+            AngularMomentum += Torque * dt;
+            if ( AngularMomentum != new Vector() ) //only do if non-zero
+            {
+                Util.MakeRotMatrix( AngularMomentum.Length() / RotInertia, LinkedEnt.Transform.InverseTransformDirection( AngularMomentum.Normalized() ), out Matrix rot );
+                LinkedEnt.Transform.SetAbsRot( Util.MultiplyMatrix( LinkedEnt.Transform.GetAbsRot(), rot ) );
+            }
 
             //reset the net force each frame
             for ( int i = 0; i < 3; ++i )
+            {
                 NetForce[ i ] = 0;
+                Torque[ i ] = 0;
+            }
         }
 
         //checks to see if this entity should collide with any entities in the world given it's current position
@@ -118,7 +146,7 @@ namespace PhysEngine
                     Collision = true;
                     if ( WorldEnt == world.player.Head || WorldEnt == world.player.Body.LinkedEnt )
                         continue; //player doesn't have faces, so don't check for collision normal
-                    Vector vCollisionNormal = WorldEnt.GetCollisionNormal( LinkedEnt.Transform.Position );
+                    Vector vCollisionNormal = WorldEnt.GetCollisionNormal( LinkedEnt.Transform.GetAbsPos() );
                     if ( vCollisionNormal.y > .9f )
                         TopCollision = true;
                 }
@@ -181,7 +209,7 @@ namespace PhysEngine
             float m2 = Obj2.Mass;
 
             //a normal vector of collision pointing out of obj1
-            Vector Normal = Obj1.LinkedEnt.GetCollisionNormal( Obj2.LinkedEnt.Transform.Position );
+            Vector Normal = Obj1.LinkedEnt.GetCollisionNormal( Obj2.LinkedEnt.Transform.GetAbsPos() );
 
             Vector Vel1 = ( Obj1.Velocity * ( m1 - m2 ) / ( m1 + m2 ) ) + ( Obj2.Velocity * 2 * m2 / ( m1 + m2 ) );
             Vector Vel2 = ( Obj1.Velocity * 2 * m2 / ( m1 + m2 ) ) + ( Obj2.Velocity * ( m2 - m1 ) / ( m1 + m2 ) );
@@ -192,18 +220,9 @@ namespace PhysEngine
             //anti-penetration
             if ( EHandle.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
             {
-                Obj1.LinkedEnt.Transform.Position -= Normal / 100;
-                Obj2.LinkedEnt.Transform.Position += Normal / 100;
+                Obj1.LinkedEnt.Transform.SetAbsPos( Obj1.LinkedEnt.Transform.GetAbsPos() - Normal / 100 );
+                Obj2.LinkedEnt.Transform.SetAbsPos( Obj2.LinkedEnt.Transform.GetAbsPos() + Normal / 100 );
             }
         }
-
-
-        public EHandle LinkedEnt;
-        public Vector Gravity;
-        public Vector NetForce;
-        public Vector AirDragCoeffs;
-        public Vector Velocity;
-        public Vector BaseVelocity;
-        public float Mass;
     }
 }

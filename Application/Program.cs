@@ -20,6 +20,8 @@ namespace PhysEngine
         static bool FireX = false;
         static bool FireF = false;
         static bool FireR = false;
+        static bool FireC = false;
+        static bool FireV = false;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
         static Player player;
 
@@ -90,10 +92,10 @@ namespace PhysEngine
                 );
                 Texture[] dirt = { world.Textures[ 0 ].texture };
                 Texture[] grass = { world.Textures[ 1 ].texture };
-                world.player = new Player( persp, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS );
+                world.player = new Player( persp, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
                 world.Add
                 (
-                    true, new PhysicsObject( new EHandle( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), new Vector(), PhysicsObject.Default_Coeffs, 25 )
+                    true, new PhysicsObject( new EHandle( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 1 )
                 );
                 world.Add
                 (
@@ -137,7 +139,7 @@ namespace PhysEngine
                     const float LookSpeed = 10.0f;
                     Mouse.GetMouseOffset( window, out double x, out double y );
                     Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -x ), new Vector( 0, 1, 0 ), out Matrix XRot );
-                    world.player.Body.LinkedEnt.Transform.Rotation = Util.MultiplyMatrix( player.Body.LinkedEnt.Transform.GetLocalRot(), XRot );
+                    world.player.Body.LinkedEnt.Transform.SetAbsRot( Util.MultiplyMatrix( player.Body.LinkedEnt.Transform.GetLocalRot(), XRot ) );
 
                     Matrix PrevHead = player.Head.Transform.GetLocalRot();
                     Util.MakeRotMatrix( (float) ( frametime * LookSpeed * -y ), new Vector( 1, 0, 0 ), out Matrix YRot );
@@ -191,24 +193,24 @@ namespace PhysEngine
                         player = world.player;
                     }
 
-                    if ( FireQ )
+                    if ( FireC )
                     {
-                        FireQ = false;
-                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.Rotation, new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.Transform.Position + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.Transform.Position, EntPt );
+                        FireC = false;
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
                         if ( hit.bHit )
                         {
                             EHandle HitEnt = hit.HitEnt;
                             HitEnt.Transform.Scale *= new Vector( 1.1f, 1.1f, 1.1f );
                         }
                     }
-                    if ( FireE )
+                    if ( FireV )
                     {
-                        FireE = false;
-                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.Rotation, new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.Transform.Position + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.Transform.Position, EntPt );
+                        FireV = false;
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
                         if ( hit.bHit )
                         {
                             EHandle HitEnt = hit.HitEnt;
@@ -219,14 +221,14 @@ namespace PhysEngine
                     {
                         FireX = false;
                         Texture[] dirt = { world.Textures[ 0 ].texture };
-                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.Rotation, new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.Transform.Position + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.Transform.Position, EntPt );
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
                         Vector ptCenter = new Vector();
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
                         else
-                            ptCenter = player.Head.Transform.Position + TransformedForward / 10;
+                            ptCenter = player.Head.Transform.GetAbsPos() + TransformedForward / 10;
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
@@ -236,14 +238,14 @@ namespace PhysEngine
                     {
                         FireZ = false;
                         Texture[] grass = { world.Textures[ 1 ].texture };
-                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.Rotation, new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.Transform.Position + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.Transform.Position, EntPt );
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
                         Vector ptCenter = new Vector();
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
                         else
-                            ptCenter = player.Head.Transform.Position + TransformedForward / 10;
+                            ptCenter = player.Head.Transform.GetAbsPos() + TransformedForward / 10;
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
@@ -252,20 +254,62 @@ namespace PhysEngine
                     if ( FireF )
                     {
                         FireF = false;
-                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.Rotation, new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.Transform.Position + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.Transform.Position, EntPt );
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
                         if ( hit.bHit )
                             world.WorldEnts.Remove( hit.HitEnt );
                     }
                     if ( FireR )
                     {
                         FireR = false;
-                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.Rotation, new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.Transform.Position + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.Transform.Position, EntPt );
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
                         if ( hit.bHit )
-                            world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25 ) );
+                            world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 1 ) );
+                    }
+                    if ( FireE )
+                    {
+                        FireE = false;
+
+                        if ( player.HeldEnt != null )
+                        {
+                            player.HeldEnt.Parent = null;
+                            player.HeldEnt = null;
+                        }
+                        else
+                        {
+                            Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                            Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                            RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
+                            if ( hit.bHit )
+                            {
+                                PhysicsObject HitPhys = world.GetEntPhysics( hit.HitEnt );
+                                if ( HitPhys != null )
+                                    HitPhys.Velocity = new Vector();
+                                hit.HitEnt.Parent = player.Head;
+                                player.HeldEnt = hit.HitEnt;
+                            }
+                        }
+                    }
+                    if ( FireQ )
+                    {
+                        FireQ = false;
+                        Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
+                        if ( hit.bHit )
+                        {
+                            PhysicsObject HitPhys = world.GetEntPhysics( hit.HitEnt );
+                            if ( HitPhys != null )
+                            {
+                                if ( HitPhys.AngularMomentum.y > 0 )
+                                    HitPhys.Torque -= new Vector( 0, 10, 10 );
+                                else
+                                    HitPhys.Torque += new Vector( 0, 10, 10 );
+                            }
+                        }
                     }
                 }
                 else
@@ -300,6 +344,10 @@ namespace PhysEngine
                     FireF = true;
                 if ( key == Keys.R )
                     FireR = true;
+                if ( key == Keys.C )
+                    FireC = true;
+                if ( key == Keys.V )
+                    FireV = true;
             }
 
 
