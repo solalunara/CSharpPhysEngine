@@ -95,7 +95,7 @@ namespace PhysEngine
                 world.player = new Player( persp, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
                 world.Add
                 (
-                    true, new PhysicsObject( new EHandle( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 1 )
+                    true, new PhysicsObject( new EHandle( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 100 )
                 );
                 world.Add
                 (
@@ -266,7 +266,7 @@ namespace PhysEngine
                         Vector TransformedForward = Util.MultiplyVector( player.Head.Transform.GetAbsRot(), new Vector( 0, 0, -30 ) );
                         Vector EntPt = player.Head.Transform.GetAbsPos() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.Head.Transform.GetAbsPos(), EntPt );
-                        if ( hit.bHit )
+                        if ( hit.bHit || world.GetEntPhysics( hit.HitEnt ) == null )
                             world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 1 ) );
                     }
                     if ( FireE )

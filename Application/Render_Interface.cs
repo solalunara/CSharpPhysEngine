@@ -429,6 +429,7 @@ namespace PhysEngine
         public static bool operator ==( Vector a, Vector b ) => a.x == b.x && a.y == b.y && a.z == b.z;
         public static bool operator !=( Vector a, Vector b ) => !( a == b );
         public static float Dot( Vector a, Vector b ) => a.x * b.x + a.y * b.y + a.z * b.z;
+        public static Vector Cross( Vector a, Vector b ) => new Vector( a.y * b.z - a.z - b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x );
         public float LengthSqr() => x * x + y * y + z * z;
         public float Length() => 1 / FastInvSqrt( LengthSqr() );
         public Vector Normalized() => this * FastInvSqrt( LengthSqr() );
