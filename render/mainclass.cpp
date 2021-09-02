@@ -100,20 +100,18 @@ void StartFrame( intptr_t window )
 	glClearColor( .1f, .2f, .7f, 1.0f );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
-void RenderEntity( intptr_t window, Shader shader, BaseEntity ent )
+void SetRenderValues( Shader shader, Transform t )
 {
 	UseShader( shader );
 	SetMatrix( shader, "transform", ent.transform.m_ThisToWorld );
-	for ( int f = 0; f < ent.FaceLength; ++f )
-	{
-		BaseFace Face = ent.EntFaces[ f ];
-		if ( !Face.texture.bInitialized )
-			continue; //nothing to render
-		glBindVertexArray( Face.VAO );
-		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, Face.EBO );
-		glBindTexture( GL_TEXTURE_2D, Face.texture.ID );
-		glDrawElements( GL_TRIANGLES, Face.IndLength, GL_UNSIGNED_INT, NULL );
-	}
+}
+void RenderFace( intptr_t window, Shader shader, BaseFace face )
+{
+	_ASSERTE( face.texture.bInitialized );
+	glBindVertexArray( face.VAO );
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, face.EBO );
+	glBindTexture( GL_TEXTURE_2D, face.texture.ID );
+	glDrawElements( GL_TRIANGLES, face.IndLength, GL_UNSIGNED_INT, NULL );
 }
 void EndFrame( intptr_t window )
 {
