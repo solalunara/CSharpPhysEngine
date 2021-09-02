@@ -157,7 +157,7 @@ namespace PhysEngine
             List<PhysicsObject[]> PhysCollisionPairs = PhysicsObject.GetCollisionPairs( this );
             for ( int i = 0; i < PhysCollisionPairs.Count; ++i )
             {
-                PhysicsObject.Collide( PhysCollisionPairs[ i ][ 0 ], PhysCollisionPairs[ i ][ 1 ], dt );
+                PhysicsObject.Collide( PhysCollisionPairs[ i ][ 0 ], PhysCollisionPairs[ i ][ 1 ], dt, this );
             }
             foreach ( PhysicsObject p in PhysicsObjects )
                 p.Simulate( dt, this );

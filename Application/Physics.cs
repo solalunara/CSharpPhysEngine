@@ -185,6 +185,8 @@ namespace PhysEngine
                 Drag[ i ] += .5f * AirDensity * Velocity[ i ] * Velocity[ i ] * AirDragCoeffs[ i ] * Areas[ i ] * iWindSign;
             }
             NetForce += Drag;
+
+            AngularMomentum *= (float) Math.Pow( .999f, 1/dt );
         }
 
         public static List<PhysicsObject[]> GetCollisionPairs( World world )
@@ -203,21 +205,45 @@ namespace PhysEngine
             }
             return Pairs;
         }
-        public static void Collide( PhysicsObject Obj1, PhysicsObject Obj2, float dt )
+        public static void Collide( PhysicsObject Obj1, PhysicsObject Obj2, float dt, World world )
         {
             float m1 = Obj1.Mass;
             float m2 = Obj2.Mass;
 
             //a normal vector of collision pointing out of obj1
-            Vector Normal = Obj1.LinkedEnt.GetCollisionNormal( Obj2.LinkedEnt.Transform.GetAbsPos() );
+            Plane CollisionPlane = Obj1.LinkedEnt.GetCollisionPlane( Obj2.LinkedEnt.Transform.GetAbsPos() );
+            Vector Normal = CollisionPlane.Normal;
 
             Vector Vel1 = ( Obj1.Velocity * ( m1 - m2 ) / ( m1 + m2 ) ) + ( Obj2.Velocity * 2 * m2 / ( m1 + m2 ) );
             Vector Vel2 = ( Obj1.Velocity * 2 * m2 / ( m1 + m2 ) ) + ( Obj2.Velocity * ( m2 - m1 ) / ( m1 + m2 ) );
 
-            Obj1.Velocity = Vel1;
-            Obj2.Velocity = Vel2;
+            //newton's second law
+            Vector Obj1Force = Obj1.Mass * ( Obj1.Velocity - Vel1 ) / dt;
+            Vector Obj2Force = Obj2.Mass * ( Obj2.Velocity - Vel2 ) / dt;
+            //newton's third law
+            Obj1.NetForce -= Obj1Force;
+            Obj2.NetForce += Obj1Force;
+            Obj1.NetForce += Obj2Force;
+            Obj2.NetForce -= Obj2Force;
 
-            //anti-penetration
+            Vector vLine = Obj1.LinkedEnt.Transform.GetAbsPos() - Obj2.LinkedEnt.Transform.GetAbsPos();
+            Vector ptStart = Obj2.LinkedEnt.Transform.GetAbsPos();
+            Vector ptOnPlane = CollisionPlane.ClosestPointOnPlane( Obj2.LinkedEnt.Transform.GetAbsPos() );
+            Vector CollisionPoint = Vector.Dot( ( ptOnPlane - ptStart ), Normal ) / Vector.Dot( vLine, Normal ) * vLine + ptStart;
+
+            Vector Radius1 = CollisionPoint - Obj1.LinkedEnt.Transform.GetAbsPos();
+            Vector Radius2 = CollisionPoint - Obj2.LinkedEnt.Transform.GetAbsPos();
+
+            if ( Obj1 != world.player.Body )
+                Obj1.Torque += Vector.Cross( Radius1, Obj1Force );
+            if ( Obj2 != world.player.Body )
+                Obj2.Torque += Vector.Cross( Radius2, Obj2Force );
+
+            //greenberg's first law (shove the objects away from each other)
+            Obj1.Velocity -= Normal;
+            Obj2.Velocity += Normal;
+
+            //greenberg's second law (if two objects are penetrating, make it stop)
             if ( EHandle.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
             {
                 Obj1.LinkedEnt.Transform.SetAbsPos( Obj1.LinkedEnt.Transform.GetAbsPos() - Normal / 100 );
