@@ -37,7 +37,8 @@ extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
 //render related functions
 extern "C" RENDER_API void Init( intptr_t *window );
 extern "C" RENDER_API void StartFrame( intptr_t window );
-extern "C" RENDER_API void RenderEntity( intptr_t window, Shader shader, BaseEntity ent );
+extern "C" RENDER_API void SetRenderValues( Shader shader, Transform t );
+extern "C" RENDER_API void RenderFace( intptr_t window, Shader shader, BaseFace face );
 extern "C" RENDER_API void EndFrame( intptr_t window );
 
 //light functions
