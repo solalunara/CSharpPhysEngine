@@ -53,7 +53,6 @@ struct RENDER_API BoundingBox
 
 struct RENDER_API BaseEntity
 {
-public:
 	BaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs );
 	BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength ); //brush init
 
@@ -62,8 +61,18 @@ public:
 
 	Transform transform;
 	BoundingBox AABB;
-
 };
+
+struct RENDER_API FaceVector
+{
+	FaceVector();
+
+
+private:
+	BaseFace arr[ 20 ];
+	int FaceLength;
+};
+
 extern "C" RENDER_API void InitBaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt );
 extern "C" RENDER_API void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength, BaseEntity *pEnt );
 

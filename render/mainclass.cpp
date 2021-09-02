@@ -95,42 +95,32 @@ void SetAmbientLight( Shader shader, float value )
 	SetFloat( shader, "AmbientLight", value );
 }
 
-void RenderLoop( intptr_t window, Shader shader, Transform camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength )
+void StartFrame( intptr_t window )
 {
 	glClearColor( .1f, .2f, .7f, 1.0f );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-
-	int width, height;
-	glfwGetWindowSize( (GLFWwindow *) window, &width, &height );
-
+}
+void RenderEntity( intptr_t window, Shader shader, BaseEntity ent )
+{
 	UseShader( shader );
-
-	//tell the vertex shader about the camera position and perspective matrix
-	SetMatrix( shader, "CameraTransform", camera.m_WorldToThis );
-	SetMatrix( shader, "Perspective", perspective );
-
-	//traverse the world for entities
-	for ( int i = 0; i < iRenderEntLength; ++i )
+	SetMatrix( shader, "transform", ent.transform.m_ThisToWorld );
+	for ( int f = 0; f < ent.FaceLength; ++f )
 	{
-		BaseEntity enti = pRenderEnts[i];
-		if ( enti.FaceLength == 0 || !enti.EntFaces[0].texture.bInitialized )
+		BaseFace Face = ent.EntFaces[ f ];
+		if ( !Face.texture.bInitialized )
 			continue; //nothing to render
-		//tell the vertex shader about where the entity is in world space
-		SetMatrix( shader, "transform", enti.transform.m_ThisToWorld );
-		//traverse the entity for faces
-		for ( int i = 0; i < enti.FaceLength; ++i )
-		{
-			BaseFace pFace = enti.EntFaces[ i ];
-			glBindVertexArray( pFace.VAO );
-			glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, pFace.EBO );
-			glBindTexture( GL_TEXTURE_2D, pFace.texture.ID );
-			glDrawElements( GL_TRIANGLES, pFace.IndLength, GL_UNSIGNED_INT, 0 );
-		}
+		glBindVertexArray( Face.VAO );
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, Face.EBO );
+		glBindTexture( GL_TEXTURE_2D, Face.texture.ID );
+		glDrawElements( GL_TRIANGLES, Face.IndLength, GL_UNSIGNED_INT, NULL );
 	}
-
+}
+void EndFrame( intptr_t window )
+{
 	glfwSwapBuffers( (GLFWwindow *) window );
 	glfwPollEvents();
 }
+
 void Terminate()
 {
 	glfwTerminate();

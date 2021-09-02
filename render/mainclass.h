@@ -36,9 +36,14 @@ extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
 
 //render related functions
 extern "C" RENDER_API void Init( intptr_t *window );
+extern "C" RENDER_API void StartFrame( intptr_t window );
+extern "C" RENDER_API void RenderEntity( intptr_t window, Shader shader, BaseEntity ent );
+extern "C" RENDER_API void EndFrame( intptr_t window );
+
+//light functions
 extern "C" RENDER_API void SetLights( Shader shader, Light *PointLights, int LightLength );
 extern "C" RENDER_API void SetAmbientLight( Shader shader, float value );
-extern "C" RENDER_API void RenderLoop( intptr_t window, Shader shader, Transform camera, glm::mat4 perspective, BaseEntity *pRenderEnts, int iRenderEntLength );
+
 extern "C" RENDER_API void Terminate();
 extern "C" RENDER_API bool ShouldTerminate( intptr_t window );
 extern "C" RENDER_API float GetTime();
