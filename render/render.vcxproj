@@ -175,21 +175,22 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BaseEntity.h" />
-    <ClInclude Include="BaseFace.h" />
+    <ClInclude Include="GLMUtils.h" />
+    <ClInclude Include="FaceMesh.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="mainclass.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="Transform.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BaseEntity.cpp" />
-    <ClCompile Include="BaseFace.cpp" />
+    <ClCompile Include="GLMUtils.cpp" />
+    <ClCompile Include="FaceMesh.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="Light.cpp" />
     <ClCompile Include="mainclass.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -199,7 +200,6 @@
     </ClCompile>
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="Transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Application\bin\Debug\Shaders\FragmentShader.frag" />

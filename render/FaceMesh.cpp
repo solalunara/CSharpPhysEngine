@@ -1,11 +1,11 @@
 #include "pch.h"
-#include "BaseFace.h"
+#include "FaceMesh.h"
 #include "Texture.h"
 
 #include <vector>
 
 
-BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, GLenum DrawType ) :
+FaceMesh::FaceMesh( int VertLength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, GLenum DrawType ) :
 	VertLength( VertLength ), IndLength( IndLength ), texture( texture ), vNormal( vNormal ),
 	VBO( 0 ), VAO( 0 ), EBO( 0 )
 {
@@ -33,29 +33,21 @@ BaseFace::BaseFace( int VertLength, float *vertices, int IndLength, int *indices
 	glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof( float ), (void *) ( 3 * sizeof( float ) ) );
 	glEnableVertexAttribArray( 1 );
 }
-BaseFace::BaseFace() :
-	VertLength( 0 ), IndLength( 0 ), VBO( 0 ), VAO( 0 ), EBO( 0 ), texture(), vNormal(), vertices(), indices()
-{
-}
 
-void DestructBaseFace( BaseFace *face )
-{
-	glDeleteBuffers( 1, &face->VBO );
-	glDeleteVertexArrays( 1, &face->VAO );
-	glDeleteBuffers( 1, &face->EBO );
-}
 
-void InitBaseFace( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, BaseFace *pFace )
+void InitMesh( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, FaceMesh *mesh )
 {
 	_ASSERTE( pFace );
-	*pFace = BaseFace( Vertlength, vertices, IndLength, indices, texture, vNormal, GL_DYNAMIC_DRAW );
+	*mesh = FaceMesh( Vertlength, vertices, IndLength, indices, texture, vNormal, GL_DYNAMIC_DRAW );
 }
-
-float GetVertAtIndex( BaseFace face, int index )
+void UpdateMesh( FaceMesh *mesh )
 {
-	return face.vertices[ index ];
+	DestructMesh( *mesh );
+	InitMesh( mesh->VertLength, mesh->vertices, mesh->IndLength, mesh->indices, mesh->texture, mesh->vNormal, mesh );
 }
-int GetIndAtIndex( BaseFace face, int index )
+void DestructMesh( FaceMesh face )
 {
-	return face.indices[ index ];
+	glDeleteBuffers( 1, &face.VBO );
+	glDeleteVertexArrays( 1, &face.VAO );
+	glDeleteBuffers( 1, &face.EBO );
 }

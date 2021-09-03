@@ -1,14 +1,7 @@
 #include "pch.h"
-#include "BaseEntity.h"
+#include "GLMUtils.h"
 
-
-//baseentity functions
-BaseEntity::BaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs ) :
-    AABB( BoundingBox( mins, maxs ) ), FaceLength( FaceLength ), transform( transform ), EntFaces()
-{
-    for ( int i = 0; i < FaceLength; ++i )
-        this->EntFaces[ i ] = EntFaces[ i ];
-}
+/*
 BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength ) :
     AABB( BoundingBox( mins, maxs ) ), FaceLength( 6 ), transform( Transform( glm::vec3( 0 ), glm::vec3( 1 ), glm::mat4( 1 ) ) ), EntFaces()
 {
@@ -101,36 +94,41 @@ BaseEntity::BaseEntity( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int T
     for ( int i = 0; i < FaceLength; ++i )
         EntFaces[ i ] = BaseFace( 20, vertices[ i ], 6, indices, bSameTexture?textures[ 0 ]:textures[ i ], normals[i], GL_DYNAMIC_DRAW );
 }
-void InitBaseEntity( BaseFace *EntFaces, int FaceLength, Transform transform, glm::vec3 mins, glm::vec3 maxs, BaseEntity *pEnt )
-{
-    _ASSERTE( pEnt );
-    *pEnt = BaseEntity( EntFaces, FaceLength, transform, mins, maxs );
-}
-void InitBrush( glm::vec3 mins, glm::vec3 maxs, Texture *textures, int TextureLength, BaseEntity *pEnt )
-{
-    _ASSERTE( pEnt );
-    *pEnt = BaseEntity( mins, maxs, textures, TextureLength );
-}
+*/
 
-void GetBaseFaceAtIndex( BaseEntity ent, BaseFace *pFace, int index )
-{
-    _ASSERTE( pFace );
-    *pFace = ent.EntFaces[ index ];
-}
-
-void DestructBaseEntity( BaseEntity *ent )
-{
-    for ( int i = 0; i < ent->FaceLength; ++i )
-        DestructBaseFace( &ent->EntFaces[ i ] );
-}
-
-void MakePerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat )
+void GLMPerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat )
 {
     _ASSERTE( pMat );
     *pMat = glm::mat4( glm::perspective( glm::radians( fov ), aspect, nearclip, farclip ) );
 }
-void MultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier )
+void GLMRotMatrix( float degrees, glm::vec3 axis, glm::mat4 *pMat )
+{
+    _ASSERTE( pMat );
+    *pMat = glm::rotate( glm::mat4( 1 ), glm::radians( degrees ), axis );
+}
+void GLMMultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier )
 {
     _ASSERTE( pMultiply );
-    *pMultiply = *pMultiply * multiplier;
+    *pMultiply = multiplier * *pMultiply;
+}
+void GLMMultMatrixVector( glm::mat4 matrix, glm::vec4 *vector )
+{
+    _ASSERTE( vector );
+    *vector = matrix * *vector;
+}
+void GLMInvertMatrix( glm::mat4 *matrix )
+{
+    _ASSERTE( matrix );
+    *matrix = glm::inverse( *matrix );
+}
+
+void GLMScale( glm::vec3 scale, glm::mat4 *m )
+{
+    _ASSERTE( m );
+    *m = glm::scale( glm::mat4( 1 ), scale );
+}
+void GLMTranslate( glm::vec3 pt, glm::mat4 *m )
+{
+    _ASSERTE( m );
+    *m = glm::translate( glm::mat4( 1 ), pt );
 }

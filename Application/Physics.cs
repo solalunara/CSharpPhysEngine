@@ -14,7 +14,7 @@ namespace PhysEngine
         public static readonly Vector Default_Gravity = new Vector( 0, -10, 0 );
         public static readonly Vector Default_Coeffs = new Vector( 1, 1, 1 );
 
-        public PhysicsObject( EHandle LinkedEnt, Vector Gravity, Vector AirDragCoeffs, float Mass, float RotInertia )
+        public PhysicsObject( BaseEntity LinkedEnt, Vector Gravity, Vector AirDragCoeffs, float Mass, float RotInertia )
         {
             this.LinkedEnt = LinkedEnt;
             this.Gravity = Gravity;
@@ -25,7 +25,7 @@ namespace PhysEngine
             this.BaseVelocity = new Vector();
         }
 
-        public EHandle LinkedEnt;
+        public BaseEntity LinkedEnt;
         public Vector Gravity;
         public Vector NetForce;
         public Vector AirDragCoeffs;
@@ -37,9 +37,9 @@ namespace PhysEngine
         public float Mass;
 
         //collide a physics object with the world
-        public void Collide( EHandle OtherEnt )
+        public void Collide( BaseEntity OtherEnt )
         {
-            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.Transform.GetAbsPos() );
+            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() );
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -47,9 +47,10 @@ namespace PhysEngine
             //reflect the velocity about the normal of the collision plane
             Velocity -= 2.0f * Vector.Dot( Velocity, collisionplane.Normal ) * collisionplane.Normal;
 
-            Vector CollisionPoint = collisionplane.ClosestPointOnPlane( LinkedEnt.Transform.GetAbsPos() );
+            /*
+            Vector CollisionPoint = collisionplane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() );
             //anti-penetration
-            if ( LinkedEnt.ent.AABB.TestCollisionPoint( CollisionPoint, LinkedEnt.Transform.GetAbsPos() ) )
+            if ( LinkedEnt.AABB.TestCollisionPoint( CollisionPoint, LinkedEnt.GetAbsOrigin() ) )
             {
                 Vector Mins = LinkedEnt.ent.AABB.mins;
                 Vector Maxs = LinkedEnt.ent.AABB.maxs;
@@ -66,6 +67,7 @@ namespace PhysEngine
                 }
                 LinkedEnt.Transform.SetAbsPos( CollisionPoint );
             }
+            */
 
             for ( int i = 0; i < 3; ++i )
             {
@@ -76,8 +78,8 @@ namespace PhysEngine
                 }
             }
 
-            if ( EHandle.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
-                LinkedEnt.Transform.SetAbsPos( LinkedEnt.Transform.GetAbsPos() + collisionplane.Normal / 100 );
+            if ( BaseEntity.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
+                LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + collisionplane.Normal / 100 );
         }
 
 
@@ -88,13 +90,13 @@ namespace PhysEngine
 
             for( int i = 0; i < world.WorldEnts.Count; ++i )
             {
-                EHandle WorldEnt = world.WorldEnts[ i ];
+                BaseEntity WorldEnt = world.WorldEnts[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
                 if ( world.GetEntPhysics( WorldEnt ) != null )
                     continue; //physics objects have their own collision resolution
 
-                if ( EHandle.TestCollision( WorldEnt, LinkedEnt ) ) //if (collision)
+                if ( BaseEntity.TestCollision( WorldEnt, LinkedEnt ) ) //if (collision)
                 {
                     Collide( WorldEnt );
                 }
@@ -109,13 +111,13 @@ namespace PhysEngine
             DragSimulate( dt, Collision );
 
             Velocity += NetForce / Mass * dt;
-            LinkedEnt.Transform.SetAbsPos( LinkedEnt.Transform.GetAbsPos() + Velocity * dt );
+            LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + Velocity * dt );
 
             AngularMomentum += Torque * dt;
             if ( AngularMomentum != new Vector() ) //only do if non-zero
             {
-                Util.MakeRotMatrix( AngularMomentum.Length() / RotInertia, LinkedEnt.Transform.InverseTransformDirection( AngularMomentum.Normalized() ), out Matrix rot );
-                LinkedEnt.Transform.SetAbsRot( Util.MultiplyMatrix( LinkedEnt.Transform.GetAbsRot(), rot ) );
+                Matrix.GLMRotMatrix( AngularMomentum.Length() / RotInertia, LinkedEnt.InverseTransformDirection( AngularMomentum.Normalized() ), out Matrix rot );
+                LinkedEnt.SetAbsRot( rot * LinkedEnt.GetAbsRot() );
             }
 
             //reset the net force each frame
@@ -132,21 +134,22 @@ namespace PhysEngine
             Collision = false;
             TopCollision = false;
 
-            if ( LinkedEnt.ent.FaceLength == 0 )
+            if ( LinkedEnt.Meshes.Length == 0 )
                 return;
 
             for ( int i = 0; i < world.WorldEnts.Count; ++i )
             {
-                EHandle WorldEnt = world.WorldEnts[ i ];
+                BaseEntity WorldEnt = world.WorldEnts[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
+                if ( WorldEnt.Meshes.Length == 0 )
+                    continue; //nothing to collide with
 
-                if ( EHandle.TestCollision( WorldEnt, LinkedEnt ) )
+                if ( BaseEntity.TestCollision( WorldEnt, LinkedEnt ) )
                 {
                     Collision = true;
-                    if ( WorldEnt == world.player.Head || WorldEnt == world.player.Body.LinkedEnt )
-                        continue; //player doesn't have faces, so don't check for collision normal
-                    Vector vCollisionNormal = WorldEnt.GetCollisionNormal( LinkedEnt.Transform.GetAbsPos() );
+
+                    Vector vCollisionNormal = WorldEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() ).Normal;
                     if ( vCollisionNormal.y > .9f )
                         TopCollision = true;
                 }
@@ -173,6 +176,7 @@ namespace PhysEngine
             if ( GroundFriction )
                 Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
 
+            /*
             Vector Areas = new Vector();
             Vector Maxs = LinkedEnt.ent.AABB.maxs;
             Vector Mins = LinkedEnt.ent.AABB.mins;
@@ -185,6 +189,7 @@ namespace PhysEngine
                 Drag[ i ] += .5f * AirDensity * Velocity[ i ] * Velocity[ i ] * AirDragCoeffs[ i ] * Areas[ i ] * iWindSign;
             }
             NetForce += Drag;
+            */
 
             AngularMomentum *= (float) Math.Pow( .999f, 1/dt );
         }
@@ -196,7 +201,7 @@ namespace PhysEngine
             {
                 for ( int j = i + 1; j < world.PhysicsObjects.Count; ++j )
                 {
-                    if ( EHandle.TestCollision( world.PhysicsObjects[ i ].LinkedEnt, world.PhysicsObjects[ j ].LinkedEnt ) )
+                    if ( BaseEntity.TestCollision( world.PhysicsObjects[ i ].LinkedEnt, world.PhysicsObjects[ j ].LinkedEnt ) )
                     {
                         PhysicsObject[] pair = { world.PhysicsObjects[ i ], world.PhysicsObjects[ j ] };
                         Pairs.Add( pair );
@@ -211,7 +216,7 @@ namespace PhysEngine
             float m2 = Obj2.Mass;
 
             //a normal vector of collision pointing out of obj1
-            Plane CollisionPlane = Obj1.LinkedEnt.GetCollisionPlane( Obj2.LinkedEnt.Transform.GetAbsPos() );
+            Plane CollisionPlane = Obj1.LinkedEnt.GetCollisionPlane( Obj2.LinkedEnt.GetAbsOrigin() );
             Vector Normal = CollisionPlane.Normal;
 
             Vector Vel1 = ( Obj1.Velocity * ( m1 - m2 ) / ( m1 + m2 ) ) + ( Obj2.Velocity * 2 * m2 / ( m1 + m2 ) );
@@ -226,13 +231,13 @@ namespace PhysEngine
             Obj1.NetForce += Obj2Force;
             Obj2.NetForce -= Obj2Force;
 
-            Vector vLine = Obj1.LinkedEnt.Transform.GetAbsPos() - Obj2.LinkedEnt.Transform.GetAbsPos();
-            Vector ptStart = Obj2.LinkedEnt.Transform.GetAbsPos();
-            Vector ptOnPlane = CollisionPlane.ClosestPointOnPlane( Obj2.LinkedEnt.Transform.GetAbsPos() );
+            Vector vLine = Obj1.LinkedEnt.GetAbsOrigin() - Obj2.LinkedEnt.GetAbsOrigin();
+            Vector ptStart = Obj2.LinkedEnt.GetAbsOrigin();
+            Vector ptOnPlane = CollisionPlane.ClosestPointOnPlane( Obj2.LinkedEnt.GetAbsOrigin() );
             Vector CollisionPoint = Vector.Dot( ( ptOnPlane - ptStart ), Normal ) / Vector.Dot( vLine, Normal ) * vLine + ptStart;
 
-            Vector Radius1 = CollisionPoint - Obj1.LinkedEnt.Transform.GetAbsPos();
-            Vector Radius2 = CollisionPoint - Obj2.LinkedEnt.Transform.GetAbsPos();
+            Vector Radius1 = CollisionPoint - Obj1.LinkedEnt.GetAbsOrigin();
+            Vector Radius2 = CollisionPoint - Obj2.LinkedEnt.GetAbsOrigin();
 
             if ( Obj1 != world.player.Body )
                 Obj1.Torque += Vector.Cross( Radius1, Obj1Force );
@@ -244,10 +249,10 @@ namespace PhysEngine
             Obj2.Velocity += Normal;
 
             //greenberg's second law (if two objects are penetrating, make it stop)
-            if ( EHandle.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
+            if ( BaseEntity.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
             {
-                Obj1.LinkedEnt.Transform.SetAbsPos( Obj1.LinkedEnt.Transform.GetAbsPos() - Normal / 100 );
-                Obj2.LinkedEnt.Transform.SetAbsPos( Obj2.LinkedEnt.Transform.GetAbsPos() + Normal / 100 );
+                Obj1.LinkedEnt.SetAbsOrigin( Obj1.LinkedEnt.GetAbsOrigin() - Normal / 100 );
+                Obj2.LinkedEnt.SetAbsOrigin( Obj2.LinkedEnt.GetAbsOrigin() + Normal / 100 );
             }
         }
     }

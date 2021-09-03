@@ -2,8 +2,6 @@
 #include "mainclass.h"
 #include "CRTDBG.h"
 #include "Texture.h"
-#include "Transform.h"
-#include "BaseFace.h"
 #include <vector>
 
 #define INITIAL_WIDTH 1000
@@ -68,44 +66,23 @@ void Init( intptr_t *window )
 	glDepthFunc( GL_LESS );
 }
 
-void SetLights( Shader shader, Light *PointLights, int LightLength )
-{
-	UseShader( shader );
-
-	std::vector<glm::vec4> LightLocations;
-	for ( int i = 0; i < LightLength; ++i )
-		LightLocations.push_back( PointLights[ i ].Position );
-
-	std::vector<glm::vec4> LightColors;
-	for ( int i = 0; i < LightLength; ++i )
-		LightColors.push_back( PointLights[ i ].Color );
-
-	std::vector<float> LightIntensities;
-	for ( int i = 0; i < LightLength; ++i )
-		LightIntensities.push_back( PointLights[ i ].Intensity );
-
-	SetVec4Array( shader, "PointLights", LightLocations );
-	SetVec4Array( shader, "LightColors", LightColors );
-	SetFloatArray( shader, "LightIntensities", LightIntensities );
-}
-void SetAmbientLight( Shader shader, float value )
-{
-	UseShader( shader );
-
-	SetFloat( shader, "AmbientLight", value );
-}
-
 void StartFrame( intptr_t window )
 {
 	glClearColor( .1f, .2f, .7f, 1.0f );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
-void SetRenderValues( Shader shader, Transform t )
+void SetCameraValues( Shader shader, glm::mat4 perspective, glm::mat4 WorldToThis )
 {
 	UseShader( shader );
-	SetMatrix( shader, "transform", ent.transform.m_ThisToWorld );
+	SetMatrix( shader, "Perspective", perspective );
+	SetMatrix( shader, "CameraTransform", WorldToThis );
 }
-void RenderFace( intptr_t window, Shader shader, BaseFace face )
+void SetRenderValues( Shader shader, glm::mat4 m )
+{
+	UseShader( shader );
+	SetMatrix( shader, "transform", m );
+}
+void RenderMesh( intptr_t window, Shader shader, FaceMesh face )
 {
 	_ASSERTE( face.texture.bInitialized );
 	glBindVertexArray( face.VAO );
@@ -163,12 +140,6 @@ void ShowMouse( intptr_t window )
 	glfwSetInputMode( (GLFWwindow *) window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
 }
 
-void MakeRotMatrix( float degrees, glm::vec3 axis, glm::mat4 *pMat )
-{
-	_ASSERTE( pMat );
-	*pMat = glm::rotate( glm::mat4( 1 ), glm::radians( degrees ), axis );
-}
-
 void SetInputCallback( intptr_t fn )
 {
 	Callback = (fptr) fn;
@@ -176,13 +147,4 @@ void SetInputCallback( intptr_t fn )
 void SetWindowMoveCallback( intptr_t fn )
 {
 	WindowMoveCallback = (fptrw) fn;
-}
-
-void InvertMatrix( glm::mat4 *matrix )
-{
-	*matrix = glm::inverse( *matrix );
-}
-void MultiplyVector( glm::mat4 matrix, glm::vec3 *vector )
-{
-	*vector = matrix * glm::vec4( *vector, 0.0f );
 }

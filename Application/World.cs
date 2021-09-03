@@ -11,7 +11,7 @@ namespace PhysEngine
 {
     public struct RayHitInfo
     {
-        public RayHitInfo( Vector ptHit, Vector vNormal, EHandle HitEnt )
+        public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt )
         {
             this.bHit = true;
             this.ptHit = ptHit;
@@ -21,21 +21,21 @@ namespace PhysEngine
         public bool bHit;
         public Vector ptHit;
         public Vector vNormal;
-        public EHandle HitEnt;
+        public BaseEntity HitEnt;
     }
     public class World
     {
         public World()
         {
-            WorldEnts = new List<EHandle>();
+            WorldEnts = new List<BaseEntity>();
             PhysicsObjects = new List<PhysicsObject>();
             Textures = new List<TextureHandle>();
         }
-        public World( params EHandle[] Ents )
+        public World( params BaseEntity[] Ents )
         {
-            WorldEnts = new List<EHandle>( Ents );
+            WorldEnts = new List<BaseEntity>( Ents );
         }
-        public List<EHandle> WorldEnts;
+        public List<BaseEntity> WorldEnts;
         public List<PhysicsObject> PhysicsObjects;
         public List<TextureHandle> Textures;
 
@@ -54,8 +54,8 @@ namespace PhysEngine
                     PhysicsObjects.Remove( _player.Body );
                     WorldEnts.Remove( _player.Body.LinkedEnt );
                     WorldEnts.Remove( _player.Head );
-                    _player.Body.LinkedEnt.ent.Close();
-                    _player.Head.ent.Close();
+                    _player.Body.LinkedEnt.Close();
+                    _player.Head.Close();
                 }
                 if ( !PhysicsObjects.Contains( value.Body ) )
                     Add( !WorldEnts.Contains( value.Body.LinkedEnt ), value.Body );
@@ -65,7 +65,7 @@ namespace PhysEngine
             }
         }
 
-        public PhysicsObject GetEntPhysics( EHandle ent )
+        public PhysicsObject GetEntPhysics( BaseEntity ent )
         {
             for ( int i = 0; i < PhysicsObjects.Count; ++i )
             {
@@ -75,14 +75,6 @@ namespace PhysEngine
             return null;
         }
 
-
-        public BaseEntity[] GetEntList()
-        {
-            BaseEntity[] ret = new BaseEntity[ WorldEnts.Count ];
-            for ( int i = 0; i < ret.Length; ++i )
-                ret[ i ] = WorldEnts[ i ].ent;
-            return ret;
-        }
         public int TextureIndex( string tex )
         {
             int index = -1;
@@ -104,7 +96,7 @@ namespace PhysEngine
             return index;
         }
 
-        public void Add( params EHandle[] ent )
+        public void Add( params BaseEntity[] ent )
         {
             WorldEnts.AddRange( ent );
         }
@@ -126,7 +118,7 @@ namespace PhysEngine
         public void Close()
         {
             for ( int i = 0; i < WorldEnts.Count; ++i )
-                WorldEnts[ i ].ent.Close();
+                WorldEnts[ i ].Close();
             for ( int i = 0; i < Textures.Count; ++i )
                 Textures[ i ].texture.Close();
         }
@@ -163,7 +155,7 @@ namespace PhysEngine
                 p.Simulate( dt, this );
         }
 
-
+        /*
         public void ToFile( string filepath )
         {
             FileStream fs = new FileStream( filepath, FileMode.Create );
@@ -338,5 +330,6 @@ namespace PhysEngine
 
             return w;
         }
+        */
     }
 }

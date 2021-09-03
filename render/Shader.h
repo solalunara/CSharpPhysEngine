@@ -19,7 +19,6 @@
 #include <sstream>
 #include <vector>
 
-#pragma once
 struct RENDER_API Shader
 {
 	Shader( const char *VertPath, const char *FragPath );
