@@ -69,16 +69,18 @@ namespace PhysEngine
             }
             */
 
+            
             for ( int i = 0; i < 3; ++i )
             {
                 if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
                 {
-                    Velocity[ i ] = 0;
+                    Velocity[ i ] = 0.0f;
                     break;
                 }
             }
+            
 
-            if ( BaseEntity.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
+            if ( Collision.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
                 LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + collisionplane.Normal / 100 );
         }
 
@@ -96,19 +98,19 @@ namespace PhysEngine
                 if ( world.GetEntPhysics( WorldEnt ) != null )
                     continue; //physics objects have their own collision resolution
 
-                if ( BaseEntity.TestCollision( WorldEnt, LinkedEnt ) ) //if (collision)
+                if ( Collision.TestCollision( WorldEnt, LinkedEnt ) ) //if (collision)
                 {
                     Collide( WorldEnt );
                 }
             }
 
-            TestCollision( world, out bool Collision, out bool TopCollision );
+            TestCollision( world, out bool bCollision, out bool TopCollision );
             //if there is a (top) collision, a normal force acts on the object that cancels the gravitational force
             //this is mathematically equivalent to not doing the gravitational force (for simple newtonian mechanics)
             if ( !TopCollision )
                 NetForce += Gravity * Mass;
 
-            DragSimulate( dt, Collision );
+            DragSimulate( dt, bCollision );
 
             Velocity += NetForce / Mass * dt;
             LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + Velocity * dt );
@@ -116,7 +118,7 @@ namespace PhysEngine
             AngularMomentum += Torque * dt;
             if ( AngularMomentum != new Vector() ) //only do if non-zero
             {
-                Matrix.GLMRotMatrix( AngularMomentum.Length() / RotInertia, LinkedEnt.InverseTransformDirection( AngularMomentum.Normalized() ), out Matrix rot );
+                Matrix.GLMRotMatrix( AngularMomentum.Length() / RotInertia, AngularMomentum.Normalized(), out Matrix rot );
                 LinkedEnt.SetAbsRot( rot * LinkedEnt.GetAbsRot() );
             }
 
@@ -129,9 +131,9 @@ namespace PhysEngine
         }
 
         //checks to see if this entity should collide with any entities in the world given it's current position
-        public void TestCollision( World world, out bool Collision, out bool TopCollision )
+        public void TestCollision( World world, out bool bCollision, out bool TopCollision )
         {
-            Collision = false;
+            bCollision = false;
             TopCollision = false;
 
             if ( LinkedEnt.Meshes.Length == 0 )
@@ -145,9 +147,9 @@ namespace PhysEngine
                 if ( WorldEnt.Meshes.Length == 0 )
                     continue; //nothing to collide with
 
-                if ( BaseEntity.TestCollision( WorldEnt, LinkedEnt ) )
+                if ( Collision.TestCollision( WorldEnt, LinkedEnt ) )
                 {
-                    Collision = true;
+                    bCollision = true;
 
                     Vector vCollisionNormal = WorldEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() ).Normal;
                     if ( vCollisionNormal.y > .9f )
@@ -176,20 +178,24 @@ namespace PhysEngine
             if ( GroundFriction )
                 Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
 
-            /*
-            Vector Areas = new Vector();
-            Vector Maxs = LinkedEnt.ent.AABB.maxs;
-            Vector Mins = LinkedEnt.ent.AABB.mins;
-            Areas.x = ( Maxs.y - Mins.y ) * ( Maxs.z - Mins.z );
-            Areas.y = ( Maxs.x - Mins.x ) * ( Maxs.z - Mins.z );
-            Areas.z = ( Maxs.x - Mins.x ) * ( Maxs.y - Mins.y );
-            for ( int i = 0; i < 3; ++i )
+            if ( LinkedEnt.GetType() == typeof( BoxEnt ) )
             {
-                int iWindSign = WindDir[ i ] > 0 ? 1 : -1;
-                Drag[ i ] += .5f * AirDensity * Velocity[ i ] * Velocity[ i ] * AirDragCoeffs[ i ] * Areas[ i ] * iWindSign;
+                BoxEnt box = (BoxEnt)LinkedEnt;
+                Vector Areas = new Vector();
+                Vector Maxs = box.AABB.maxs;
+                Vector Mins = box.AABB.mins;
+                Areas.x = (Maxs.y - Mins.y) * (Maxs.z - Mins.z);
+                Areas.y = (Maxs.x - Mins.x) * (Maxs.z - Mins.z);
+                Areas.z = (Maxs.x - Mins.x) * (Maxs.y - Mins.y);
+                for (int i = 0; i < 3; ++i)
+                {
+                    int iWindSign = WindDir[i] > 0 ? 1 : -1;
+                    Drag[i] += .5f * AirDensity * Velocity[i] * Velocity[i] * AirDragCoeffs[i] * Areas[i] * iWindSign;
+                }
             }
+            
+            
             NetForce += Drag;
-            */
 
             AngularMomentum *= (float) Math.Pow( .999f, 1/dt );
         }
@@ -201,7 +207,7 @@ namespace PhysEngine
             {
                 for ( int j = i + 1; j < world.PhysicsObjects.Count; ++j )
                 {
-                    if ( BaseEntity.TestCollision( world.PhysicsObjects[ i ].LinkedEnt, world.PhysicsObjects[ j ].LinkedEnt ) )
+                    if ( Collision.TestCollision( world.PhysicsObjects[ i ].LinkedEnt, world.PhysicsObjects[ j ].LinkedEnt ) )
                     {
                         PhysicsObject[] pair = { world.PhysicsObjects[ i ], world.PhysicsObjects[ j ] };
                         Pairs.Add( pair );
@@ -249,7 +255,7 @@ namespace PhysEngine
             Obj2.Velocity += Normal;
 
             //greenberg's second law (if two objects are penetrating, make it stop)
-            if ( BaseEntity.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
+            if ( Collision.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
             {
                 Obj1.LinkedEnt.SetAbsOrigin( Obj1.LinkedEnt.GetAbsOrigin() - Normal / 100 );
                 Obj2.LinkedEnt.SetAbsOrigin( Obj2.LinkedEnt.GetAbsOrigin() + Normal / 100 );

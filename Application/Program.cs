@@ -73,6 +73,7 @@ namespace PhysEngine
                 Console.WriteLine( "Attempting to create from file " + args[ 0 ] + "..." );
                 try
                 {
+                    throw new NotImplementedException();
                     //world = World.FromFile( args[ 0 ] );
                 }
                 catch ( Exception e )
@@ -80,7 +81,6 @@ namespace PhysEngine
                     Console.WriteLine( "Failed to create map from file: \n" + e + "\nThis is probably an indication of a corrupted world file." );
                     bMakeNewMap = true;
                 }
-                world.player.Perspective = persp;
             }
             if ( bMakeNewMap )
             {
@@ -88,10 +88,12 @@ namespace PhysEngine
                 world.Add
                 (
                     new TextureHandle( DirName + "/Textures/dirt.png" ),
-                    new TextureHandle( DirName + "/Textures/grass.png" )
+                    new TextureHandle( DirName + "/Textures/grass.png" ),
+                    new TextureHandle( DirName + "/Textures/dirtext.png" )
                 );
                 Texture[] dirt = { world.Textures[ 0 ].texture };
                 Texture[] grass = { world.Textures[ 1 ].texture };
+                Texture[] dirtext = { world.Textures[ 2 ].texture };
                 world.player = new Player( persp, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
                 world.Add
                 (
