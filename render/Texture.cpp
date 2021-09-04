@@ -33,9 +33,14 @@ Texture::Texture( const char *FilePath, GLenum Unit, GLenum WrapStyle, GLenum Fi
 	_ASSERTE( data );
 
 	ID = 0;
+	GLuint Format;
+	if ( nrChannels == 3 )
+		Format = GL_RGB;
+	else
+		Format = GL_RGBA;
 	glGenTextures( 1, &ID );
 	glBindTexture( GL_TEXTURE_2D, ID );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+	glTexImage2D( GL_TEXTURE_2D, 0, Format, width, height, 0, Format, GL_UNSIGNED_BYTE, data );
 	glGenerateMipmap( GL_TEXTURE_2D );
 	stbi_image_free( data );
 

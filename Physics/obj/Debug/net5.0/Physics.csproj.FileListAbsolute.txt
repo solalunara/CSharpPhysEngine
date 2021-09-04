@@ -1,0 +1,12 @@
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\bin\Debug\net5.0\Physics.deps.json
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\bin\Debug\net5.0\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\bin\Debug\net5.0\ref\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\bin\Debug\net5.0\Physics.pdb
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.csproj.AssemblyReference.cache
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.AssemblyInfoInputs.cache
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.AssemblyInfo.cs
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.csproj.CoreCompileInputs.cache
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\ref\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net5.0\Physics.pdb

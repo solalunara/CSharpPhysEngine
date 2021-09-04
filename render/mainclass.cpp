@@ -84,6 +84,7 @@ void SetRenderValues( Shader shader, glm::mat4 m )
 }
 void RenderMesh( intptr_t window, Shader shader, FaceMesh face )
 {
+	UseShader( shader );
 	_ASSERTE( face.texture.bInitialized );
 	glBindVertexArray( face.VAO );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, face.EBO );

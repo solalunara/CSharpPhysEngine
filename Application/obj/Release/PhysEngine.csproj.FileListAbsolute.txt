@@ -1,7 +1,0 @@
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\bin\Release\PhysEngine.exe.config
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\bin\Release\PhysEngine.exe
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\bin\Release\PhysEngine.pdb
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\obj\Release\PhysEngine.csproj.AssemblyReference.cache
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\obj\Release\PhysEngine.csproj.CoreCompileInputs.cache
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\obj\Release\PhysEngine.exe
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Application\obj\Release\PhysEngine.pdb

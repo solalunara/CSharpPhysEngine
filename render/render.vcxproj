@@ -105,7 +105,7 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\Application\bin\Debug"</Command>
+      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\PhysicsEngine\bin\Debug\net5.0"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,7 +127,7 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\Application\bin\Debug"</Command>
+      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\PhysicsEngine\bin\Debug\net5.0"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -147,7 +147,7 @@
       <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\Application\bin\Debug"</Command>
+      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\PhysicsEngine\bin\Debug\net5.0"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,7 +171,7 @@
       <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\Application\bin\Debug"</Command>
+      <Command>xcopy /y /d "$(OutDir)\render.dll" "$(SolutionDir)\PhysicsEngine\bin\Debug\net5.0"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -200,12 +200,6 @@
     </ClCompile>
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Application\bin\Debug\Shaders\FragmentShader.frag" />
-    <None Include="..\Application\bin\Debug\Shaders\GUIFrag.frag" />
-    <None Include="..\Application\bin\Debug\Shaders\GUIVert.vert" />
-    <None Include="..\Application\bin\Debug\Shaders\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
