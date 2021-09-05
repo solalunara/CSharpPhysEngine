@@ -1,0 +1,56 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RenderInterface
+{
+    // Interfaces for projects that don't include PhysicsEngine
+    public interface IEntHandle
+    {
+        void Close();
+
+        void SetLocalOrigin( Vector pt );
+        void SetLocalRot( Matrix r );
+        void SetLocalScale( Vector s );
+        Vector GetLocalOrigin();
+        Matrix GetLocalRot();
+        Vector GetLocalScale();
+
+        void SetAbsOrigin( Vector pt );
+        void SetAbsRot( Matrix r );
+        Vector GetAbsOrigin();
+        Matrix GetAbsRot();
+
+        Plane GetCollisionPlane( Vector pt );
+
+        Vector[] GetVerts();
+        Vector[] GetWorldVerts();
+
+
+        Vector TransformDirection( Vector dir );
+        Vector TransformPoint( Vector pt );
+        Vector InverseTransformDirection( Vector dir );
+        Vector InverseTransformPoint( Vector pt );
+
+        FaceMesh[] Meshes
+        {
+            get;
+            set;
+        }
+    }
+    public interface IWorldHandle
+    {
+        IEntHandle[] GetEntList();
+        IPhysHandle[] GetPhysObjList();
+    }
+    public interface IPhysHandle
+    {
+        IEntHandle LinkedEnt
+        {
+            get;
+            set;
+        }
+    }
+}

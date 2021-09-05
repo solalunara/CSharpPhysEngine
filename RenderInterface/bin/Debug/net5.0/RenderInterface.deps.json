@@ -6,14 +6,6 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v5.0": {
-      "Physics/1.0.0": {
-        "dependencies": {
-          "RenderInterface": "1.0.0"
-        },
-        "runtime": {
-          "Physics.dll": {}
-        }
-      },
       "RenderInterface/1.0.0": {
         "runtime": {
           "RenderInterface.dll": {}
@@ -22,11 +14,6 @@
     }
   },
   "libraries": {
-    "Physics/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
     "RenderInterface/1.0.0": {
       "type": "project",
       "serviceable": false,

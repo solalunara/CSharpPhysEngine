@@ -17,3 +17,5 @@ C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\bin\Debug\net5.0\Physics.pdb
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net5.0\PhysicsEngine.csproj.AssemblyReference.cache
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net5.0\PhysicsEngine.csproj.CopyComplete
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\bin\Debug\net5.0\RenderInterface.dll
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\bin\Debug\net5.0\RenderInterface.pdb

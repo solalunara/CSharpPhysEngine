@@ -5,11 +5,24 @@
       "Physics/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v5.0",
+        "dependencies": {
+          "RenderInterface": "1.0.0"
+        },
         "compile": {
           "bin/placeholder/Physics.dll": {}
         },
         "runtime": {
           "bin/placeholder/Physics.dll": {}
+        }
+      },
+      "RenderInterface/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v5.0",
+        "compile": {
+          "bin/placeholder/RenderInterface.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/RenderInterface.dll": {}
         }
       }
     }
@@ -19,6 +32,11 @@
       "type": "project",
       "path": "../Physics/Physics.csproj",
       "msbuildProject": "../Physics/Physics.csproj"
+    },
+    "RenderInterface/1.0.0": {
+      "type": "project",
+      "path": "../RenderInterface/RenderInterface.csproj",
+      "msbuildProject": "../RenderInterface/RenderInterface.csproj"
     }
   },
   "projectFileDependencyGroups": {

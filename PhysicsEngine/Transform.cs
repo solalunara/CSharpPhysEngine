@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RenderInterface;
 
 namespace PhysEngine
 {
-    public class Transform
+    class Transform
     {
         public Transform( Vector Position, Vector Scale, Matrix Rotation )
         {
@@ -83,9 +84,7 @@ namespace PhysEngine
 
         public void Update()
         {
-            Matrix.GLMTranslate( Position, out Matrix PosMatrix );
-            Matrix.GLMScale( Scale, out Matrix SclMatrix );
-            ThisToWorld = PosMatrix * Rotation * SclMatrix;
+            ThisToWorld = Matrix.Translate( Position ) * Rotation * Matrix.Scale( Scale );
             WorldToThis = -ThisToWorld;
         }
 

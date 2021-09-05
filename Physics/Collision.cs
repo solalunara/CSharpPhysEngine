@@ -4,18 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PhysEngine
+namespace RenderInterface
 {
-    public struct CollisionInfo
-    {
-
-        public Vector CollisionNormal; //
-    }
     public class Collision
     {
-
-
-        public static bool TestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1, Vector offset2 )
+        public static bool TestCollision( IEntHandle ent1, IEntHandle ent2, Vector offset1, Vector offset2 )
         {
             Vector[] Points1 = ent1.GetWorldVerts();
             Vector[] Points2 = ent2.GetWorldVerts();
@@ -26,29 +19,29 @@ namespace PhysEngine
 
             for ( int i = 0; i < ent1.Meshes.Length; ++i )
             {
-                if ( !TestCollision( ent1.TransformDirection( ent1.Meshes[i].Normal ), Points1, Points2 ) )
+                if ( !TestCollision( ent1.TransformDirection( ent1.Meshes[ i ].Normal ), Points1, Points2 ) )
                     return false;
             }
             for ( int i = 0; i < ent2.Meshes.Length; ++i )
             {
-                if ( !TestCollision( ent2.TransformDirection( ent2.Meshes[i].Normal ), Points1, Points2 ) )
+                if ( !TestCollision( ent2.TransformDirection( ent2.Meshes[ i ].Normal ), Points1, Points2 ) )
                     return false;
             }
             return true;
         }
-        public static bool TestCollision( BaseEntity ent1, BaseEntity ent2 )
+        public static bool TestCollision( IEntHandle ent1, IEntHandle ent2 )
         {
-            BaseEntity[] ents = { ent1, ent2 };
+            IEntHandle[] ents = { ent1, ent2 };
 
-            Vector[] Points1 = ents[0].GetWorldVerts();
-            Vector[] Points2 = ents[1].GetWorldVerts();
+            Vector[] Points1 = ents[ 0 ].GetWorldVerts();
+            Vector[] Points2 = ents[ 1 ].GetWorldVerts();
 
             for ( int EntIndex = 0; EntIndex < 2; ++EntIndex )
             {
-                BaseEntity Ent = ents[EntIndex];
+                IEntHandle Ent = ents[ EntIndex ];
                 for ( int i = 0; i < Ent.Meshes.Length; ++i )
                 {
-                    if ( !TestCollision( Ent.TransformDirection( Ent.Meshes[i].Normal ), Points1, Points2 ) )
+                    if ( !TestCollision( Ent.TransformDirection( Ent.Meshes[ i ].Normal ), Points1, Points2 ) )
                         return false;
                 }
             }

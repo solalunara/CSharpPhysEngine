@@ -15,8 +15,16 @@
         }
       },
       "Physics/1.0.0": {
+        "dependencies": {
+          "RenderInterface": "1.0.0"
+        },
         "runtime": {
           "Physics.dll": {}
+        }
+      },
+      "RenderInterface/1.0.0": {
+        "runtime": {
+          "RenderInterface.dll": {}
         }
       }
     }
@@ -28,6 +36,11 @@
       "sha512": ""
     },
     "Physics/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "RenderInterface/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

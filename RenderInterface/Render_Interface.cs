@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace PhysEngine
+namespace RenderInterface
 {
     public class Renderer
     {
@@ -67,52 +67,7 @@ namespace PhysEngine
         }
     }
 
-    public class Player
-    {
-        public static readonly Vector EYE_CENTER_OFFSET = new(0, 0.5f, 0);
-        public static readonly BBox PLAYER_NORMAL_BBOX = new(new Vector(-.5f, -1.0f, -.5f), new Vector(.5f, 1.0f, .5f));
-        public static readonly BBox PLAYER_CROUCH_BBOX = new(new Vector(-.5f, -0.5f, -.5f), new Vector(.5f, 0.5f, .5f));
-        public static readonly Texture[] BLANK_TEXTURE = { new Texture() };
-        //depending on how the compiler works, this may cause a memory leak. Prob won't though
-        public static readonly FaceMesh[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ).Meshes;
-        public static readonly FaceMesh[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, BLANK_TEXTURE ).Meshes;
-        public const float PLAYER_MASS = 50.0f;
-        public const float PLAYER_ROTI = 1.0f;
-        public Player( Matrix Perspective, Vector Gravity, Vector Coeffs, float Mass, float RotI )
-        {
-            this.Perspective = Perspective;
-            _crouched = false;
-            Body = new PhysicsObject( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ), Gravity, Coeffs, Mass, RotI );
-            Head = new BaseEntity( new FaceMesh[ 0 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
-            {
-                Parent = Body.LinkedEnt
-            };
-            Head.SetLocalOrigin( EYE_CENTER_OFFSET );
-        }
-        private bool _crouched;
-        public Matrix Perspective;
-        public PhysicsObject Body;
-        public BaseEntity Head;
-        public BaseEntity HeldEnt;
-        public void Crouch()
-        {
-            if ( !_crouched )
-            {
-                _crouched = true;
-                Body.LinkedEnt.Meshes = PLAYER_CROUCH_FACES;
-                Head.SetLocalOrigin( new Vector() );
-            }
-        }
-        public void UnCrouch()
-        {
-            if ( _crouched )
-            {
-                _crouched = false;
-                Body.LinkedEnt.Meshes = PLAYER_NORMAL_FACES;
-                Head.SetLocalOrigin( EYE_CENTER_OFFSET );
-            }
-        }
-    }
+
 
     [StructLayout( LayoutKind.Sequential )]
     public struct FaceMesh
@@ -384,6 +339,17 @@ namespace PhysEngine
             return rot;
         }
 
+        public static Matrix Scale( Vector s )
+        {
+            GLMScale( s, out Matrix scale );
+            return scale;
+        }
+        public static Matrix Translate( Vector pt )
+        {
+            GLMTranslate( pt, out Matrix translation );
+            return translation;
+        }
+
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void GLMPerspective( float fov, float aspect, float nearclip, float farclip, out Matrix pMat );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -395,9 +361,9 @@ namespace PhysEngine
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void GLMInvertMatrix( ref Matrix matrix );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void GLMScale( Vector s, out Matrix scale );
+        private static extern void GLMScale( Vector s, out Matrix scale );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void GLMTranslate( Vector pt, out Matrix translation );
+        private static extern void GLMTranslate( Vector pt, out Matrix translation );
     }
 
 
@@ -510,82 +476,6 @@ namespace PhysEngine
         public Vector ClosestPointOnPlane( Vector pt )
         {
             return pt - DistanceFromPointToPlane( pt ) * Normal;
-        }
-    }
-
-
-    public class BBox
-    {
-        public BBox( Vector mins, Vector maxs )
-        {
-            this.mins = mins;
-            this.maxs = maxs;
-        }
-        public Vector mins;
-        public Vector maxs;
-
-        //member methods
-        public bool TestCollisionAABB( BBox bbox, Vector ptThis, Vector ptB2 )
-        {
-            Vector ptWorldMins1 = this.mins + ptThis;
-            Vector ptWorldMaxs1 = this.maxs + ptThis;
-            Vector ptWorldMins2 = bbox.mins + ptB2;
-            Vector ptWorldMaxs2 = bbox.maxs + ptB2;
-            bool bCollisionX = ptWorldMins1.x <= ptWorldMaxs2.x && ptWorldMaxs1.x >= ptWorldMins2.x;
-            bool bCollisionY = ptWorldMins1.y <= ptWorldMaxs2.y && ptWorldMaxs1.y >= ptWorldMins2.y;
-            bool bCollisionZ = ptWorldMins1.z <= ptWorldMaxs2.z && ptWorldMaxs1.z >= ptWorldMins2.z;
-            return bCollisionX && bCollisionY && bCollisionZ;
-        }
-        public bool TestCollisionPoint( Vector pt, Vector ptThis )
-        {
-            bool bShouldCollide = true;
-            for ( int i = 0; i < 3; ++i )
-                if ( !( pt[ i ] > mins[ i ] + ptThis[ i ] && pt[ i ] < maxs[ i ] + ptThis[ i ] ) )
-                    bShouldCollide = false;
-            return bShouldCollide;
-        }
-        public Plane GetCollisionPlane( Vector pt, Vector ptB )
-        {
-            Vector ptWorldMins = mins + ptB;
-            Vector ptWorldMaxs = maxs + ptB;
-
-            Plane[] planes =
-            {
-                new Plane( new Vector( 0, 0, 1 ), Vector.Dot( new Vector( 0, 0, 1 ), ptWorldMaxs ) ),
-                new(new Vector(0, 0, -1), Vector.Dot(new Vector(0, 0, -1), ptWorldMins)),
-                new Plane( new Vector( 0, 1, 0 ), Vector.Dot( new Vector( 0, 1, 0 ), ptWorldMaxs ) ),
-                new Plane( new Vector( 0,-1, 0 ), Vector.Dot( new Vector( 0,-1, 0 ), ptWorldMins ) ),
-                new Plane( new Vector( 1, 0, 0 ), Vector.Dot( new Vector( 1, 0, 0 ), ptWorldMaxs ) ),
-                new Plane( new Vector( -1, 0, 0 ), Vector.Dot( new Vector( -1, 0, 0 ), ptWorldMins ) ),
-            };
-
-            float[] fPlaneDists =
-            {
-                Vector.Dot( planes[ 0 ].Normal, pt ) - planes[ 0 ].Dist,
-                Vector.Dot( planes[ 1 ].Normal, pt ) - planes[ 1 ].Dist,
-                Vector.Dot( planes[ 2 ].Normal, pt ) - planes[ 2 ].Dist,
-                Vector.Dot( planes[ 3 ].Normal, pt ) - planes[ 3 ].Dist,
-                Vector.Dot( planes[ 4 ].Normal, pt ) - planes[ 4 ].Dist,
-                Vector.Dot( planes[ 5 ].Normal, pt ) - planes[ 5 ].Dist,
-            };
-
-            float fMaxDist = fPlaneDists[ 0 ];
-            int iMaxIndex = 0;
-            for ( int i = 0; i < 6; ++i )
-            {
-                if ( fPlaneDists[ i ] > fMaxDist )
-                {
-                    iMaxIndex = i;
-                    fMaxDist = fPlaneDists[ i ];
-                }
-            }
-
-            return planes[ iMaxIndex ];
-        }
-        public Vector GetCollisionNormal( Vector pt, Vector ptB )
-        {
-            Plane p = GetCollisionPlane( pt, ptB );
-            return p.Normal;
         }
     }
 

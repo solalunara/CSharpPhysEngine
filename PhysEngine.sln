@@ -5,9 +5,11 @@ VisualStudioVersion = 16.0.31605.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "render", "render\render.vcxproj", "{04D05156-5164-4EC4-9392-0F83E8592465}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Physics", "Physics\Physics.csproj", "{2F5C8B51-FAEB-4005-8292-2B3FAFC8CF5D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Physics", "Physics\Physics.csproj", "{2F5C8B51-FAEB-4005-8292-2B3FAFC8CF5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhysicsEngine", "PhysicsEngine\PhysicsEngine.csproj", "{533B2346-4CA9-440E-93F4-03C6E090322B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhysicsEngine", "PhysicsEngine\PhysicsEngine.csproj", "{533B2346-4CA9-440E-93F4-03C6E090322B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderInterface", "RenderInterface\RenderInterface.csproj", "{378E9E9F-578F-4B99-B09A-2D66D47D4414}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +55,18 @@ Global
 		{533B2346-4CA9-440E-93F4-03C6E090322B}.Release|x64.Build.0 = Release|Any CPU
 		{533B2346-4CA9-440E-93F4-03C6E090322B}.Release|x86.ActiveCfg = Release|Any CPU
 		{533B2346-4CA9-440E-93F4-03C6E090322B}.Release|x86.Build.0 = Release|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Debug|x64.Build.0 = Debug|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Debug|x86.Build.0 = Debug|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|Any CPU.Build.0 = Release|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x64.ActiveCfg = Release|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x64.Build.0 = Release|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x86.ActiveCfg = Release|Any CPU
+		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

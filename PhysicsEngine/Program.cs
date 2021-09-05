@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Reflection;
+using Physics;
+using RenderInterface;
 
 namespace PhysEngine
 {
@@ -83,8 +85,10 @@ namespace PhysEngine
             int[] CrosshairInds = { 0, 1, 3, 1, 2, 3 };
             FaceMesh CrosshairMesh = new(CrosshairVerts, CrosshairInds, new Texture(DirName + "/Textures/Crosshair.png"), new Vector(0, 0, 0));
 
-            
-            World world = new();
+
+            World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
+
+
             if ( !bMakeNewMap ) //load map from arg
             {
                 Console.WriteLine( "Attempting to create from file " + args[ 0 ] + "..." );
@@ -110,10 +114,10 @@ namespace PhysEngine
                 );
                 Texture[] dirt = { world.Textures[ 0 ].texture };
                 Texture[] grass = { world.Textures[ 1 ].texture };
-                world.player = new Player( persp, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
+                world.player = new Player( persp, PhysObj.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
                 world.Add
                 (
-                    true, new PhysicsObject( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 100 )
+                    new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 100, new() )
                 );
                 world.Add
                 (
@@ -149,9 +153,11 @@ namespace PhysEngine
                 if ( frametime > 1.0f )
                     frametime = 0; //most likely debugging
 
+                world.Simulator.SetPause( rtMech.HasFlag( RuntimeMechanics.PAUSED ) );
+
                 if ( !rtMech.HasFlag( RuntimeMechanics.PAUSED ) )
                 {
-                    PhysicsObject CamPhys = world.player.Body;
+                    PhysObj CamPhys = world.player.Body;
 
                     Mouse.HideMouse( window );
                     const float LookSpeed = 10.0f;
@@ -181,18 +187,16 @@ namespace PhysEngine
                     if ( ( MoveTracker & (uint) Move.MOVE_RIGHT ) != 0 )
                         Force += player.Body.LinkedEnt.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                     //Force.y = 0;
-                    CamPhys.NetForce += Force;
+                    CamPhys.AddForce( Force, 0 );
 
                     if ( ( MoveTracker & (uint) Move.MOVE_JUMP ) != 0 && TopCollision )
                     {
-                        CamPhys.Velocity.y = 5.0f;
+                        CamPhys.Momentum.y = 5.0f * CamPhys.Mass;
                     }
                     if ( CamPhys.Velocity.Length() > Max_Player_Speed && Collision )
                     {
                         CamPhys.Velocity = CamPhys.Velocity.Normalized() * Max_Player_Speed;
                     }
-
-                    world.Simulate( frametime );
 
                     if ( rtMech.HasFlag( RuntimeMechanics.SAVE ) )
                     {
@@ -284,7 +288,7 @@ namespace PhysEngine
                         Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt );
                         if ( hit.bHit || world.GetEntPhysics( hit.HitEnt ) == null )
-                            world.Add( false, new PhysicsObject( hit.HitEnt, PhysicsObject.Default_Gravity, PhysicsObject.Default_Coeffs, 25, 1 ) );
+                            world.Add( new PhysObj( hit.HitEnt, PhysObj.Default_Coeffs, 25, 1, new() ) );
                     }
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREE ) )
                     {
@@ -302,7 +306,7 @@ namespace PhysEngine
                             RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt );
                             if ( hit.bHit )
                             {
-                                PhysicsObject HitPhys = world.GetEntPhysics( hit.HitEnt );
+                                PhysObj HitPhys = world.GetEntPhysics( hit.HitEnt );
                                 if ( HitPhys != null )
                                     HitPhys.Velocity = new Vector();
                                 hit.HitEnt.Parent = player.Head;
@@ -318,7 +322,7 @@ namespace PhysEngine
                         RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt );
                         if ( hit.bHit )
                         {
-                            PhysicsObject HitPhys = world.GetEntPhysics( hit.HitEnt );
+                            PhysObj HitPhys = world.GetEntPhysics( hit.HitEnt );
                             if ( HitPhys != null )
                             {
                                 if ( HitPhys.AngularMomentum.y > 0 )

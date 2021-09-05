@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using Physics;
+using RenderInterface;
 
 namespace PhysEngine
 {
-    public struct RayHitInfo
+    struct RayHitInfo
     {
         public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt )
         {
@@ -23,22 +25,27 @@ namespace PhysEngine
         public Vector vNormal;
         public BaseEntity HitEnt;
     }
-    public class World
+    class World : IWorldHandle
     {
-        public World()
+        public World( Vector Gravity, float PhysSimTime )
         {
             WorldEnts = new List<BaseEntity>();
-            PhysicsObjects = new List<PhysicsObject>();
+            PhysicsObjects = new List<PhysObj>();
             Textures = new List<TextureHandle>();
+
+            Environment = new( Gravity );
+            Simulator = new( PhysSimTime, Environment, this );
         }
         public World( params BaseEntity[] Ents )
         {
             WorldEnts = new List<BaseEntity>( Ents );
         }
         public List<BaseEntity> WorldEnts;
-        public List<PhysicsObject> PhysicsObjects;
+        public List<PhysObj> PhysicsObjects;
         public List<TextureHandle> Textures;
 
+        public PhysicsEnvironment Environment;
+        public PhysicsSimulator Simulator;
 
         private Player _player;
         public Player player
@@ -52,20 +59,23 @@ namespace PhysEngine
                 if ( _player != null )
                 {
                     PhysicsObjects.Remove( _player.Body );
-                    WorldEnts.Remove( _player.Body.LinkedEnt );
+                    WorldEnts.Remove( (BaseEntity) _player.Body.LinkedEnt );
                     WorldEnts.Remove( _player.Head );
                     _player.Body.LinkedEnt.Close();
                     _player.Head.Close();
                 }
                 if ( !PhysicsObjects.Contains( value.Body ) )
-                    Add( !WorldEnts.Contains( value.Body.LinkedEnt ), value.Body );
+                    Add( value.Body );
                 if ( !WorldEnts.Contains( value.Head ) )
                     Add( value.Head );
                 _player = value;
             }
         }
 
-        public PhysicsObject GetEntPhysics( BaseEntity ent )
+        public IEntHandle[] GetEntList() => WorldEnts.ToArray();
+        public IPhysHandle[] GetPhysObjList() => PhysicsObjects.ToArray();
+
+        public PhysObj GetEntPhysics( BaseEntity ent )
         {
             for ( int i = 0; i < PhysicsObjects.Count; ++i )
             {
@@ -100,16 +110,17 @@ namespace PhysEngine
         {
             WorldEnts.AddRange( ent );
         }
-        public void Add( bool AddToWorld, params PhysicsObject[] pobjs )
+        public void Add( params PhysObj[] pobjs )
         {
-            if ( AddToWorld )
+            foreach ( PhysObj p in pobjs )
             {
-                for ( int i = 0; i < pobjs.Length; ++i )
+                if ( !WorldEnts.Contains( (BaseEntity) p.LinkedEnt ) )
                 {
-                    WorldEnts.Add( pobjs[ i ].LinkedEnt );
+                    WorldEnts.Add( (BaseEntity) p.LinkedEnt );
                 }
             }
             PhysicsObjects.AddRange( pobjs );
+            Environment.PObjs.AddRange( pobjs );
         }
         public void Add( params TextureHandle[] tex )
         {
@@ -143,16 +154,6 @@ namespace PhysEngine
                 --TraceFidelity;
             }
             return new RayHitInfo();
-        }
-        public void Simulate( float dt )
-        {
-            List<PhysicsObject[]> PhysCollisionPairs = PhysicsObject.GetCollisionPairs( this );
-            for ( int i = 0; i < PhysCollisionPairs.Count; ++i )
-            {
-                PhysicsObject.Collide( PhysCollisionPairs[ i ][ 0 ], PhysCollisionPairs[ i ][ 1 ], dt, this );
-            }
-            foreach ( PhysicsObject p in PhysicsObjects )
-                p.Simulate( dt, this );
         }
 
         /*
