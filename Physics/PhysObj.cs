@@ -52,6 +52,7 @@ namespace Physics
             get => AngularMomentum / RotInertia;
             set => AngularMomentum = value * RotInertia;
         }
+        internal Vector LastAngVelocity;
 
         internal Vector NetForce;
         public Vector Torque;
@@ -69,20 +70,36 @@ namespace Physics
         {
             NetForce += Force;
             Vector Radius = WorldPt - LinkedEnt.GetAbsOrigin();
+            Vector tr = Vector.Cross( Radius, Force );
             Torque += Vector.Cross( Radius, Force );
         }
 
         public void DragSimulate( bool GroundFriction, Vector Gravity )
         {
-            Vector Drag = new();
+            //Objects sometimes have a hard time coming to rest on a surface, because they'll keep alternating direction of rotation.
+            //Here we try to help those objects out a little bit by detecting their condition then rounding their angles to rest nicely on the surface.
+            if ( Vector.Dot( LastAngVelocity.Normalized(), AngularVelocity.Normalized() ) < -.75f )
+            {
+                AngularMomentum = new();
+                Vector QAngles = LinkedEnt.LocalTransform.QAngles;
+                for ( int i = 0; i < 3; ++i )
+                    QAngles[ i ] = MathF.Round( QAngles[ i ] );
+                LinkedEnt.LocalTransform.QAngles = QAngles;
+            }
+
             //if the object is almost stopped, force it to stop.
             //drag in this case commonly overshoots.
-            bool DoLinearDrag = true;
+            if ( AngularMomentum.Length() < 0.5f )
+            {
+                AngularMomentum = new();
+            }
             if ( Velocity.Length() < 0.1f )
             {
                 Velocity = new();
-                DoLinearDrag = false;
+                return;
             }
+
+            Vector Drag;
 
             //find the relative velocity through the air
             Vector ModVel = Velocity - AirVelocity;
@@ -104,25 +121,18 @@ namespace Physics
             float Area = EntNormal.Length() * 0.5f;
 
             //apply air drag
-            if ( DoLinearDrag )
-            {
-                Drag = .5f * AirDensity * -ModVel * ModVel.Length() * Area;
-                for ( int i = 0; i < 3; ++i )
-                    Drag[ i ] *= AirDragCoeffs[ i ];
-            }
+            Drag = .5f * AirDensity * -ModVel * ModVel.Length() * Area;
+            for ( int i = 0; i < 3; ++i )
+                Drag[ i ] *= AirDragCoeffs[ i ];
 
-            const float AirTorqueMultiplier = 1;
-            if ( AngularVelocity.Length() > 0.1f )
-            {
-                Torque -= MathF.Pow( Area, (float) 5 / 2 ) * AngularVelocity * AngularVelocity.Length() * AirDensity * AirTorqueMultiplier;
-            }
-            else
-            {
-                AngularMomentum = new();
-            }
+            //const float AirTorqueMultiplier = 0;
+            //if ( AngularVelocity.Length() > 0.01f )
+            //    Torque -= MathF.Pow( Area, (float) 5 / 2 ) * AngularVelocity * AngularVelocity.Length() * AirDensity * AirTorqueMultiplier;
+
+            
 
             //ground friction, only do on ground contact
-            if ( GroundFriction && DoLinearDrag )
+            if ( GroundFriction )
                 Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
 
             NetForce += Drag;
@@ -180,6 +190,10 @@ namespace Physics
 
                 CollisionPoint = CollisionPlane.ClosestPointOnPlane( CollisionPoint );
             }
+            else //no obvious point of contact
+            {
+                CollisionPoint = CollisionPlane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() );
+            }
 
             //solve penetration
             LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + CollisionPlane.Normal * -Dists.Min() );
@@ -187,26 +201,6 @@ namespace Physics
             Vector Force = Vector.Dot( -Gravity * Mass, CollisionPlane.Normal ) * CollisionPlane.Normal; 
             AddForceAtPoint( Force, CollisionPoint );
 
-            /*
-            //if velocity is already in the direction of the normal, don't reflect it
-            if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
-                return;
-
-            //reflect the velocity about the normal of the collision plane
-            Velocity -= 2.0f * Vector.Dot( Velocity, collisionplane.Normal ) * collisionplane.Normal;
-
-            for ( int i = 0; i < 3; ++i )
-            {
-                if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
-                {
-                    Momentum[ i ] = 0.0f;
-                    break;
-                }
-            }
-
-            if ( Collision.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
-                LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + collisionplane.Normal / 100 );
-            */
         }
 
         public void TestCollision( IWorldHandle world, out bool bCollision, out bool TopCollision )

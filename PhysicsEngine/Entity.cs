@@ -30,7 +30,9 @@ namespace PhysEngine
             get => _Meshes;
             set => _Meshes = value;
         }
-        public Transform LocalTransform;
+        private Transform _LocalTransform;
+        public ITransformHandle LocalTransform
+        { get => _LocalTransform; set => _LocalTransform = (Transform) value; }
 
         private BaseEntity _Parent;
         public IEntHandle Parent

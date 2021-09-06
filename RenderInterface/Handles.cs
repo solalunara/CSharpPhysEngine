@@ -48,8 +48,50 @@ namespace RenderInterface
             set;
         }
 
+        ITransformHandle LocalTransform
+        {
+            get;
+            set;
+        }
+
         bool TestCollision( Vector pt );
     }
+    public interface ITransformHandle
+    {
+        Matrix ThisToWorld
+        {
+            get;
+            set;
+        }
+        Matrix WorldToThis
+        {
+            get;
+            set;
+        }
+
+        Vector Position
+        {
+            get;
+            set;
+        }
+        Vector Scale
+        {
+            get;
+            set;
+        }
+        Matrix Rotation
+        {
+            get;
+            set;
+        }
+
+        Vector QAngles
+        {
+            get;
+            set;
+        }
+    }
+
     public interface IWorldHandle
     {
         IEntHandle[] GetEntList();

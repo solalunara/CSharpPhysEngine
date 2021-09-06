@@ -123,10 +123,11 @@ namespace Physics
                 p.Momentum += p.NetForce * dt;
                 p.LinkedEnt.SetAbsOrigin( p.LinkedEnt.GetAbsOrigin() + p.Velocity * dt );
 
+                p.LastAngVelocity = p.AngularVelocity;
                 p.AngularMomentum += p.Torque * dt;
                 if ( p.AngularVelocity.Length() > 0.1f )
                 {
-                    p.LinkedEnt.SetAbsRot( Matrix.RotMatrix( p.AngularVelocity.Length() * 180 / MathF.PI, p.AngularMomentum.Normalized() ) * p.LinkedEnt.GetAbsRot() );
+                    p.LinkedEnt.SetAbsRot( Matrix.RotMatrix( p.AngularVelocity.Length() * dt * 180 / MathF.PI, p.AngularMomentum.Normalized() ) * p.LinkedEnt.GetAbsRot() );
                 }
 
 

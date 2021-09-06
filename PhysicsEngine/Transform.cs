@@ -7,7 +7,7 @@ using RenderInterface;
 
 namespace PhysEngine
 {
-    class Transform
+    class Transform : ITransformHandle
     {
         public Transform( Vector Position, Vector Scale, Matrix Rotation )
         {
@@ -16,8 +16,10 @@ namespace PhysEngine
             this._Rotation = Rotation;
             Update();
         }
-        public Matrix ThisToWorld;
-        public Matrix WorldToThis;
+        private Matrix _ThisToWorld;
+        public Matrix ThisToWorld { get => _ThisToWorld; set => _ThisToWorld = value; }
+        private Matrix _WorldToThis;
+        public Matrix WorldToThis { get => _WorldToThis; set => _WorldToThis = value; }
 
         private Vector _Position;
         public Vector Position
@@ -59,21 +61,21 @@ namespace PhysEngine
                 Vector angles = new();
                 if ( Rotation.Columns[ 0 ][ 1 ] > 0.998 )
                 { // singularity at north pole
-                    angles.y = (float) Math.Atan2( Rotation.Columns[ 2 ][ 0 ], Rotation.Columns[ 2 ][ 2 ] );
-                    angles.x = (float) Math.PI / 2;
+                    angles.y = MathF.Atan2( Rotation.Columns[ 2 ][ 0 ], Rotation.Columns[ 2 ][ 2 ] ) * 180 / MathF.PI;
+                    angles.x = 180;
                     angles.z = 0;
                     return angles;
                 }
                 if ( Rotation.Columns[ 0 ][ 1 ] < -0.998 )
                 { // singularity at south pole
-                    angles.y = (float) Math.Atan2( Rotation.Columns[ 2 ][ 0 ], Rotation.Columns[ 2 ][ 2 ] );
-                    angles.x = (float) -Math.PI / 2;
+                    angles.y = MathF.Atan2( Rotation.Columns[ 2 ][ 0 ], Rotation.Columns[ 2 ][ 2 ] ) * 180 / MathF.PI;
+                    angles.x = -180;
                     angles.z = 0;
                     return angles;
                 }
-                angles.x = (float) Math.Asin( Rotation.Columns[ 0 ][ 1 ] );
-                angles.y = (float) Math.Atan2( -Rotation.Columns[ 0 ][ 2 ], Rotation.Columns[ 0 ][ 0 ] );
-                angles.z = (float) Math.Atan2( -Rotation.Columns[ 2 ][ 1 ], Rotation.Columns[ 1 ][ 1 ] );
+                angles.x = MathF.Asin( Rotation.Columns[ 0 ][ 1 ] ) * 180 / MathF.PI;
+                angles.y = MathF.Atan2( -Rotation.Columns[ 0 ][ 2 ], Rotation.Columns[ 0 ][ 0 ] ) * 180 / MathF.PI;
+                angles.z = MathF.Atan2( -Rotation.Columns[ 2 ][ 1 ], Rotation.Columns[ 1 ][ 1 ] ) * 180 / MathF.PI;
                 return angles;
             }
             set

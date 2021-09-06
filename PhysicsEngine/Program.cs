@@ -117,7 +117,7 @@ namespace PhysEngine
                 world.player = new Player( persp, PhysObj.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
                 world.Add
                 (
-                    new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 1000, new() )
+                    new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 20, new() )
                 );
                 world.Add
                 (
