@@ -56,6 +56,12 @@ namespace PhysEngine
             }
             set
             {
+                if ( value == null )
+                {
+                    _player = null;
+                    return;
+                }
+
                 if ( _player != null )
                 {
                     PhysicsObjects.Remove( _player.Body );
@@ -75,7 +81,7 @@ namespace PhysEngine
         public IEntHandle[] GetEntList() => WorldEnts.ToArray();
         public IPhysHandle[] GetPhysObjList() => PhysicsObjects.ToArray();
 
-        public PhysObj GetEntPhysics( BaseEntity ent )
+        public IPhysHandle GetEntPhysics( IEntHandle ent )
         {
             for ( int i = 0; i < PhysicsObjects.Count; ++i )
             {
@@ -105,6 +111,8 @@ namespace PhysEngine
             }
             return index;
         }
+
+        public void Add() { }
 
         public void Add( params BaseEntity[] ent )
         {

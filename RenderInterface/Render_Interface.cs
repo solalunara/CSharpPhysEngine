@@ -24,8 +24,6 @@ namespace RenderInterface
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void SetRenderValues( Shader s, Matrix m );
 
-        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void RenderMesh( IntPtr window, Shader shader, FaceMesh face );
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void EndFrame( IntPtr window );
@@ -113,6 +111,8 @@ namespace RenderInterface
         public void Update() => UpdateMesh( ref this );
         public void Close() => DestructMesh( this );
 
+        public void Render( Shader shader ) => RenderMesh( shader, this );
+
         //api init
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitMesh( int VertLength, float[] vertices, int IndLength, int[] indices, Texture textureptr, Vector Normal, out FaceMesh face );
@@ -120,6 +120,9 @@ namespace RenderInterface
         private static extern void UpdateMesh( ref FaceMesh mesh );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void DestructMesh( FaceMesh mesh );
+
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void RenderMesh( Shader shader, FaceMesh face );
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Shader

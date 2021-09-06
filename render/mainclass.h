@@ -31,7 +31,7 @@ extern "C" RENDER_API void Init( intptr_t *window );
 extern "C" RENDER_API void StartFrame( intptr_t window );
 extern "C" RENDER_API void SetCameraValues( Shader shader, glm::mat4 perspective, glm::mat4 WorldToThis );
 extern "C" RENDER_API void SetRenderValues( Shader shader, glm::mat4 m );
-extern "C" RENDER_API void RenderMesh( intptr_t window, Shader shader, FaceMesh face );
+extern "C" RENDER_API void RenderMesh( Shader shader, FaceMesh face );
 extern "C" RENDER_API void EndFrame( intptr_t window );
 
 extern "C" RENDER_API void Terminate();

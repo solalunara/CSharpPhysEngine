@@ -23,6 +23,8 @@ namespace RenderInterface
         Vector GetAbsOrigin();
         Matrix GetAbsRot();
 
+        Matrix CalcEntMatrix();
+
         Plane GetCollisionPlane( Vector pt );
 
         Vector[] GetVerts();
@@ -39,11 +41,20 @@ namespace RenderInterface
             get;
             set;
         }
+
+        IEntHandle Parent
+        {
+            get;
+            set;
+        }
+
+        bool TestCollision( Vector pt );
     }
     public interface IWorldHandle
     {
         IEntHandle[] GetEntList();
         IPhysHandle[] GetPhysObjList();
+        IPhysHandle GetEntPhysics( IEntHandle ent );
     }
     public interface IPhysHandle
     {

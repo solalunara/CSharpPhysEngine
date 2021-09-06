@@ -41,7 +41,7 @@ namespace PhysEngine
         const float Movespeed_Air = 5.0f;
         const float Movespeed_Gnd = 20.0f;
 
-        const float Max_Player_Speed = 50.0f;
+        const float Max_Player_Speed = 5.0f;
 
         static void Main( string[] args )
         {
@@ -83,7 +83,7 @@ namespace PhysEngine
                 -.05f, 0.05f, 0.0f,     0.0f, 1.0f
             };
             int[] CrosshairInds = { 0, 1, 3, 1, 2, 3 };
-            FaceMesh CrosshairMesh = new(CrosshairVerts, CrosshairInds, new Texture(DirName + "/Textures/Crosshair.png"), new Vector(0, 0, 0));
+            FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, new Texture( DirName + "/Textures/Crosshair.png" ), new Vector( 0, 0, 0 ) );
 
 
             World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
@@ -117,7 +117,7 @@ namespace PhysEngine
                 world.player = new Player( persp, PhysObj.Default_Coeffs, Player.PLAYER_MASS, Player.PLAYER_ROTI );
                 world.Add
                 (
-                    new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 100, new() )
+                    new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 1000, new() )
                 );
                 world.Add
                 (
@@ -126,13 +126,16 @@ namespace PhysEngine
                     new BoxEnt( new Vector( 0, -12, -10 ), new Vector( 20, -11, 10 ), dirt ),
 
                     //grass walls
-                    new BoxEnt( new Vector( -10, -10, -12 ), new Vector( 0, 0, -10 ), grass ),
-                    new BoxEnt( new Vector( -10, -10, 10 ), new Vector( 0, 0, 12 ), grass ),
-                    new BoxEnt( new Vector( 0, -11, -12 ), new Vector( 20, 0, -10 ), grass ),
-                    new BoxEnt( new Vector( 0, -11, 10 ), new Vector( 20, 0, 12 ), grass ),
-                    new BoxEnt( new Vector( -12, -10, -10 ), new Vector( -10, 0, 10 ), grass ),
-                    new BoxEnt( new Vector( 10, -10, -10 ), new Vector( 12, 0, 10 ), grass ),
-                    new BoxEnt( new Vector( 20, -11, -10 ), new Vector( 22, 0, 10 ), grass )
+                    new BoxEnt( new Vector( -10, -10, -12 ), new Vector( 0, 5, -10 ), grass ),
+                    new BoxEnt( new Vector( -10, -10, 10 ), new Vector( 0, 5, 12 ), grass ),
+                    new BoxEnt( new Vector( 0, -11, -12 ), new Vector( 20, 5, -10 ), grass ),
+                    new BoxEnt( new Vector( 0, -11, 10 ), new Vector( 20, 5, 12 ), grass ),
+                    new BoxEnt( new Vector( -12, -10, -10 ), new Vector( -10, 5, 10 ), grass ),
+                    new BoxEnt( new Vector( 10, -10, -10 ), new Vector( 12, 5, 10 ), grass ),
+                    new BoxEnt( new Vector( 20, -11, -10 ), new Vector( 22, 5, 10 ), grass ),
+
+                    //dirt roof
+                    new BoxEnt( new Vector( -10, 5, -10 ), new Vector( 20, 6, 10 ), dirt )
                 );
             }
 
@@ -157,6 +160,7 @@ namespace PhysEngine
 
                 if ( !rtMech.HasFlag( RuntimeMechanics.PAUSED ) )
                 {
+
                     PhysObj CamPhys = world.player.Body;
 
                     Mouse.HideMouse( window );
@@ -306,7 +310,7 @@ namespace PhysEngine
                             RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt );
                             if ( hit.bHit )
                             {
-                                PhysObj HitPhys = world.GetEntPhysics( hit.HitEnt );
+                                PhysObj HitPhys = (PhysObj) world.GetEntPhysics( hit.HitEnt );
                                 if ( HitPhys != null )
                                     HitPhys.Velocity = new Vector();
                                 hit.HitEnt.Parent = player.Head;
@@ -322,7 +326,7 @@ namespace PhysEngine
                         RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt );
                         if ( hit.bHit )
                         {
-                            PhysObj HitPhys = world.GetEntPhysics( hit.HitEnt );
+                            PhysObj HitPhys = (PhysObj) world.GetEntPhysics( hit.HitEnt );
                             if ( HitPhys != null )
                             {
                                 if ( HitPhys.AngularMomentum.y > 0 )
@@ -336,6 +340,9 @@ namespace PhysEngine
                 else
                     Mouse.ShowMouse( window );
 
+
+                TimeSpan TimeDiff = DateTime.Now - world.Environment.LastSimTime;
+
                 Renderer.StartFrame( window );
                 Renderer.SetCameraValues( shader, player.Perspective, -player.Head.CalcEntMatrix() );
                 foreach ( BaseEntity b in world.WorldEnts )
@@ -346,10 +353,10 @@ namespace PhysEngine
                         if ( !m.texture.Initialized )
                             continue; //nothing to render
 
-                        Renderer.RenderMesh( window, shader, m );
+                        m.Render( shader );
                     }
                 }
-                Renderer.RenderMesh( window, GUI, CrosshairMesh );
+                CrosshairMesh.Render( GUI );
                 Renderer.EndFrame( window );
             }
             //world.ToFile( DirName + "/Worlds/world1.worldmap" );

@@ -33,7 +33,7 @@ namespace PhysEngine
         public Transform LocalTransform;
 
         private BaseEntity _Parent;
-        public BaseEntity Parent
+        public IEntHandle Parent
         {
             get
             {
@@ -43,7 +43,7 @@ namespace PhysEngine
             {
                 Vector AbsPos = GetAbsOrigin();
                 Matrix AbsRot = GetAbsRot();
-                _Parent = value;
+                _Parent = (BaseEntity) value;
                 SetAbsOrigin( AbsPos );
                 SetAbsRot( AbsRot );
             }
@@ -102,15 +102,11 @@ namespace PhysEngine
 
         public Plane GetCollisionPlane( Vector pt )
         {
-            if ( Meshes.Length == 0 )
-            {
-
-            }
             Plane[] planes = new Plane[ Meshes.Length ];
             for ( int i = 0; i < planes.Length; ++i )
             {
-                Vector WorldPoint = (Vector) ( CalcEntMatrix() * Meshes[ i ].GetVerts()[ 0 ] );
-                planes[ i ] = new Plane( Meshes[ i ].Normal, Vector.Dot( Meshes[ i ].Normal, WorldPoint ) );
+                Vector WorldPoint = TransformPoint( Meshes[ i ].GetVerts()[ 0 ] );
+                planes[ i ] = new Plane( TransformDirection( Meshes[ i ].Normal ), Vector.Dot( TransformDirection( Meshes[ i ].Normal ), WorldPoint ) );
             }
 
             float[] PlaneDists = new float[ planes.Length ];
@@ -258,15 +254,15 @@ namespace PhysEngine
 
     class Player
     {
-        public static readonly Vector EYE_CENTER_OFFSET = new(0, 0.5f, 0);
-        public static readonly BBox PLAYER_NORMAL_BBOX = new(new Vector(-.5f, -1.0f, -.5f), new Vector(.5f, 1.0f, .5f));
-        public static readonly BBox PLAYER_CROUCH_BBOX = new(new Vector(-.5f, -0.5f, -.5f), new Vector(.5f, 0.5f, .5f));
+        public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
+        public static readonly BBox PLAYER_NORMAL_BBOX = new( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
+        public static readonly BBox PLAYER_CROUCH_BBOX = new( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, 0.5f, .5f ) );
         public static readonly Texture[] BLANK_TEXTURE = { new Texture() };
         //depending on how the compiler works, this may cause a memory leak. Prob won't though
         public static readonly FaceMesh[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ).Meshes;
         public static readonly FaceMesh[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, BLANK_TEXTURE ).Meshes;
         public const float PLAYER_MASS = 50.0f;
-        public const float PLAYER_ROTI = 1.0f;
+        public const float PLAYER_ROTI = float.PositiveInfinity;
         public Player( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
         {
             this.Perspective = Perspective;

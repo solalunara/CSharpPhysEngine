@@ -82,7 +82,7 @@ void SetRenderValues( Shader shader, glm::mat4 m )
 	UseShader( shader );
 	SetMatrix( shader, "transform", m );
 }
-void RenderMesh( intptr_t window, Shader shader, FaceMesh face )
+void RenderMesh( Shader shader, FaceMesh face )
 {
 	UseShader( shader );
 	_ASSERTE( face.texture.bInitialized );

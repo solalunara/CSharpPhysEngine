@@ -65,16 +65,23 @@ namespace Physics
                 ForceChannels.Add( Channel );
             }
         }
+        public void AddForceAtPoint( Vector Force, Vector WorldPt )
+        {
+            NetForce += Force;
+            Vector Radius = WorldPt - LinkedEnt.GetAbsOrigin();
+            Torque += Vector.Cross( Radius, Force );
+        }
 
         public void DragSimulate( bool GroundFriction, Vector Gravity )
         {
-            Vector Drag;
+            Vector Drag = new();
             //if the object is almost stopped, force it to stop.
             //drag in this case commonly overshoots.
+            bool DoLinearDrag = true;
             if ( Velocity.Length() < 0.1f )
             {
                 Velocity = new();
-                return;
+                DoLinearDrag = false;
             }
 
             //find the relative velocity through the air
@@ -97,21 +104,90 @@ namespace Physics
             float Area = EntNormal.Length() * 0.5f;
 
             //apply air drag
-            Drag = .5f * AirDensity * -ModVel * ModVel.Length() * Area;
-            for ( int i = 0; i < 3; ++i )
-                Drag[ i ] *= AirDragCoeffs[ i ];
+            if ( DoLinearDrag )
+            {
+                Drag = .5f * AirDensity * -ModVel * ModVel.Length() * Area;
+                for ( int i = 0; i < 3; ++i )
+                    Drag[ i ] *= AirDragCoeffs[ i ];
+            }
+
+            const float AirTorqueMultiplier = 1;
+            if ( AngularVelocity.Length() > 0.1f )
+            {
+                Torque -= MathF.Pow( Area, (float) 5 / 2 ) * AngularVelocity * AngularVelocity.Length() * AirDensity * AirTorqueMultiplier;
+            }
+            else
+            {
+                AngularMomentum = new();
+            }
 
             //ground friction, only do on ground contact
-            if ( GroundFriction )
+            if ( GroundFriction && DoLinearDrag )
                 Drag += WindDir * Mass * Gravity.Length() * GroundDragCoeff;
 
             NetForce += Drag;
         }
 
         //collide a physics object with the world
-        public void Collide( IEntHandle OtherEnt )
+        public void Collide( IEntHandle OtherEnt, Vector Gravity )
         {
-            Plane collisionplane = OtherEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() );
+            Plane CollisionPlane = OtherEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() );
+
+            //If the velocity is going into the plane, zero the component of the plane
+            if ( Vector.Dot( CollisionPlane.Normal, Velocity ) <= 0 )
+            {
+                for ( int i = 0; i < 3; ++i )
+                {
+                    if ( Math.Abs( CollisionPlane.Normal[ i ] ) > .75f )
+                    {
+                        Momentum[ i ] = 0.0f;
+                        break;
+                    }
+                }
+            }
+
+            Vector[] WorldPts = LinkedEnt.GetWorldVerts();
+            float[] Dists = new float[ WorldPts.Length ];
+            List<int> PenetrationIndexes = new();
+            for ( int i = 0; i < WorldPts.Length; ++i )
+            {
+                Dists[ i ] = CollisionPlane.DistanceFromPointToPlane( WorldPts[ i ] );
+
+                if ( OtherEnt.TestCollision( WorldPts[ i ] ) )
+                {
+                    PenetrationIndexes.Add( i );
+                }
+            }
+
+            Vector CollisionPoint = new();
+
+            //technically the result would be the same, but this is just an optimization
+            //since the case of 1 point is a lot simpler and doesn't require all the list allocations
+            if ( PenetrationIndexes.Count == 1 ) //single point of contact
+            {
+                int PenetrationIndex = PenetrationIndexes[ 0 ];
+                CollisionPoint = WorldPts[ PenetrationIndex ] + CollisionPlane.Normal * -Dists[ PenetrationIndex ];
+            }
+            else if ( PenetrationIndexes.Count > 0 ) //multiple points of contact
+            {
+                Vector[] CollisionPoints = new Vector[ PenetrationIndexes.Count ];
+                for ( int i = 0; i < CollisionPoints.Length; ++i )
+                    CollisionPoints[ i ] = WorldPts[ PenetrationIndexes[ i ] ];
+
+                for ( int i = 0; i < CollisionPoints.Length; ++i )
+                    CollisionPoint += CollisionPoints[ i ];
+                CollisionPoint /= CollisionPoints.Length;
+
+                CollisionPoint = CollisionPlane.ClosestPointOnPlane( CollisionPoint );
+            }
+
+            //solve penetration
+            LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + CollisionPlane.Normal * -Dists.Min() );
+
+            Vector Force = Vector.Dot( -Gravity * Mass, CollisionPlane.Normal ) * CollisionPlane.Normal; 
+            AddForceAtPoint( Force, CollisionPoint );
+
+            /*
             //if velocity is already in the direction of the normal, don't reflect it
             if ( Vector.Dot( collisionplane.Normal, Velocity ) > 0 )
                 return;
@@ -123,13 +199,14 @@ namespace Physics
             {
                 if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
                 {
-                    //Momentum[ i ] = 0.0f;
+                    Momentum[ i ] = 0.0f;
                     break;
                 }
             }
 
-            //if ( Collision.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
-            //    LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + collisionplane.Normal / 100 );
+            if ( Collision.TestCollision( LinkedEnt, OtherEnt, collisionplane.Normal / 100, new Vector() ) )
+                LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + collisionplane.Normal / 100 );
+            */
         }
 
         public void TestCollision( IWorldHandle world, out bool bCollision, out bool TopCollision )
@@ -153,7 +230,7 @@ namespace Physics
                     bCollision = true;
 
                     Vector vCollisionNormal = WorldEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() ).Normal;
-                    if ( vCollisionNormal.y > .9f )
+                    if ( vCollisionNormal.y > .7f )
                         TopCollision = true;
                 }
             }
@@ -162,59 +239,21 @@ namespace Physics
         public static List<PhysObj[]> GetCollisionPairs( IWorldHandle world )
         {
             List<PhysObj[]> Pairs = new();
-            for ( int i = 0; i < world.GetEntList().Length; ++i )
+            IPhysHandle[] PhysList = world.GetPhysObjList();
+            for ( int i = 0; i < PhysList.Length; ++i )
             {
-                for ( int j = i + 1; j < world.GetEntList().Length; ++j )
+                for ( int j = i + 1; j < PhysList.Length; ++j )
                 {
-                    if ( Collision.TestCollision( world.GetPhysObjList()[ i ].LinkedEnt, world.GetPhysObjList()[ j ].LinkedEnt ) )
+                    if ( Collision.TestCollision( PhysList[ i ].LinkedEnt, PhysList[ j ].LinkedEnt ) )
                     {
-                        PhysObj[] pair = { (PhysObj) world.GetPhysObjList()[ i ], (PhysObj) world.GetPhysObjList()[ j ] };
+                        PhysObj[] pair = { (PhysObj) PhysList[ i ], (PhysObj) PhysList[ j ] };
                         Pairs.Add( pair );
                     }
                 }
             }
             return Pairs;
         }
-        public static void Collide( PhysObj Obj1, PhysObj Obj2, float dt )
-        {
-            float m1 = Obj1.Mass;
-            float m2 = Obj2.Mass;
-
-            //a normal vector of collision pointing out of obj1
-            Plane CollisionPlane = Obj1.LinkedEnt.GetCollisionPlane( Obj2.LinkedEnt.GetAbsOrigin() );
-            Vector Normal = CollisionPlane.Normal;
-
-            Vector Vel1 = ( Obj1.Velocity * ( m1 - m2 ) / ( m1 + m2 ) ) + ( Obj2.Velocity * 2 * m2 / ( m1 + m2 ) );
-            Vector Vel2 = ( Obj1.Velocity * 2 * m2 / ( m1 + m2 ) ) + ( Obj2.Velocity * ( m2 - m1 ) / ( m1 + m2 ) );
-
-            //newton's second law
-            Vector Obj1Force = Obj1.Mass * ( Obj1.Velocity - Vel1 ) / dt;
-            Vector Obj2Force = Obj2.Mass * ( Obj2.Velocity - Vel2 ) / dt;
-            //newton's third law
-            Obj1.NetForce -= Obj1Force;
-            Obj2.NetForce += Obj1Force;
-            Obj1.NetForce += Obj2Force;
-            Obj2.NetForce -= Obj2Force;
-
-            Vector vLine = Obj1.LinkedEnt.GetAbsOrigin() - Obj2.LinkedEnt.GetAbsOrigin();
-            Vector ptStart = Obj2.LinkedEnt.GetAbsOrigin();
-            Vector ptOnPlane = CollisionPlane.ClosestPointOnPlane( Obj2.LinkedEnt.GetAbsOrigin() );
-            Vector CollisionPoint = Vector.Dot( ( ptOnPlane - ptStart ), Normal ) / Vector.Dot( vLine, Normal ) * vLine + ptStart;
-
-            Vector Radius1 = CollisionPoint - Obj1.LinkedEnt.GetAbsOrigin();
-            Vector Radius2 = CollisionPoint - Obj2.LinkedEnt.GetAbsOrigin();
-
-            //greenberg's first law (shove the objects away from each other)
-            Obj1.Velocity -= Normal;
-            Obj2.Velocity += Normal;
-
-            //greenberg's second law (if two objects are penetrating, make it stop)
-            if ( Collision.TestCollision( Obj1.LinkedEnt, Obj2.LinkedEnt ) )
-            {
-                Obj1.LinkedEnt.SetAbsOrigin( Obj1.LinkedEnt.GetAbsOrigin() - Normal / 100 );
-                Obj2.LinkedEnt.SetAbsOrigin( Obj2.LinkedEnt.GetAbsOrigin() + Normal / 100 );
-            }
-        }
+        
     }
 }
 
