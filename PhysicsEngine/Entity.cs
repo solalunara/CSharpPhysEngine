@@ -30,11 +30,11 @@ namespace PhysEngine
             get => _Meshes;
             set => _Meshes = value;
         }
-        private Transform _LocalTransform;
+        private ITransformHandle _LocalTransform;
         public ITransformHandle LocalTransform
-        { get => _LocalTransform; set => _LocalTransform = (Transform) value; }
+        { get => _LocalTransform; set => _LocalTransform = value; }
 
-        private BaseEntity _Parent;
+        private IEntHandle _Parent;
         public IEntHandle Parent
         {
             get
@@ -254,7 +254,28 @@ namespace PhysEngine
         public BBox AABB;
     }
 
-    class Player
+    interface Player
+    {
+        IPhysHandle Body
+        {
+            get;
+            set;
+        }
+        IEntHandle Head
+        {
+            get;
+            set;
+        }
+    }
+
+    class Player2D : Player
+    {
+        private IPhysHandle _Body;
+        public IPhysHandle Body { get => _Body; set => _Body = value; }
+        private IEntHandle _Head;
+        public IEntHandle Head { get => _Head; set => _Head = value; }
+    }
+    class Player3D : Player
     {
         public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
         public static readonly BBox PLAYER_NORMAL_BBOX = new( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
@@ -265,7 +286,8 @@ namespace PhysEngine
         public static readonly FaceMesh[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, BLANK_TEXTURE ).Meshes;
         public const float PLAYER_MASS = 50.0f;
         public const float PLAYER_ROTI = float.PositiveInfinity;
-        public Player( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
+
+        public Player3D( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
         {
             this.Perspective = Perspective;
             _crouched = false;
@@ -276,11 +298,14 @@ namespace PhysEngine
             };
             Head.SetLocalOrigin( EYE_CENTER_OFFSET );
         }
+
         private bool _crouched;
         public Matrix Perspective;
-        public PhysObj Body;
-        public BaseEntity Head;
-        public BaseEntity HeldEnt;
+        private IPhysHandle _Body;
+        public IPhysHandle Body { get => _Body; set => _Body = value; }
+        private IEntHandle _Head;
+        public IEntHandle Head { get => _Head; set => _Head = value; }
+        public IEntHandle HeldEnt;
         public void Crouch()
         {
             if ( !_crouched )

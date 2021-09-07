@@ -34,7 +34,8 @@ namespace Physics
 
         public Vector AirDragCoeffs;
 
-        public float Mass;
+        private float _Mass;
+        public float Mass { get => _Mass; set => _Mass = value; }
         public float RotInertia;
 
         public Vector Momentum;

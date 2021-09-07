@@ -105,5 +105,24 @@ namespace RenderInterface
             get;
             set;
         }
+
+        Vector Velocity
+        {
+            get;
+            set;
+        }
+        Vector AngularVelocity
+        {
+            get;
+            set;
+        }
+        float Mass
+        {
+            get;
+            set;
+        }
+
+        void AddForce( Vector force, int Channel );
+        void TestCollision( IWorldHandle world, out bool Collide, out bool TopCollide );
     }
 }

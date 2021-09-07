@@ -22,8 +22,7 @@
 typedef unsigned int uint;
 
 //callback functions
-extern "C" RENDER_API void WindowSizeChanged( GLFWwindow *window, int width, int height );
-extern "C" RENDER_API void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods );
+extern "C" RENDER_API void WindowSizeChanged( int width, int height );
 extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
 
 //render related functions
@@ -40,12 +39,13 @@ extern "C" RENDER_API float GetTime();
 extern "C" RENDER_API void GetWindowSize( intptr_t window, int *x, int *y );
 
 //input callback
-typedef intptr_t (*fptr)( intptr_t window, int key, int scancode, int act, int mods );
-extern "C" RENDER_API void SetInputCallback( intptr_t fn );
+extern "C" RENDER_API void SetInputCallback( intptr_t window, intptr_t fn );
 
 //window move callback
-typedef intptr_t (*fptrw)( intptr_t window, int width, int height );
-extern "C" RENDER_API void SetWindowMoveCallback( intptr_t fn );
+extern "C" RENDER_API void SetWindowMoveCallback( intptr_t window, intptr_t fn );
+
+//mouse button callback
+extern "C" RENDER_API void SetMouseButtonCallback( intptr_t window, intptr_t fn );
 
 
 //mouse related functions

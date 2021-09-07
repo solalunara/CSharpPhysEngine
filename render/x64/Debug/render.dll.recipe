@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\x64\Debug\render.dll</FullPath>
+      <FullPath>C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\x64\Debug\render.dll</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

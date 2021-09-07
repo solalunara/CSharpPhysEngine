@@ -37,7 +37,7 @@ FaceMesh::FaceMesh( int VertLength, float *vertices, int IndLength, int *indices
 
 void InitMesh( int Vertlength, float *vertices, int IndLength, int *indices, Texture texture, glm::vec3 vNormal, FaceMesh *mesh )
 {
-	_ASSERTE( pFace );
+	_ASSERTE( mesh );
 	*mesh = FaceMesh( Vertlength, vertices, IndLength, indices, texture, vNormal, GL_DYNAMIC_DRAW );
 }
 void UpdateMesh( FaceMesh *mesh )

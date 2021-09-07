@@ -59,7 +59,7 @@ namespace Physics
 
         public DateTime LastSimTime;
 
-        public List<PhysObj> PObjs;
+        public List<IPhysHandle> PObjs;
         public Vector Gravity;
 
         internal List<Collision> Collisions;

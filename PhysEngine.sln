@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Physics", "Physics\Physics.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhysicsEngine", "PhysicsEngine\PhysicsEngine.csproj", "{533B2346-4CA9-440E-93F4-03C6E090322B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderInterface", "RenderInterface\RenderInterface.csproj", "{378E9E9F-578F-4B99-B09A-2D66D47D4414}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderInterface", "RenderInterface\RenderInterface.csproj", "{378E9E9F-578F-4B99-B09A-2D66D47D4414}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,12 +21,13 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|Any CPU.Build.0 = Debug|x64
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|x64.ActiveCfg = Release|x64
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|x64.Build.0 = Release|x64
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|x86.ActiveCfg = Debug|Win32
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Debug|x86.Build.0 = Debug|Win32
-		{04D05156-5164-4EC4-9392-0F83E8592465}.Release|Any CPU.ActiveCfg = Release|Win32
+		{04D05156-5164-4EC4-9392-0F83E8592465}.Release|Any CPU.ActiveCfg = Release|x64
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Release|x64.ActiveCfg = Release|x64
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Release|x64.Build.0 = Release|x64
 		{04D05156-5164-4EC4-9392-0F83E8592465}.Release|x86.ActiveCfg = Release|Win32

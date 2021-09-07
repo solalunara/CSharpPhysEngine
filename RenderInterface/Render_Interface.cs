@@ -41,10 +41,16 @@ namespace RenderInterface
         public static extern float GetTime();
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void SetInputCallback( IntPtr fn );
+        public static extern void SetInputCallback( IntPtr window, IntPtr fn );
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void SetWindowMoveCallback( IntPtr fn );
+        public static extern void SetWindowMoveCallback( IntPtr window, IntPtr fn );
+
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void SetMouseButtonCallback( IntPtr window, IntPtr fn );
+
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        public static extern void WindowSizeChanged( int width, int height );
     }
     public class Mouse
     {

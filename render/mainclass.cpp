@@ -9,20 +9,9 @@
 
 #define LKSPD 20.0f
 
-static fptr Callback = NULL;
-static fptrw WindowMoveCallback = NULL;
-
-void WindowSizeChanged( GLFWwindow *window, int width, int height )
+void WindowSizeChanged( int width, int height )
 {
 	glViewport( 0, 0, width, height );
-	//camera.m_Perspective = glm::perspective( 45.0f, (float) width / height, 0.1f, 1000.0f );
-	if ( WindowMoveCallback )
-		WindowMoveCallback( (intptr_t) window, width, height );
-}
-void InputMGR( GLFWwindow *window, int key, int scancode, int action, int mods )
-{
-	if ( Callback )
-		Callback( (intptr_t) window, key, scancode, action, mods );
 }
 void SetFlag( uint *ToSet, unsigned int val, bool bVal )
 {
@@ -55,11 +44,6 @@ void Init( intptr_t *window )
 	}
 	//set the viewport to render to
 	glViewport( 0, 0, INITIAL_WIDTH, INITIAL_HEIGHT );
-
-	//callback function for window size changed
-	glfwSetFramebufferSizeCallback( (GLFWwindow *) *window, WindowSizeChanged );
-	//callback function for key pressed
-	glfwSetKeyCallback( (GLFWwindow *) *window, InputMGR );
 
 	glEnable( GL_DEPTH_TEST ); 
 	glEnable( GL_FRAMEBUFFER_SRGB );
@@ -141,11 +125,15 @@ void ShowMouse( intptr_t window )
 	glfwSetInputMode( (GLFWwindow *) window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
 }
 
-void SetInputCallback( intptr_t fn )
+void SetInputCallback( intptr_t window, intptr_t fn )
 {
-	Callback = (fptr) fn;
+	glfwSetKeyCallback( (GLFWwindow *)window, (GLFWkeyfun)fn );
 }
-void SetWindowMoveCallback( intptr_t fn )
+void SetWindowMoveCallback( intptr_t window, intptr_t fn )
 {
-	WindowMoveCallback = (fptrw) fn;
+	glfwSetFramebufferSizeCallback( (GLFWwindow*)window, (GLFWframebuffersizefun)fn );
+}
+void SetMouseButtonCallback( intptr_t window, intptr_t fn )
+{
+	glfwSetMouseButtonCallback( (GLFWwindow*)window, (GLFWmousebuttonfun)fn );
 }
