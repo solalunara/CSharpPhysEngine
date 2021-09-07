@@ -70,7 +70,6 @@ namespace Physics
         {
             NetForce += Force;
             Vector Radius = WorldPt - LinkedEnt.GetAbsOrigin();
-            Vector tr = Vector.Cross( Radius, Force );
             Torque += Vector.Cross( Radius, Force );
         }
 
@@ -81,10 +80,15 @@ namespace Physics
             if ( Vector.Dot( LastAngVelocity.Normalized(), AngularVelocity.Normalized() ) < -.75f )
             {
                 AngularMomentum = new();
-                Vector QAngles = LinkedEnt.LocalTransform.QAngles;
+                Matrix Rot = LinkedEnt.GetAbsRot();
                 for ( int i = 0; i < 3; ++i )
-                    QAngles[ i ] = MathF.Round( QAngles[ i ] );
-                LinkedEnt.LocalTransform.QAngles = QAngles;
+                {
+                    for ( int j = 0; j < 3; ++j )
+                    {
+                        Rot.Columns[ i ][ j ] = MathF.Round( Rot.Columns[ i ][ j ] * 180 / MathF.PI ) * MathF.PI / 180;
+                    }
+                }
+                LinkedEnt.SetAbsRot( Rot );
             }
 
             //if the object is almost stopped, force it to stop.
@@ -142,9 +146,11 @@ namespace Physics
         public void Collide( IEntHandle OtherEnt, Vector Gravity )
         {
             Plane CollisionPlane = OtherEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() );
+            //Is the center of mass above the object?
+            bool COMAbove = OtherEnt.TestCollision( CollisionPlane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() ) );
 
             //If the velocity is going into the plane, zero the component of the plane
-            if ( Vector.Dot( CollisionPlane.Normal, Velocity ) <= 0 )
+            if ( Vector.Dot( CollisionPlane.Normal, Velocity ) <= 0 && COMAbove )
             {
                 for ( int i = 0; i < 3; ++i )
                 {
@@ -156,15 +162,16 @@ namespace Physics
                 }
             }
 
+
             Vector[] WorldPts = LinkedEnt.GetWorldVerts();
             float[] Dists = new float[ WorldPts.Length ];
             List<int> PenetrationIndexes = new();
             for ( int i = 0; i < WorldPts.Length; ++i )
             {
-                Dists[ i ] = CollisionPlane.DistanceFromPointToPlane( WorldPts[ i ] );
 
                 if ( OtherEnt.TestCollision( WorldPts[ i ] ) )
                 {
+                    Dists[ i ] = CollisionPlane.DistanceFromPointToPlane( WorldPts[ i ] );
                     PenetrationIndexes.Add( i );
                 }
             }
