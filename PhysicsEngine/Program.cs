@@ -13,26 +13,9 @@ namespace PhysEngine
 {
     class Program
     {
-        [Flags]
-        enum RuntimeMechanics
-        {
-            NONE =      0,
-            PAUSED =    1 << 0,
-            SAVE =      1 << 1,
-            LOAD =      1 << 2,
-            FIREQ =     1 << 3,
-            FIREE =     1 << 4,
-            FIREZ =     1 << 5,
-            FIREX =     1 << 6,
-            FIREF =     1 << 7,
-            FIRER =     1 << 8,
-            FIREC =     1 << 9,
-            FIREV =     1 << 10
-        }
-
         static RuntimeMechanics rtMech = RuntimeMechanics.NONE;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
-        static Player player;
+        static IPlayer player;
 
 
         const float fov = 75.0f;
@@ -47,7 +30,17 @@ namespace PhysEngine
         {
             try
             {
-                RunProgram( args );
+                if ( args.Length == 1 )
+                {
+                    if ( args[ 0 ] == "-2d" )
+                        Run2D();
+                    else if ( args[ 0 ] == "-3d" )
+                        Run3D();
+                    else
+                        throw new NotImplementedException( "only 2d and 3d supported" );
+                }
+                else
+                    Run2D();
             }
             finally
             {
@@ -55,7 +48,7 @@ namespace PhysEngine
             }
         }
 
-        public static void RunProgram( string[] args )
+        public static void Run3D()
         {
             string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
 
@@ -118,6 +111,8 @@ namespace PhysEngine
             Renderer.SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr ) );
             WindowHandle wndptr = WindowMove;
             Renderer.SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
+            MouseHandle msptr = MouseClick;
+            Renderer.SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
 
             float lasttime = Renderer.GetTime();
 
@@ -138,12 +133,11 @@ namespace PhysEngine
 
                     Mouse.HideMouse( window );
                     const float LookSpeed = 10.0f;
-                    Mouse.GetMouseOffset( window, out double xd, out double yd );
-                    float x = (float) xd; float y = (float) yd;
-                    player.Body.LinkedEnt.SetAbsRot( Matrix.RotMatrix( frametime * LookSpeed * -x, new Vector( 0, 1, 0 ) ) * player.Body.LinkedEnt.GetAbsRot() );
+                    Point2 MousePos = Mouse.GetMouseOffset( window );
+                    player.Body.LinkedEnt.SetAbsRot( Matrix.RotMatrix( frametime * LookSpeed * -MousePos.x, new Vector( 0, 1, 0 ) ) * player.Body.LinkedEnt.GetAbsRot() );
 
                     Matrix PrevHead = player.Head.GetLocalRot();
-                    player.Head.SetLocalRot( Matrix.RotMatrix( frametime * LookSpeed * -y, new Vector( 1, 0, 0 ) ) * player.Head.GetLocalRot() );
+                    player.Head.SetLocalRot( Matrix.RotMatrix( frametime * LookSpeed * -MousePos.y, new Vector( 1, 0, 0 ) ) * player.Head.GetLocalRot() );
                     if ( Vector.Dot( new Vector( 0, 0, -1 ), player.Head.GetLocalRot().GetForward() ) < 0 ) //looking >90 degrees
                     {
                         player.Head.SetLocalRot( PrevHead );
@@ -266,14 +260,14 @@ namespace PhysEngine
                         if ( hit.bHit || world.GetEntPhysics( hit.HitEnt ) == null )
                             world.Add( new PhysObj( hit.HitEnt, PhysObj.Default_Coeffs, 25, 1, new() ) );
                     }
-                    if ( rtMech.HasFlag( RuntimeMechanics.FIREE ) )
+                    if ( rtMech.HasFlag( RuntimeMechanics.FIREE ) && player.GetType() == typeof( Player3D ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREE;
-
-                        if ( player.HeldEnt != null )
+                        Player3D player3 = (Player3D) player;
+                        if ( player3.HeldEnt != null )
                         {
-                            player.HeldEnt.Parent = null;
-                            player.HeldEnt = null;
+                            player3.HeldEnt.Parent = null;
+                            player3.HeldEnt = null;
                         }
                         else
                         {
@@ -286,7 +280,7 @@ namespace PhysEngine
                                 if ( HitPhys != null )
                                     HitPhys.Velocity = new Vector();
                                 hit.HitEnt.Parent = player.Head;
-                                player.HeldEnt = hit.HitEnt;
+                                player3.HeldEnt = hit.HitEnt;
                             }
                         }
                     }
@@ -332,6 +326,65 @@ namespace PhysEngine
                 Renderer.EndFrame( window );
             }
             //world.ToFile( DirName + "/Worlds/world1.worldmap" );
+        }
+
+        public static void Run2D()
+        {
+            string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
+            Renderer.Init( out IntPtr window );
+            Shader shader = new( DirName + "/Shaders/dim2.vert", DirName + "/Shaders/dim2.frag" );
+            World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
+            Texture[] dirt = { new( DirName + "/Textures/dirt.png" ) };
+            world.Add
+            (
+                new BoxEnt( new( -0.5f, -0.5f, 0 ), new(), dirt )
+            );
+            world.Add
+            (
+                new PhysObj( new BoxEnt( new( -0.2f, 0.5f, 0 ), new( .8f, 1.5f, 0 ), dirt ), PhysObj.Default_Coeffs, 5, 10, new() )
+            );
+
+            InputHandle inptptr = Input;
+            Renderer.SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr ) );
+            WindowHandle wndptr = WindowMove;
+            Renderer.SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
+            MouseHandle msptr = MouseClick;
+            Renderer.SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
+
+            player = new Player2D();
+
+            while ( !Renderer.ShouldTerminate( window ) )
+            {
+                if ( rtMech.HasFlag( RuntimeMechanics.FIRELEFT ) )
+                {
+                    for ( int i = 0; i < world.WorldEnts.Count; ++i )
+                    {
+                        if ( world.WorldEnts[ i ].GetType() == typeof( Button ) )
+                        {
+                            ( (Button) world.WorldEnts[ i ] ).ClickCallback();
+                        }
+                    }
+                }
+
+                Renderer.StartFrame( window );
+                Renderer.SetCameraValues( shader, player.Perspective, -player.Head.CalcEntMatrix() );
+                foreach ( BaseEntity b in world.WorldEnts )
+                {
+                    Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
+                    foreach ( FaceMesh m in b.Meshes )
+                    {
+                        if ( !m.texture.Initialized )
+                            continue; //nothing to render
+
+                        m.Render( shader );
+                    }
+                };
+                Renderer.EndFrame( window );
+            }
+
+            dirt[ 0 ].Close();
+            world.Close();
+            Renderer.Terminate();
         }
 
         public delegate void InputHandle( IntPtr window, Keys key, int scancode, Actions act, int mods );
@@ -380,11 +433,15 @@ namespace PhysEngine
                 }
             }
 
-
-            if ( ( act == Actions.PRESSED || act == Actions.HELD ) && key == Keys.LCONTROL ) //holding control
-                player.Crouch();
-            else if ( key == Keys.LCONTROL ) //not holding control
-                player.UnCrouch();
+            if ( player.GetType() == typeof( Player3D ) )
+            {
+                Player3D player3 = (Player3D) player;
+                if ( ( act == Actions.PRESSED || act == Actions.HELD ) && key == Keys.LCONTROL ) //holding control
+                    player3.Crouch();
+                else if ( key == Keys.LCONTROL ) //not holding control
+                    player3.UnCrouch();
+            }
+            
 
 
 
@@ -417,40 +474,24 @@ namespace PhysEngine
             Renderer.WindowSizeChanged( width, height );
             player.Perspective = Matrix.Perspective( fov, (float) width / height, 0.01f, 1000.0f );
         }
+        public delegate void MouseHandle( IntPtr window, MouseButton mouse, Actions act, int mods );
+        public static void MouseClick( IntPtr window, MouseButton mouse, Actions act, int mods )
+        {
+            if ( act == Actions.PRESSED )
+            {
+                switch ( mouse )
+                {
+                    case MouseButton.LEFT:
+                        rtMech |= RuntimeMechanics.FIRELEFT;
+                        break;
+                    case MouseButton.RIGHT:
+                        rtMech |= RuntimeMechanics.FIRERIGHT;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
-    public enum Keys
-    {
-        W = 87,
-        S = 83,
-        A = 65,
-        D = 68,
-        SPACE = 32,
-        ESCAPE = 256,
-        LCONTROL = 341,
-        F6 = 295,
-        F7 = 296,
-        Q = 81,
-        E = 69,
-        Z = 90,
-        X = 88,
-        C = 67,
-        V = 86,
-        F = 70,
-        R = 82,
-    }
-    public enum Actions
-    {
-        RELEASED = 0,
-        PRESSED = 1,
-        HELD = 2,
-    }
-    public enum Move
-    {
-        MOVE_NONE       = 0,
-        MOVE_FORWARD    = 1 << 0,
-        MOVE_BACKWARD   = 1 << 1,
-        MOVE_LEFT       = 1 << 2,
-        MOVE_RIGHT      = 1 << 3,
-        MOVE_JUMP       = 1 << 4,
-    }
+    
 }

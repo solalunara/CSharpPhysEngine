@@ -52,10 +52,41 @@ namespace RenderInterface
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void WindowSizeChanged( int width, int height );
     }
+
+    public struct Point2
+    {
+        public Point2( float x, float y )
+        {
+            this.x = x;
+            this.y = y;
+        }
+        public Point2( double x, double y )
+        {
+            this.x = (float) x;
+            this.y = (float) y;
+        }
+        public float x;
+        public float y;
+    }
     public class Mouse
     {
+        
+
+        public static Point2 GetMouseOffset( IntPtr window )
+        {
+            GetMouseOffset( window, out double x, out double y );
+            return new( x, y );
+        }
+        public static Point2 GetMouseNormalizedPos( IntPtr window )
+        {
+            GetMouseNormalizedPos( window, out double x, out double y );
+            return new( x, y );
+        }
+
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void GetMouseOffset( IntPtr window, out double x, out double y );
+        private static extern void GetMouseOffset( IntPtr window, out double x, out double y );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void GetMouseNormalizedPos( IntPtr window, out double x, out double y );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void MoveMouseToCenter( IntPtr window );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]

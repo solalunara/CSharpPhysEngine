@@ -7,13 +7,11 @@
 #define INITIAL_WIDTH 1000
 #define INITIAL_HEIGHT 720
 
-#define LKSPD 20.0f
-
 void WindowSizeChanged( int width, int height )
 {
 	glViewport( 0, 0, width, height );
 }
-void SetFlag( uint *ToSet, unsigned int val, bool bVal )
+void SetFlag( uint *ToSet, uint val, bool bVal )
 {
 	if ( bVal )
 		*ToSet |= val;
@@ -109,6 +107,14 @@ void GetMouseOffset( intptr_t window, double *x, double *y )
 	glfwGetCursorPos( (GLFWwindow *) window, &xpos, &ypos );
 	*x = xpos - ( width / 2 );
 	*y = ypos - ( height / 2 );
+}
+void GetMouseNormalizedPos( intptr_t window, double *x, double *y )
+{
+	GetMouseOffset( window, x, y );
+	int width, height;
+	glfwGetWindowSize( (GLFWwindow *)window, &width, &height );
+	*x /= width / 2;
+	*y /= height / 2;
 }
 void MoveMouseToCenter( intptr_t window )
 {

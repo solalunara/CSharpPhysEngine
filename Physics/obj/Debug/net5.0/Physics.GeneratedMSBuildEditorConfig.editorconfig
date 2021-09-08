@@ -7,4 +7,4 @@ build_property.PublishSingleFile =
 build_property.IncludeAllContentForSelfExtract = 
 build_property._SupportedPlatformList = Android,iOS,Linux,macOS,Windows
 build_property.RootNamespace = Physics
-build_property.ProjectDir = C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\
+build_property.ProjectDir = C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\

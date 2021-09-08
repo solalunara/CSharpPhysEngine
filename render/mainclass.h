@@ -23,7 +23,7 @@ typedef unsigned int uint;
 
 //callback functions
 extern "C" RENDER_API void WindowSizeChanged( int width, int height );
-extern "C" RENDER_API void SetFlag( uint *ToSet, unsigned int val, bool bVal );
+extern "C" RENDER_API void SetFlag( uint *ToSet, uint val, bool bVal );
 
 //render related functions
 extern "C" RENDER_API void Init( intptr_t *window );
@@ -50,6 +50,7 @@ extern "C" RENDER_API void SetMouseButtonCallback( intptr_t window, intptr_t fn 
 
 //mouse related functions
 extern "C" RENDER_API void GetMouseOffset( intptr_t window, double *x, double *y );
+extern "C" RENDER_API void GetMouseNormalizedPos( intptr_t window, double *x, double *y );
 extern "C" RENDER_API void MoveMouseToCenter( intptr_t window );
 extern "C" RENDER_API void HideMouse( intptr_t window );
 extern "C" RENDER_API void ShowMouse( intptr_t window );

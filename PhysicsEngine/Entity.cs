@@ -162,13 +162,6 @@ namespace PhysEngine
         }
     }
 
-    public enum Space
-    {
-        NONE      = 0,
-        WORLD     = 1 << 0,
-        SELF      = 1 << 1,
-    }
-
     class BoxEnt : BaseEntity
     {
         public BoxEnt( Vector mins, Vector maxs, Texture[] tx, bool NormalizeBox = true ) :
@@ -244,17 +237,32 @@ namespace PhysEngine
                 new Vector( 1, 0, 0 )
             };
 
-            bool SingleTexture = tx.Length == 1;
+            switch ( tx.Length )
+            {
+                case 0:
+                    for ( int i = 0; i < 6; ++i )
+                        Meshes[ i ] = new FaceMesh( Verts[ i ], inds, new Texture(), Normals[ i ] );
+                    break;
+                case 1:
+                    for ( int i = 0; i < 6; ++i )
+                        Meshes[ i ] = new FaceMesh( Verts[ i ], inds, tx[ 0 ], Normals[ i ] );
+                    break;
+                case 6:
+                    for ( int i = 0; i < 6; ++i )
+                        Meshes[ i ] = new FaceMesh( Verts[ i ], inds, tx[ i ], Normals[ i ] );
+                    break;
+                default:
+                    System.Diagnostics.Debug.Assert( false );
+                    break;
+            }
 
-            for ( int i = 0; i < 6; ++i )
-                Meshes[ i ] = new FaceMesh( Verts[ i ], inds, SingleTexture ? tx[ 0 ] : tx[ i ], Normals[ i ] );
 
         }
 
         public BBox AABB;
     }
 
-    interface Player
+    interface IPlayer
     {
         IPhysHandle Body
         {
@@ -266,24 +274,40 @@ namespace PhysEngine
             get;
             set;
         }
+        Matrix Perspective
+        {
+            get;
+            set;
+        }
     }
 
-    class Player2D : Player
+    class Player2D : IPlayer
     {
+        public Player2D()
+        {
+            Perspective = Matrix.IdentityMatrix();
+            Body = new PhysObj( new BoxEnt( new( -.5f, -1, -.5f ), new( 0.5f, 1, 0.5f ), Array.Empty<Texture>() ), PhysObj.Default_Coeffs, 50, float.PositiveInfinity, new() );
+            Head = new BaseEntity( Array.Empty<FaceMesh>(), new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+            {
+                Parent = Body.LinkedEnt
+            };
+        }
+
         private IPhysHandle _Body;
         public IPhysHandle Body { get => _Body; set => _Body = value; }
         private IEntHandle _Head;
         public IEntHandle Head { get => _Head; set => _Head = value; }
+        private Matrix _Perspective;
+        public Matrix Perspective { get => _Perspective; set => _Perspective = value; }
     }
-    class Player3D : Player
+    class Player3D : IPlayer
     {
         public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
         public static readonly BBox PLAYER_NORMAL_BBOX = new( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
         public static readonly BBox PLAYER_CROUCH_BBOX = new( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, 0.5f, .5f ) );
-        public static readonly Texture[] BLANK_TEXTURE = { new Texture() };
         //depending on how the compiler works, this may cause a memory leak. Prob won't though
-        public static readonly FaceMesh[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ).Meshes;
-        public static readonly FaceMesh[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, BLANK_TEXTURE ).Meshes;
+        public static readonly FaceMesh[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<Texture>() ).Meshes;
+        public static readonly FaceMesh[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, Array.Empty<Texture>() ).Meshes;
         public const float PLAYER_MASS = 50.0f;
         public const float PLAYER_ROTI = float.PositiveInfinity;
 
@@ -291,16 +315,19 @@ namespace PhysEngine
         {
             this.Perspective = Perspective;
             _crouched = false;
-            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, BLANK_TEXTURE ), Coeffs, Mass, RotI, new() );
+            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<Texture>() ), Coeffs, Mass, RotI, new() );
             Head = new BaseEntity( Array.Empty<FaceMesh>(), new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
             {
-                Parent = (BaseEntity) Body.LinkedEnt
+                Parent = Body.LinkedEnt
             };
             Head.SetLocalOrigin( EYE_CENTER_OFFSET );
         }
 
+        private Matrix _Perspective;
+        public Matrix Perspective { get => _Perspective; set => _Perspective = value; }
+
         private bool _crouched;
-        public Matrix Perspective;
+
         private IPhysHandle _Body;
         public IPhysHandle Body { get => _Body; set => _Body = value; }
         private IEntHandle _Head;
