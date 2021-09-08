@@ -15,7 +15,7 @@ namespace PhysEngine
     {
         static RuntimeMechanics rtMech = RuntimeMechanics.NONE;
         static uint MoveTracker = (uint) Move.MOVE_NONE;
-        static IPlayer player;
+        static Player player;
 
 
         const float fov = 75.0f;
@@ -136,11 +136,11 @@ namespace PhysEngine
                     Point2 MousePos = Mouse.GetMouseOffset( window );
                     player.Body.LinkedEnt.SetAbsRot( Matrix.RotMatrix( frametime * LookSpeed * -MousePos.x, new Vector( 0, 1, 0 ) ) * player.Body.LinkedEnt.GetAbsRot() );
 
-                    Matrix PrevHead = player.Head.GetLocalRot();
-                    player.Head.SetLocalRot( Matrix.RotMatrix( frametime * LookSpeed * -MousePos.y, new Vector( 1, 0, 0 ) ) * player.Head.GetLocalRot() );
-                    if ( Vector.Dot( new Vector( 0, 0, -1 ), player.Head.GetLocalRot().GetForward() ) < 0 ) //looking >90 degrees
+                    Matrix PrevHead = player.camera.GetLocalRot();
+                    player.camera.SetLocalRot( Matrix.RotMatrix( frametime * LookSpeed * -MousePos.y, new Vector( 1, 0, 0 ) ) * player.camera.GetLocalRot() );
+                    if ( Vector.Dot( new Vector( 0, 0, -1 ), player.camera.GetLocalRot().GetForward() ) < 0 ) //looking >90 degrees
                     {
-                        player.Head.SetLocalRot( PrevHead );
+                        player.camera.SetLocalRot( PrevHead );
                     }
 
                     Mouse.MoveMouseToCenter( window );
@@ -189,9 +189,9 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREC ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREC;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt );
                         if ( hit.bHit )
                         {
                             IEntHandle HitEnt = hit.HitEnt;
@@ -201,9 +201,9 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREV ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREV;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt );
                         if ( hit.bHit )
                         {
                             IEntHandle HitEnt = hit.HitEnt;
@@ -213,14 +213,14 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREX ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREX;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         Vector ptCenter = new();
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
                         else
-                            ptCenter = player.Head.GetAbsOrigin() + TransformedForward / 10;
+                            ptCenter = player.camera.GetAbsOrigin() + TransformedForward / 10;
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
@@ -229,14 +229,14 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREZ ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREZ;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         Vector ptCenter = new();
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
                         else
-                            ptCenter = player.Head.GetAbsOrigin() + TransformedForward / 10;
+                            ptCenter = player.camera.GetAbsOrigin() + TransformedForward / 10;
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
@@ -245,18 +245,18 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREF ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREF;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         if ( hit.bHit )
                             world.WorldEnts.Remove( hit.HitEnt );
                     }
                     if ( rtMech.HasFlag( RuntimeMechanics.FIRER ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIRER;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         if ( hit.bHit || world.GetEntPhysics( hit.HitEnt ) == null )
                             world.Add( new PhysObj( hit.HitEnt, PhysObj.Default_Coeffs, 25, 1, new() ) );
                     }
@@ -271,15 +271,15 @@ namespace PhysEngine
                         }
                         else
                         {
-                            Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                            Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                            RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
+                            Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                            Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                            RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                             if ( hit.bHit )
                             {
                                 PhysObj HitPhys = (PhysObj) world.GetEntPhysics( hit.HitEnt );
                                 if ( HitPhys != null )
                                     HitPhys.Velocity = new Vector();
-                                hit.HitEnt.Parent = player.Head;
+                                hit.HitEnt.Parent = player.camera;
                                 player3.HeldEnt = hit.HitEnt;
                             }
                         }
@@ -287,9 +287,9 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREQ ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREQ;
-                        Vector TransformedForward = (Vector) ( player.Head.GetAbsRot() * new Vector( 0, 0, -30 ) );
-                        Vector EntPt = player.Head.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = world.TraceRay( player.Head.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
+                        RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         if ( hit.bHit )
                         {
                             PhysObj HitPhys = (PhysObj) world.GetEntPhysics( hit.HitEnt );
@@ -310,7 +310,7 @@ namespace PhysEngine
                 TimeSpan TimeDiff = DateTime.Now - world.Environment.LastSimTime;
 
                 Renderer.StartFrame( window );
-                Renderer.SetCameraValues( shader, player.Perspective, -player.Head.CalcEntMatrix() );
+                Renderer.SetCameraValues( shader, player.camera.Perspective, -player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in world.WorldEnts )
                 {
                     Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
@@ -332,7 +332,7 @@ namespace PhysEngine
         {
             string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
             Renderer.Init( out IntPtr window );
-            Shader shader = new( DirName + "/Shaders/dim2.vert", DirName + "/Shaders/dim2.frag" );
+            Shader shader = new( DirName + "/Shaders/VertexShader.vert", DirName + "/Shaders/FragmentShader.frag" );
             World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
             Texture[] dirt = { new( DirName + "/Textures/dirt.png" ) };
             world.Add
@@ -367,7 +367,7 @@ namespace PhysEngine
                 }
 
                 Renderer.StartFrame( window );
-                Renderer.SetCameraValues( shader, player.Perspective, -player.Head.CalcEntMatrix() );
+                Renderer.SetCameraValues( shader, player.camera.Perspective, -player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in world.WorldEnts )
                 {
                     Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
@@ -472,7 +472,7 @@ namespace PhysEngine
         public static void WindowMove( IntPtr window, int width, int height )
         {
             Renderer.WindowSizeChanged( width, height );
-            player.Perspective = Matrix.Perspective( fov, (float) width / height, 0.01f, 1000.0f );
+            player.camera.Perspective = Matrix.Perspective( fov, (float) width / height, 0.01f, 1000.0f );
         }
         public delegate void MouseHandle( IntPtr window, MouseButton mouse, Actions act, int mods );
         public static void MouseClick( IntPtr window, MouseButton mouse, Actions act, int mods )

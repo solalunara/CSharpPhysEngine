@@ -262,45 +262,34 @@ namespace PhysEngine
         public BBox AABB;
     }
 
-    interface IPlayer
+    class Camera : BaseEntity
     {
-        IPhysHandle Body
+        public Camera( Matrix Perspective ) : base( Array.Empty<FaceMesh>(), new( new(), new( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
         {
-            get;
-            set;
+            this.Perspective = Perspective;
         }
-        IEntHandle Head
-        {
-            get;
-            set;
-        }
-        Matrix Perspective
-        {
-            get;
-            set;
-        }
+        public Matrix Perspective;
     }
 
-    class Player2D : IPlayer
+    abstract class Player
+    {
+        public Camera camera;
+        public IPhysHandle Body;
+    }
+
+    class Player2D : Player
     {
         public Player2D()
         {
-            Perspective = Matrix.IdentityMatrix();
-            Body = new PhysObj( new BoxEnt( new( -.5f, -1, -.5f ), new( 0.5f, 1, 0.5f ), Array.Empty<Texture>() ), PhysObj.Default_Coeffs, 50, float.PositiveInfinity, new() );
-            Head = new BaseEntity( Array.Empty<FaceMesh>(), new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+            Body = new PhysObj( new Dim2Box( new( -.05f, -.1f ), new( 0.05f, 0.1f ), new() ), PhysObj.Default_Coeffs, 50, float.PositiveInfinity, new() );
+            camera = new( Matrix.IdentityMatrix() )
             {
                 Parent = Body.LinkedEnt
             };
+            camera.SetLocalOrigin( new( 0, 0, 10 ) );
         }
-
-        private IPhysHandle _Body;
-        public IPhysHandle Body { get => _Body; set => _Body = value; }
-        private IEntHandle _Head;
-        public IEntHandle Head { get => _Head; set => _Head = value; }
-        private Matrix _Perspective;
-        public Matrix Perspective { get => _Perspective; set => _Perspective = value; }
     }
-    class Player3D : IPlayer
+    class Player3D : Player
     {
         public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
         public static readonly BBox PLAYER_NORMAL_BBOX = new( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
@@ -313,25 +302,17 @@ namespace PhysEngine
 
         public Player3D( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
         {
-            this.Perspective = Perspective;
             _crouched = false;
             Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<Texture>() ), Coeffs, Mass, RotI, new() );
-            Head = new BaseEntity( Array.Empty<FaceMesh>(), new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+            Head = new Camera( Perspective )
             {
                 Parent = Body.LinkedEnt
             };
             Head.SetLocalOrigin( EYE_CENTER_OFFSET );
         }
 
-        private Matrix _Perspective;
-        public Matrix Perspective { get => _Perspective; set => _Perspective = value; }
-
         private bool _crouched;
-
-        private IPhysHandle _Body;
-        public IPhysHandle Body { get => _Body; set => _Body = value; }
-        private IEntHandle _Head;
-        public IEntHandle Head { get => _Head; set => _Head = value; }
+        public Camera Head;
         public IEntHandle HeldEnt;
         public void Crouch()
         {
