@@ -17,6 +17,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 extern "C" RENDER_API void GLMPerspective( float fov, float aspect, float nearclip, float farclip, glm::mat4 *pMat );
+extern "C" RENDER_API void GLMOrtho( float left, float right, float bottom, float top, float n, float f, glm::mat4 * pMat );
 extern "C" RENDER_API void GLMRotMatrix( float degrees, glm::vec3 axis, glm::mat4 *pMat );
 extern "C" RENDER_API void GLMMultiplyMatrix( glm::mat4 *pMultiply, glm::mat4 multiplier );
 extern "C" RENDER_API void GLMMultMatrixVector( glm::mat4 matrix, glm::vec4 *vector );

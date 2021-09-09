@@ -316,41 +316,20 @@ namespace RenderInterface
         [MarshalAs( UnmanagedType.ByValArray, SizeConst = 4 )]
         public Vector4[] Columns;
 
-        public static Matrix IdentityMatrix()
-        {
-            float[,] values =
+        public static Matrix IdentityMatrix() =>
+        new( 
+            new float[,] 
             {
                 { 1, 0, 0, 0 },
                 { 0, 1, 0, 0 },
                 { 0, 0, 1, 0 },
                 { 0, 0, 0, 1 }
-            };
-            return new( values );
-        }
-        public static Matrix InvertZMatrix()
-        {
-            float[,] values =
-            {
-                { 1, 0, 0, 0 },
-                { 0, 1, 0, 0 },
-                { 0, 0,-1, 0 },
-                { 0, 0, 0, 1 }
-            };
-            return new( values );
-        }
+            } 
+        );
 
-        public Vector GetRight()
-        {
-            return new( Columns[ 0 ][ 0 ], Columns[ 1 ][ 0 ], Columns[ 2 ][ 0 ] );
-        }
-        public Vector GetUp()
-        {
-            return new( Columns[ 0 ][ 1 ], Columns[ 1 ][ 1 ], Columns[ 2 ][ 1 ] );
-        }
-        public Vector GetForward()
-        {
-            return new( -Columns[ 0 ][ 2 ], -Columns[ 1 ][ 2 ], -Columns[ 2 ][ 2 ] );
-        }
+        public Vector GetRight() => new( Columns[ 0 ][ 0 ], Columns[ 1 ][ 0 ], Columns[ 2 ][ 0 ] );
+        public Vector GetUp() => new( Columns[ 0 ][ 1 ], Columns[ 1 ][ 1 ], Columns[ 2 ][ 1 ] );
+        public Vector GetForward() => new( -Columns[ 0 ][ 2 ], -Columns[ 1 ][ 2 ], -Columns[ 2 ][ 2 ] );
 
         public static Matrix operator *( Matrix a, Matrix b )
         {
@@ -373,6 +352,11 @@ namespace RenderInterface
             GLMPerspective( fov, aspect, nearclip, farclip, out Matrix persp );
             return persp;
         }
+        public static Matrix Ortho( float left, float right, float bottom, float top, float near, float far )
+        {
+            GLMOrtho( left, right, bottom, top, near, far, out Matrix persp );
+            return persp;
+        }
         public static Matrix RotMatrix( float degrees, Vector axis )
         {
             GLMRotMatrix( degrees, axis, out Matrix rot );
@@ -392,6 +376,8 @@ namespace RenderInterface
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void GLMPerspective( float fov, float aspect, float nearclip, float farclip, out Matrix pMat );
+        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
+        private static extern void GLMOrtho( float left, float right, float bottom, float top, float n, float f, out Matrix pMat );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void GLMRotMatrix( float degrees, Vector axis, out Matrix pMat );
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]

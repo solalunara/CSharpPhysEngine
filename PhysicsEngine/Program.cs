@@ -335,17 +335,19 @@ namespace PhysEngine
             Shader shader = new( DirName + "/Shaders/VertexShader.vert", DirName + "/Shaders/FragmentShader.frag" );
             World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
             Texture[] dirt = { new( DirName + "/Textures/dirt.png" ) };
+            Texture button = new( DirName + "/Textures/button.png" );
             world.Add
             (
-                new BoxEnt( new( -0.5f, -0.5f, 0 ), new(), dirt )
+                new Button( new( -0.5f, -0.5f ), new( 0.5f, 0.5f ), button, () => Console.WriteLine( "clicked" ) )
             );
             world.Add
             (
                 new PhysObj( new BoxEnt( new( -0.2f, 0.5f, 0 ), new( .8f, 1.5f, 0 ), dirt ), PhysObj.Default_Coeffs, 5, 10, new() )
             );
+            shader.SetAmbientLight( 1.0f );
 
             InputHandle inptptr = Input;
-            Renderer.SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr ) );
+            Renderer.SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr = Input ) );
             WindowHandle wndptr = WindowMove;
             Renderer.SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
             MouseHandle msptr = MouseClick;
@@ -357,16 +359,22 @@ namespace PhysEngine
             {
                 if ( rtMech.HasFlag( RuntimeMechanics.FIRELEFT ) )
                 {
+                    rtMech &= ~RuntimeMechanics.FIRELEFT;
+                    Point2 ms = Mouse.GetMouseNormalizedPos( window );
+                    Vector MousePos = new( ms.x, ms.y, 0 );
                     for ( int i = 0; i < world.WorldEnts.Count; ++i )
                     {
                         if ( world.WorldEnts[ i ].GetType() == typeof( Button ) )
                         {
-                            ( (Button) world.WorldEnts[ i ] ).ClickCallback();
+                            Button b = (Button) world.WorldEnts[ i ];
+                            if ( b.TestCollision( MousePos ) )
+                                b.ClickCallback();
                         }
                     }
                 }
 
                 Renderer.StartFrame( window );
+                Matrix Cam = -player.camera.CalcEntMatrix();
                 Renderer.SetCameraValues( shader, player.camera.Perspective, -player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in world.WorldEnts )
                 {
@@ -383,8 +391,8 @@ namespace PhysEngine
             }
 
             dirt[ 0 ].Close();
+            button.Close();
             world.Close();
-            Renderer.Terminate();
         }
 
         public delegate void InputHandle( IntPtr window, Keys key, int scancode, Actions act, int mods );

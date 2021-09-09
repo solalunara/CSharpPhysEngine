@@ -101,6 +101,11 @@ void GLMPerspective( float fov, float aspect, float nearclip, float farclip, glm
     _ASSERTE( pMat );
     *pMat = glm::mat4( glm::perspective( glm::radians( fov ), aspect, nearclip, farclip ) );
 }
+void GLMOrtho( float left, float right, float bottom, float top, float n, float f, glm::mat4 *pMat )
+{
+    _ASSERTE( pMat );
+    *pMat = glm::mat4( glm::ortho( left, right, bottom, top, n, f ) );
+}
 void GLMRotMatrix( float degrees, glm::vec3 axis, glm::mat4 *pMat )
 {
     _ASSERTE( pMat );

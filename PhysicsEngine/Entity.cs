@@ -282,7 +282,7 @@ namespace PhysEngine
         public Player2D()
         {
             Body = new PhysObj( new Dim2Box( new( -.05f, -.1f ), new( 0.05f, 0.1f ), new() ), PhysObj.Default_Coeffs, 50, float.PositiveInfinity, new() );
-            camera = new( Matrix.IdentityMatrix() )
+            camera = new( Matrix.Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.01f, 1000.0f ) )
             {
                 Parent = Body.LinkedEnt
             };
@@ -304,15 +304,14 @@ namespace PhysEngine
         {
             _crouched = false;
             Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<Texture>() ), Coeffs, Mass, RotI, new() );
-            Head = new Camera( Perspective )
+            camera = new Camera( Perspective )
             {
                 Parent = Body.LinkedEnt
             };
-            Head.SetLocalOrigin( EYE_CENTER_OFFSET );
+            camera.SetLocalOrigin( EYE_CENTER_OFFSET );
         }
 
         private bool _crouched;
-        public Camera Head;
         public IEntHandle HeldEnt;
         public void Crouch()
         {
@@ -320,7 +319,7 @@ namespace PhysEngine
             {
                 _crouched = true;
                 Body.LinkedEnt.Meshes = PLAYER_CROUCH_FACES;
-                Head.SetLocalOrigin( new Vector() );
+                camera.SetLocalOrigin( new Vector() );
             }
         }
         public void UnCrouch()
@@ -329,7 +328,7 @@ namespace PhysEngine
             {
                 _crouched = false;
                 Body.LinkedEnt.Meshes = PLAYER_NORMAL_FACES;
-                Head.SetLocalOrigin( EYE_CENTER_OFFSET );
+                camera.SetLocalOrigin( EYE_CENTER_OFFSET );
             }
         }
     }
