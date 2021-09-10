@@ -40,7 +40,7 @@ namespace PhysEngine
                         throw new NotImplementedException( "only 2d and 3d supported" );
                 }
                 else
-                    Run2D();
+                    Run3D();
             }
             finally
             {
@@ -83,6 +83,7 @@ namespace PhysEngine
             Texture[] dirt = { new Texture( DirName + "/Textures/dirt.png" ) };
             Texture[] grass = { new Texture( DirName + "/Textures/grass.png" ) };
             player = new Player3D( persp, PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
+            //player = new Player2D();
             world.Add
             (
                 new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 20, new() ),
@@ -338,11 +339,11 @@ namespace PhysEngine
             Texture button = new( DirName + "/Textures/button.png" );
             world.Add
             (
-                new Button( new( -0.5f, -0.5f ), new( 0.5f, 0.5f ), button, () => Console.WriteLine( "clicked" ) )
+                new Button( new( -1, -1 ), new( 1, 1 ), button, () => Console.WriteLine( "clicked" ) )
             );
             world.Add
             (
-                new PhysObj( new BoxEnt( new( -0.2f, 0.5f, 0 ), new( .8f, 1.5f, 0 ), dirt ), PhysObj.Default_Coeffs, 5, 10, new() )
+                new PhysObj( new Dim2Box( new( -1, 3 ), new( 1, 5 ), dirt[ 0 ] ), PhysObj.Default_Coeffs, 5, 5, new() )
             );
             shader.SetAmbientLight( 1.0f );
 
@@ -361,7 +362,8 @@ namespace PhysEngine
                 {
                     rtMech &= ~RuntimeMechanics.FIRELEFT;
                     Point2 ms = Mouse.GetMouseNormalizedPos( window );
-                    Vector MousePos = new( ms.x, ms.y, 0 );
+                    Vector MousePos = player.camera.TransformPoint( new( ms.x * 10, ms.y * 10, 0 ) );
+                    MousePos.z = 0;
                     for ( int i = 0; i < world.WorldEnts.Count; ++i )
                     {
                         if ( world.WorldEnts[ i ].GetType() == typeof( Button ) )
