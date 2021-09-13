@@ -40,7 +40,7 @@ namespace PhysEngine
                         throw new NotImplementedException( "only 2d and 3d supported" );
                 }
                 else
-                    Run3D();
+                    Run2D();
             }
             finally
             {
@@ -337,13 +337,16 @@ namespace PhysEngine
             World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
             Texture[] dirt = { new( DirName + "/Textures/dirt.png" ) };
             Texture button = new( DirName + "/Textures/button.png" );
+
+            Texture Sun = new( DirName + "/Textures/Sun.png" );
+            Texture Earth = new( DirName + "/Textures/Earth.png" );
+            Texture Jupiter = new( DirName + "/Textures/Jupiter.png" );
+
             world.Add
             (
-                new Button( new( -1, -1 ), new( 1, 1 ), button, () => Console.WriteLine( "clicked" ) )
-            );
-            world.Add
-            (
-                new PhysObj( new Dim2Box( new( -1, 3 ), new( 1, 5 ), dirt[ 0 ] ), PhysObj.Default_Coeffs, 5, 5, new() )
+                new Button( new( -9, -2.5f ), new( -4, 2.5f ), Sun, () => Console.WriteLine( "The sun" ) ),
+                new Button( new( -2.5f, -2.5f ), new( 2.5f, 2.5f ), Earth, () => Console.WriteLine( "The earth" ) ),
+                new Button( new( 4, -2.5f ), new( 9, 2.5f ), Jupiter, () => Console.WriteLine( "The planet jupiter" ) )
             );
             shader.SetAmbientLight( 1.0f );
 
