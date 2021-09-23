@@ -282,7 +282,7 @@ namespace PhysEngine
         public Player2D()
         {
             Body = new PhysObj( new Dim2Box( new( -.05f, -.1f ), new( 0.05f, 0.1f ), new() ), PhysObj.Default_Coeffs, 50, float.PositiveInfinity, new() );
-            camera = new( Matrix.Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.01f, 1000.0f ) )
+            camera = new( Matrix.Ortho( -10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 1000.0f ) )
             {
                 Parent = Body.LinkedEnt
             };

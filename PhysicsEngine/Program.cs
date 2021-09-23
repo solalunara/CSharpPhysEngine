@@ -40,7 +40,7 @@ namespace PhysEngine
                         throw new NotImplementedException( "only 2d and 3d supported" );
                 }
                 else
-                    Run2D();
+                    Run3D();
             }
             finally
             {
@@ -83,6 +83,7 @@ namespace PhysEngine
             Texture[] dirt = { new Texture( DirName + "/Textures/dirt.png" ) };
             Texture[] grass = { new Texture( DirName + "/Textures/grass.png" ) };
             player = new Player3D( persp, PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
+            //player = new Player2D();
             world.Add
             (
                 new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 20, new() ),
@@ -336,13 +337,16 @@ namespace PhysEngine
             World world = new( PhysicsEnvironment.Default_Gravity, 0.02f );
             Texture[] dirt = { new( DirName + "/Textures/dirt.png" ) };
             Texture button = new( DirName + "/Textures/button.png" );
+
+            Texture Sun = new( DirName + "/Textures/Sun.png" );
+            Texture Earth = new( DirName + "/Textures/Earth.png" );
+            Texture Jupiter = new( DirName + "/Textures/Jupiter.png" );
+
             world.Add
             (
-                new Button( new( -0.5f, -0.5f ), new( 0.5f, 0.5f ), button, () => Console.WriteLine( "clicked" ) )
-            );
-            world.Add
-            (
-                new PhysObj( new BoxEnt( new( -0.2f, 0.5f, 0 ), new( .8f, 1.5f, 0 ), dirt ), PhysObj.Default_Coeffs, 5, 10, new() )
+                new Button( new( -9, -2.5f ), new( -4, 2.5f ), Sun, () => Console.WriteLine( "The sun" ) ),
+                new Button( new( -2.5f, -2.5f ), new( 2.5f, 2.5f ), Earth, () => Console.WriteLine( "The earth" ) ),
+                new Button( new( 4, -2.5f ), new( 9, 2.5f ), Jupiter, () => Console.WriteLine( "The planet jupiter" ) )
             );
             shader.SetAmbientLight( 1.0f );
 
@@ -361,7 +365,8 @@ namespace PhysEngine
                 {
                     rtMech &= ~RuntimeMechanics.FIRELEFT;
                     Point2 ms = Mouse.GetMouseNormalizedPos( window );
-                    Vector MousePos = new( ms.x, ms.y, 0 );
+                    Vector MousePos = player.camera.TransformPoint( new( ms.x * 10, ms.y * 10, 0 ) );
+                    MousePos.z = 0;
                     for ( int i = 0; i < world.WorldEnts.Count; ++i )
                     {
                         if ( world.WorldEnts[ i ].GetType() == typeof( Button ) )
@@ -369,6 +374,7 @@ namespace PhysEngine
                             Button b = (Button) world.WorldEnts[ i ];
                             if ( b.TestCollision( MousePos ) )
                                 b.ClickCallback();
+
                         }
                     }
                 }
@@ -378,6 +384,7 @@ namespace PhysEngine
                 Renderer.SetCameraValues( shader, player.camera.Perspective, -player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in world.WorldEnts )
                 {
+                    b.SetAbsRot( Matrix.RotMatrix( 0.5f, new( 0, 1, 1 ) ) * b.GetAbsRot() );
                     Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
                     foreach ( FaceMesh m in b.Meshes )
                     {
