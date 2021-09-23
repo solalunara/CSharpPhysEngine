@@ -1,0 +1,15 @@
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\bin\Debug\net6.0\Physics.deps.json
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\bin\Debug\net6.0\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\bin\Debug\net6.0\ref\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\bin\Debug\net6.0\Physics.pdb
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\bin\Debug\net6.0\RenderInterface.dll
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\bin\Debug\net6.0\RenderInterface.pdb
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.csproj.AssemblyReference.cache
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.AssemblyInfoInputs.cache
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.AssemblyInfo.cs
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.csproj.CoreCompileInputs.cache
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.csproj.CopyComplete
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\ref\Physics.dll
+C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Physics\obj\Debug\net6.0\Physics.pdb

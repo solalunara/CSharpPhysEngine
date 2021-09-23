@@ -40,7 +40,7 @@ namespace PhysEngine
                         throw new NotImplementedException( "only 2d and 3d supported" );
                 }
                 else
-                    Run2D();
+                    Run3D();
             }
             finally
             {
@@ -374,6 +374,7 @@ namespace PhysEngine
                             Button b = (Button) world.WorldEnts[ i ];
                             if ( b.TestCollision( MousePos ) )
                                 b.ClickCallback();
+
                         }
                     }
                 }
@@ -383,6 +384,7 @@ namespace PhysEngine
                 Renderer.SetCameraValues( shader, player.camera.Perspective, -player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in world.WorldEnts )
                 {
+                    b.SetAbsRot( Matrix.RotMatrix( 0.5f, new( 0, 1, 1 ) ) * b.GetAbsRot() );
                     Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
                     foreach ( FaceMesh m in b.Meshes )
                     {
