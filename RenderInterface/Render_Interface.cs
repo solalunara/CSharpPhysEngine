@@ -70,8 +70,6 @@ namespace RenderInterface
     }
     public class Mouse
     {
-        
-
         public static Point2 GetMouseOffset( IntPtr window )
         {
             GetMouseOffset( window, out double x, out double y );
@@ -208,16 +206,6 @@ namespace RenderInterface
         private static extern void DestructTexture( ref Texture pTex );
 
     }
-    public class TextureHandle
-    {
-        public TextureHandle( string filepath )
-        {
-            this.TextureName = filepath;
-            this.texture = new Texture( filepath );
-        }
-        public Texture texture;
-        public string TextureName;
-    }
 
     [StructLayout( LayoutKind.Sequential )]
     public struct Vector4
@@ -258,20 +246,14 @@ namespace RenderInterface
         {
             get
             {
-                switch ( i )
+                return i switch
                 {
-                    case 0:
-                        return x;
-                    case 1:
-                        return y;
-                    case 2:
-                        return z;
-                    case 3:
-                        return w;
-                    default:
-                        System.Diagnostics.Debug.Assert( false, "tried to access vector element out of bounds" );
-                        return 0;
-                }
+                    0 => x,
+                    1 => y,
+                    2 => z,
+                    3 => w,
+                    _ => throw new ArgumentOutOfRangeException( nameof( i ), "i was out of range" )
+                };
             }
             set
             {
@@ -296,7 +278,7 @@ namespace RenderInterface
             }
         }
 
-        public static implicit operator Vector4( Vector v ) => new( v.x, v.y, v.z, 1.0f );
+        public static explicit operator Vector4( (Vector, float) a ) => new( a.Item1.x, a.Item1.y, a.Item1.z, a.Item2 );
     }
     [StructLayout( LayoutKind.Sequential )]
     public struct Matrix
@@ -419,18 +401,13 @@ namespace RenderInterface
         {
             get
             {
-                switch ( i )
+                return i switch
                 {
-                    case 0:
-                        return x;
-                    case 1:
-                        return y;
-                    case 2:
-                        return z;
-                    default:
-                        System.Diagnostics.Debug.Assert( false, "tried to access vector element out of bounds" );
-                        return 0;
-                }
+                    0 => x,
+                    1 => y,
+                    2 => z,
+                    _ => throw new ArgumentOutOfRangeException( nameof( i ), "Vector accessor out of range" )
+                };
             }
             set
             {
@@ -489,6 +466,18 @@ namespace RenderInterface
         {
             this.Normal = Normal;
             this.Dist = Dist;
+        }
+        public Plane( Vector pt1, Vector pt2, Vector pt3 )
+        {
+            pt2 -= pt1;
+            pt3 -= pt1;
+            Normal = Vector.Cross( pt2, pt3 );
+            Dist = Vector.Dot( Normal, pt1 );
+        }
+        public Plane( Vector Normal, Vector PassThrough )
+        {
+            this.Normal = Normal.Normalized();
+            Dist = Vector.Dot( this.Normal, PassThrough );
         }
         [MarshalAs( UnmanagedType.Struct )]
         public Vector Normal;

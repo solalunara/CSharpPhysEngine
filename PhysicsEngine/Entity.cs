@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,160 +9,6 @@ using RenderInterface;
 
 namespace PhysEngine
 {
-    class BaseEntity : IEntHandle
-    {
-        public BaseEntity( FaceMesh[] Meshes, Transform LocalTransform )
-        {
-            this.Meshes = Meshes;
-            this.LocalTransform = LocalTransform;
-        }
-
-        public void Close()
-        {
-            foreach ( FaceMesh m in Meshes )
-            {
-                m.Close();
-            }
-        }
-
-        private FaceMesh[] _Meshes;
-        public FaceMesh[] Meshes
-        {
-            get => _Meshes;
-            set => _Meshes = value;
-        }
-        private ITransformHandle _LocalTransform;
-        public ITransformHandle LocalTransform
-        { get => _LocalTransform; set => _LocalTransform = value; }
-
-        private IEntHandle _Parent;
-        public IEntHandle Parent
-        {
-            get
-            {
-                return _Parent;
-            }
-            set
-            {
-                Vector AbsPos = GetAbsOrigin();
-                Matrix AbsRot = GetAbsRot();
-                _Parent = (BaseEntity) value;
-                SetAbsOrigin( AbsPos );
-                SetAbsRot( AbsRot );
-            }
-        }
-
-        public void SetLocalOrigin( Vector pt ) => LocalTransform.Position = pt;
-        public void SetLocalRot( Matrix r ) => LocalTransform.Rotation = r;
-        public void SetLocalScale( Vector s ) => LocalTransform.Scale = s;
-
-        public Vector GetLocalOrigin() => LocalTransform.Position;
-        public Matrix GetLocalRot() => LocalTransform.Rotation;
-        public Vector GetLocalScale() => LocalTransform.Scale;
-
-        public void SetAbsOrigin( Vector pt )
-        {
-            if ( Parent != null )
-                LocalTransform.Position = Parent.InverseTransformPoint( pt );
-            else
-                LocalTransform.Position = pt;
-        }
-        public void SetAbsRot( Matrix r )
-        {
-            if ( Parent != null )
-                LocalTransform.Rotation = -Parent.GetAbsRot() * r;
-            else
-                LocalTransform.Rotation = r;
-        }
-        public Vector GetAbsOrigin()
-        {
-            if ( Parent != null )
-                return Parent.TransformPoint( LocalTransform.Position );
-            else
-                return LocalTransform.Position;
-        }
-        public Matrix GetAbsRot()
-        {
-            if ( Parent != null )
-                return Parent.GetAbsRot() * LocalTransform.Rotation;
-            else
-                return LocalTransform.Rotation;
-        }
-
-
-        public Matrix CalcEntMatrix()
-        {
-            if ( Parent != null )
-                return Parent.CalcEntMatrix() * LocalTransform.ThisToWorld;
-            return LocalTransform.ThisToWorld;
-        }
-
-        public Vector TransformDirection( Vector dir ) => (Vector) ( CalcEntMatrix() * new Vector4( dir, 0.0f ) );
-        public Vector TransformPoint( Vector pt ) => (Vector) ( CalcEntMatrix() * new Vector4( pt, 1.0f ) );
-        public Vector InverseTransformDirection( Vector dir ) => (Vector) ( -CalcEntMatrix() * new Vector4( dir, 0.0f ) );
-        public Vector InverseTransformPoint( Vector pt ) => (Vector) ( -CalcEntMatrix() * new Vector4( pt, 1.0f ) );
-
-
-        public Plane GetCollisionPlane( Vector pt )
-        {
-            Plane[] planes = new Plane[ Meshes.Length ];
-            for ( int i = 0; i < planes.Length; ++i )
-            {
-                Vector WorldPoint = TransformPoint( Meshes[ i ].GetVerts()[ 0 ] );
-                planes[ i ] = new Plane( TransformDirection( Meshes[ i ].Normal ), Vector.Dot( TransformDirection( Meshes[ i ].Normal ), WorldPoint ) );
-            }
-
-            float[] PlaneDists = new float[ planes.Length ];
-            for ( int i = 0; i < PlaneDists.Length; ++i )
-            {
-                PlaneDists[ i ] = Vector.Dot( planes[ i ].Normal, pt ) - planes[ i ].Dist;
-            }
-
-            float MaxDist = PlaneDists[ 0 ];
-            int MaxIndex = 0;
-            for ( int i = 0; i < PlaneDists.Length; ++i )
-            {
-                if ( PlaneDists[ i ] > MaxDist )
-                {
-                    MaxIndex = i;
-                    MaxDist = PlaneDists[ i ];
-                }
-            }
-
-            return planes[ MaxIndex ];
-        }
-
-        public Vector[] GetVerts()
-        {
-            HashSet<Vector> Verts = new();
-            for ( int i = 0; i < Meshes.Length; ++i )
-            {
-                Verts.UnionWith( Meshes[ i ].GetVerts() );
-            }
-            return Verts.ToArray();
-        }
-        public Vector[] GetWorldVerts()
-        {
-            Vector[] ret = GetVerts();
-            for ( int i = 0; i < ret.Length; ++i )
-            {
-                ret[ i ] = TransformPoint( ret[ i ] );
-            }
-            return ret;
-        }
-        public bool TestCollision( Vector pt )
-        {
-            Vector[] Points1 = GetWorldVerts();
-            Vector[] Points2 = { pt };
-            for ( int i = 0; i < Meshes.Length; ++i )
-            {
-                if ( !Collision.TestCollision( Meshes[ i ].Normal, Points1, Points2 ) )
-                    return false;
-            }
-            return true;
-        }
-    }
-
     class BoxEnt : BaseEntity
     {
         public BoxEnt( Vector mins, Vector maxs, Texture[] tx, bool NormalizeBox = true ) :
@@ -252,7 +99,7 @@ namespace PhysEngine
                         Meshes[ i ] = new FaceMesh( Verts[ i ], inds, tx[ i ], Normals[ i ] );
                     break;
                 default:
-                    System.Diagnostics.Debug.Assert( false );
+                    Debug.Assert( false );
                     break;
             }
 
@@ -312,7 +159,7 @@ namespace PhysEngine
         }
 
         private bool _crouched;
-        public IEntHandle HeldEnt;
+        public BaseEntity HeldEnt;
         public void Crouch()
         {
             if ( !_crouched )

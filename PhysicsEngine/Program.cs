@@ -30,14 +30,20 @@ namespace PhysEngine
         {
             try
             {
-                if ( args.Length == 1 )
+                if ( args.Length > 0 )
                 {
-                    if ( args[ 0 ] == "-2d" )
-                        Run2D();
-                    else if ( args[ 0 ] == "-3d" )
-                        Run3D();
-                    else
-                        throw new NotImplementedException( "only 2d and 3d supported" );
+                    for ( int i = 0; i < args.Length; ++i )
+                    {
+                        switch ( args[ i ].ToLower() )
+                        {
+                            case "-2d":
+                                Run2D();
+                                break;
+                            case "-3d":
+                                Run3D();
+                                break;
+                        }
+                    }
                 }
                 else
                     Run3D();
@@ -59,8 +65,8 @@ namespace PhysEngine
 
             Light[] testlights = 
             { 
-                new Light( new Vector( 0, -5,-5 ), new Vector( 0.7f, 0.7f, 1 ), 20 ),
-                new Light( new Vector( 0, -5, 5 ), new Vector( 0.7f, 0.7f, 1 ), 20 )
+                new Light( new Vector4( 0, -5,-5, 1 ), new Vector4( 0.7f, 0.7f, 1, 1 ), 20 ),
+                new Light( new Vector4( 0, -5, 5, 1 ), new Vector4( 0.7f, 0.7f, 1, 1 ), 20 )
             };
             shader.SetLights( testlights );
 
@@ -190,31 +196,31 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREC ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREC;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt );
                         if ( hit.bHit )
                         {
-                            IEntHandle HitEnt = hit.HitEnt;
+                            BaseEntity HitEnt = hit.HitEnt;
                             HitEnt.LocalTransform.Scale *= new Vector( 1.1f, 1.1f, 1.1f );
                         }
                     }
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREV ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREV;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt );
                         if ( hit.bHit )
                         {
-                            IEntHandle HitEnt = hit.HitEnt;
+                            BaseEntity HitEnt = hit.HitEnt;
                             HitEnt.LocalTransform.Scale *= new Vector( 0.9f, 0.9f, 0.9f );
                         }
                     }
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREX ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREX;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         Vector ptCenter = new();
@@ -230,7 +236,7 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREZ ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREZ;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         Vector ptCenter = new();
@@ -246,7 +252,7 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREF ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREF;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         if ( hit.bHit )
@@ -255,7 +261,7 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIRER ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIRER;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         if ( hit.bHit || world.GetEntPhysics( hit.HitEnt ) == null )
@@ -272,7 +278,7 @@ namespace PhysEngine
                         }
                         else
                         {
-                            Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                            Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                             Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                             RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                             if ( hit.bHit )
@@ -288,7 +294,7 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.FIREQ ) )
                     {
                         rtMech &= ~RuntimeMechanics.FIREQ;
-                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector( 0, 0, -30 ) );
+                        Vector TransformedForward = (Vector) ( player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = world.TraceRay( player.camera.GetAbsOrigin(), EntPt, player.Body.LinkedEnt);
                         if ( hit.bHit )

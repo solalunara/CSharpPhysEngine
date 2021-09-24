@@ -15,7 +15,7 @@ namespace Physics
         const float AirDensity = 1.255f; //kg/m^3
 
 
-        public PhysObj( IEntHandle LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity )
+        public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity )
         {
             this.LinkedEnt = LinkedEnt;
             this.AirDragCoeffs = AirDragCoeffs;
@@ -25,8 +25,8 @@ namespace Physics
             ForceChannels = new();
         }
 
-        private IEntHandle _LinkedEnt;
-        public IEntHandle LinkedEnt
+        private BaseEntity _LinkedEnt;
+        public BaseEntity LinkedEnt
         {
             get => _LinkedEnt;
             set => _LinkedEnt = value;
@@ -144,8 +144,11 @@ namespace Physics
         }
 
         //collide a physics object with the world
-        public void Collide( IEntHandle OtherEnt, Vector Gravity )
+        public void Collide( BaseEntity OtherEnt, Vector Gravity )
         {
+            Vector CollisionNormal = -BaseEntity.TestCollision( LinkedEnt, OtherEnt ).Item1;
+            float CollisionDepth = BaseEntity.TestCollisionDepth( LinkedEnt, OtherEnt ).Item1;
+
             Plane CollisionPlane = OtherEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() );
             //Is the center of mass above the object?
             bool COMAbove = OtherEnt.TestCollision( CollisionPlane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() ) );
@@ -162,7 +165,6 @@ namespace Physics
                     }
                 }
             }
-
 
             Vector[] WorldPts = LinkedEnt.GetWorldVerts();
             float[] Dists = new float[ WorldPts.Length ];
@@ -204,9 +206,9 @@ namespace Physics
             }
 
             //solve penetration
-            LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + CollisionPlane.Normal * -Dists.Min() );
+            LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + CollisionNormal * CollisionDepth );
 
-            Vector Force = Vector.Dot( -Gravity * Mass, CollisionPlane.Normal ) * CollisionPlane.Normal; 
+            Vector Force = Vector.Dot( -Gravity * Mass, CollisionNormal ) * CollisionNormal; 
             AddForceAtPoint( Force, CollisionPoint );
 
         }
@@ -221,13 +223,13 @@ namespace Physics
 
             for ( int i = 0; i < world.GetEntList().Length; ++i )
             {
-                IEntHandle WorldEnt = world.GetEntList()[ i ];
+                BaseEntity WorldEnt = world.GetEntList()[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
                 if ( WorldEnt.Meshes.Length == 0 )
                     continue; //nothing to collide with
 
-                if ( Collision.TestCollision( WorldEnt, LinkedEnt ) )
+                if ( BaseEntity.BinaryTestCollision( WorldEnt, LinkedEnt ) )
                 {
                     bCollision = true;
 
@@ -238,18 +240,17 @@ namespace Physics
             }
         }
 
-        public static List<PhysObj[]> GetCollisionPairs( IWorldHandle world )
+        public static List<(PhysObj, PhysObj)> GetCollisionPairs( IWorldHandle world )
         {
-            List<PhysObj[]> Pairs = new();
+            List<(PhysObj, PhysObj)> Pairs = new();
             IPhysHandle[] PhysList = world.GetPhysObjList();
             for ( int i = 0; i < PhysList.Length; ++i )
             {
                 for ( int j = i + 1; j < PhysList.Length; ++j )
                 {
-                    if ( Collision.TestCollision( PhysList[ i ].LinkedEnt, PhysList[ j ].LinkedEnt ) )
+                    if ( BaseEntity.BinaryTestCollision( PhysList[ i ].LinkedEnt, PhysList[ j ].LinkedEnt ) )
                     {
-                        PhysObj[] pair = { (PhysObj) PhysList[ i ], (PhysObj) PhysList[ j ] };
-                        Pairs.Add( pair );
+                        Pairs.Add( ( (PhysObj)PhysList[ i ], (PhysObj)PhysList[ j ] ) );
                     }
                 }
             }

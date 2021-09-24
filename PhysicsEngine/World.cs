@@ -13,7 +13,7 @@ namespace PhysEngine
 {
     struct RayHitInfo
     {
-        public RayHitInfo( Vector ptHit, Vector vNormal, IEntHandle HitEnt )
+        public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt )
         {
             this.bHit = true;
             this.ptHit = ptHit;
@@ -23,7 +23,7 @@ namespace PhysEngine
         public bool bHit;
         public Vector ptHit;
         public Vector vNormal;
-        public IEntHandle HitEnt;
+        public BaseEntity HitEnt;
     }
     class World : IWorldHandle
     {
@@ -39,16 +39,16 @@ namespace PhysEngine
         {
             WorldEnts = new( Ents );
         }
-        public List<IEntHandle> WorldEnts;
+        public List<BaseEntity> WorldEnts;
         public List<IPhysHandle> PhysicsObjects;
 
         public PhysicsEnvironment Environment;
         public PhysicsSimulator Simulator;
 
-        public IEntHandle[] GetEntList() => WorldEnts.ToArray();
+        public BaseEntity[] GetEntList() => WorldEnts.ToArray();
         public IPhysHandle[] GetPhysObjList() => PhysicsObjects.ToArray();
 
-        public IPhysHandle GetEntPhysics( IEntHandle ent )
+        public IPhysHandle GetEntPhysics( BaseEntity ent )
         {
             for ( int i = 0; i < PhysicsObjects.Count; ++i )
             {
@@ -58,7 +58,7 @@ namespace PhysEngine
             return null;
         }
 
-        public void Add( params IEntHandle[] ent )
+        public void Add( params BaseEntity[] ent )
         {
             WorldEnts.AddRange( ent );
         }
@@ -80,7 +80,7 @@ namespace PhysEngine
                 WorldEnts[ i ].Close();
         }
 
-        public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, params IEntHandle[] IgnoreEnts )
+        public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, params BaseEntity[] IgnoreEnts )
         {
             int TraceFidelity = 300;
             Vector vDirection = ( ptEnd - ptStart ) / TraceFidelity;

@@ -1,106 +1,396 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace RenderInterface
 {
     // Interfaces for projects that don't include PhysicsEngine
-    public interface IEntHandle
+    public class BaseEntity
     {
-        void Close();
-
-        void SetLocalOrigin( Vector pt );
-        void SetLocalRot( Matrix r );
-        void SetLocalScale( Vector s );
-        Vector GetLocalOrigin();
-        Matrix GetLocalRot();
-        Vector GetLocalScale();
-
-        void SetAbsOrigin( Vector pt );
-        void SetAbsRot( Matrix r );
-        Vector GetAbsOrigin();
-        Matrix GetAbsRot();
-
-        Matrix CalcEntMatrix();
-
-        Plane GetCollisionPlane( Vector pt );
-
-        Vector[] GetVerts();
-        Vector[] GetWorldVerts();
-
-
-        Vector TransformDirection( Vector dir );
-        Vector TransformPoint( Vector pt );
-        Vector InverseTransformDirection( Vector dir );
-        Vector InverseTransformPoint( Vector pt );
-
-        FaceMesh[] Meshes
+        //constructor
+        public BaseEntity( FaceMesh[] Meshes, Transform LocalTransform )
         {
-            get;
-            set;
+            this.Meshes = Meshes;
+            this.LocalTransform = LocalTransform;
         }
 
-        IEntHandle Parent
+        //member data
+        public FaceMesh[] Meshes;
+        public Transform LocalTransform;
+
+        //sort of member data
+        private BaseEntity _Parent;
+        public BaseEntity Parent
         {
-            get;
-            set;
+            get
+            {
+                return _Parent;
+            }
+            set
+            {
+                Vector OldPos = GetAbsOrigin();
+                Matrix OldRot = GetAbsRot();
+                _Parent = value;
+                SetAbsOrigin( OldPos );
+                SetAbsRot( OldRot );
+            }
         }
 
-        ITransformHandle LocalTransform
+        //member methods
+        public void Close()
         {
-            get;
-            set;
+            foreach ( FaceMesh m in Meshes )
+            {
+                m.Close();
+            }
+        }
+        public void SetLocalOrigin( Vector pt ) => LocalTransform.Position = pt;
+        public void SetLocalRot( Matrix r ) => LocalTransform.Rotation = r;
+        public void SetLocalScale( Vector s ) => LocalTransform.Scale = s;
+        public Vector GetLocalOrigin() => LocalTransform.Position;
+        public Matrix GetLocalRot() => LocalTransform.Rotation;
+        public Vector GetLocalScale() => LocalTransform.Scale;
+        public void SetAbsOrigin( Vector pt )
+        {
+            if ( Parent != null )
+                LocalTransform.Position = Parent.InverseTransformPoint( pt );
+            else
+                LocalTransform.Position = pt;
+        }
+        public void SetAbsRot( Matrix r )
+        {
+            if ( Parent != null )
+                LocalTransform.Rotation = -Parent.GetAbsRot() * r;
+            else
+                LocalTransform.Rotation = r;
+        }
+        public Vector GetAbsOrigin()
+        {
+            if ( Parent != null )
+                return Parent.TransformPoint( LocalTransform.Position );
+            else
+                return LocalTransform.Position;
+        }
+        public Matrix GetAbsRot()
+        {
+            if ( Parent != null )
+                return Parent.GetAbsRot() * LocalTransform.Rotation;
+            else
+                return LocalTransform.Rotation;
+        }
+        public Matrix CalcEntMatrix()
+        {
+            if ( Parent != null )
+                return Parent.CalcEntMatrix() * LocalTransform.ThisToWorld;
+            return LocalTransform.ThisToWorld;
+        }
+        public Vector TransformDirection( Vector dir ) => (Vector)( CalcEntMatrix() * new Vector4( dir, 0.0f ) );
+        public Vector TransformPoint( Vector pt ) => (Vector)( CalcEntMatrix() * new Vector4( pt, 1.0f ) );
+        public Vector InverseTransformDirection( Vector dir ) => (Vector)( -CalcEntMatrix() * new Vector4( dir, 0.0f ) );
+        public Vector InverseTransformPoint( Vector pt ) => (Vector)( -CalcEntMatrix() * new Vector4( pt, 1.0f ) );
+        public Vector[] GetVerts()
+        {
+            HashSet<Vector> Verts = new();
+            for ( int i = 0; i < Meshes.Length; ++i )
+            {
+                Verts.UnionWith( Meshes[ i ].GetVerts() );
+            }
+            return Verts.ToArray();
+        }
+        public Vector[] GetWorldVerts()
+        {
+            Vector[] ret = GetVerts();
+            for ( int i = 0; i < ret.Length; ++i )
+            {
+                ret[ i ] = TransformPoint( ret[ i ] );
+            }
+            return ret;
+        }
+        public bool TestCollision( Vector pt )
+        {
+            Vector[] Points1 = GetWorldVerts();
+            Vector[] Points2 = { pt };
+            for ( int i = 0; i < Meshes.Length; ++i )
+            {
+                if ( TestCollision( Meshes[ i ].Normal, Points1, Points2 ) == 0 )
+                    return false;
+            }
+            return true;
+        }
+        public Plane GetCollisionPlane( Vector pt )
+        {
+            Plane[] planes = new Plane[ Meshes.Length ];
+            for ( int i = 0; i < planes.Length; ++i )
+            {
+                Vector WorldPoint = TransformPoint( Meshes[ i ].GetVerts()[ 0 ] );
+                planes[ i ] = new Plane( TransformDirection( Meshes[ i ].Normal ), Vector.Dot( TransformDirection( Meshes[ i ].Normal ), WorldPoint ) );
+            }
+
+            float[] PlaneDists = new float[ planes.Length ];
+            for ( int i = 0; i < PlaneDists.Length; ++i )
+            {
+                PlaneDists[ i ] = Vector.Dot( planes[ i ].Normal, pt ) - planes[ i ].Dist;
+            }
+
+            float MaxDist = PlaneDists[ 0 ];
+            int MaxIndex = 0;
+            for ( int i = 0; i < PlaneDists.Length; ++i )
+            {
+                if ( PlaneDists[ i ] > MaxDist )
+                {
+                    MaxIndex = i;
+                    MaxDist = PlaneDists[ i ];
+                }
+            }
+
+            return planes[ MaxIndex ];
         }
 
-        bool TestCollision( Vector pt );
+        //static members
+        public static ( Vector, Vector ) TestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
+        {
+            if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
+            {
+                Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
+                return ( new Vector(), new Vector() );
+            }
+            Vector Direction = ent1.GetAbsOrigin() + offset1 - ent2.GetAbsOrigin() - offset2;
+            Vector[] Points1 = ent1.GetWorldVerts();
+            Vector[] Points2 = ent2.GetWorldVerts();
+            for ( int i = 0; i < Points1.Length; ++i )
+                Points1[ i ] += offset1;
+            for ( int i = 0; i < Points2.Length; ++i )
+                Points2[ i ] += offset2;
+
+            List<float> NormsEnt1 = new();
+            List<float> NormsEnt2 = new();
+            for ( int i = 0; i < ent1.Meshes.Length; ++i )
+                NormsEnt1.Add( TestCollision( ent1.TransformDirection( ent1.Meshes[ i ].Normal ), Points1, Points2 ) );
+            for ( int i = 0; i < ent2.Meshes.Length; ++i )
+                NormsEnt2.Add( TestCollision( ent2.TransformDirection( ent2.Meshes[ i ].Normal ), Points1, Points2 ) );
+
+            int NormEnt1 = NormsEnt1.IndexOf( NormsEnt1.Min() );
+            int NormEnt2 = NormsEnt2.IndexOf( NormsEnt2.Min() );
+            Vector Norm1 = ent1.TransformDirection( ent1.Meshes[ NormEnt1 ].Normal );
+            Vector Norm2 = ent2.TransformDirection( ent2.Meshes[ NormEnt2 ].Normal );
+            if ( Vector.Dot( Norm1, -Direction ) < 0 )
+                Norm1 = -Norm1;
+            if ( Vector.Dot( Norm2, Direction ) < 0 )
+                Norm2 = -Norm2;
+            return ( Norm1, Norm2 );
+        }
+        public static ( float, float ) TestCollisionDepth( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
+        {
+            Vector[] Points1 = ent1.GetWorldVerts();
+            Vector[] Points2 = ent2.GetWorldVerts();
+            for ( int i = 0; i < Points1.Length; ++i )
+                Points1[ i ] += offset1;
+            for ( int i = 0; i < Points2.Length; ++i )
+                Points2[ i ] += offset2;
+
+            if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
+            {
+                Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
+                return (0, 0);
+            }
+
+            (Vector, Vector) Norms = TestCollision( ent1, ent2, offset1, offset2 );
+            return (TestCollision( Norms.Item1, Points1, Points2 ), TestCollision( Norms.Item2, Points1, Points2 ));
+        }
+        public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
+        {
+            BaseEntity[] ents = { ent1, ent2 };
+
+            Vector[] Points1 = ent1.GetWorldVerts();
+            Vector[] Points2 = ent2.GetWorldVerts();
+            for ( int i = 0; i < Points1.Length; ++i )
+                Points1[ i ] += offset1;
+            for ( int i = 0; i < Points2.Length; ++i )
+                Points2[ i ] += offset2;
+
+            for ( int EntIndex = 0; EntIndex < 2; ++EntIndex )
+            {
+                BaseEntity Ent = ents[ EntIndex ];
+                for ( int i = 0; i < Ent.Meshes.Length; ++i )
+                {
+                    if ( TestCollision( Ent.TransformDirection( Ent.Meshes[ i ].Normal ), Points1, Points2 ) == 0 )
+                        return false;
+                }
+            }
+            return true;
+        }
+        public static float TestCollision( Vector Normal, Vector[] Points1, Vector[] Points2 )
+        {
+            if ( Points1.Length == 0 || Points2.Length == 0 )
+                return 0;
+
+            float[] ProjectedPoints1 = new float[ Points1.Length ];
+            float[] ProjectedPoints2 = new float[ Points2.Length ];
+
+            for ( int i = 0; i < Points1.Length; ++i )
+                ProjectedPoints1[ i ] = Vector.Dot( Points1[ i ], Normal );
+            for ( int i = 0; i < Points2.Length; ++i )
+                ProjectedPoints2[ i ] = Vector.Dot( Points2[ i ], Normal );
+
+            float amin = ProjectedPoints1.Min();
+            float amax = ProjectedPoints1.Max();
+
+            float bmin = ProjectedPoints2.Min();
+            float bmax = ProjectedPoints2.Max();
+
+            //if ( Small1 >= Large2 || Small2 >= Large1 )
+            //    return 0;
+
+            if ( amin < bmax && amin > bmin )
+                return bmax - amin;
+            else if ( bmin < amax && bmin > amin )
+                return amax - bmin;
+            else
+                return 0;
+        }
     }
-    public interface ITransformHandle
+    public class Transform
     {
-        Matrix ThisToWorld
+        public Transform( Vector Position, Vector Scale, Matrix Rotation )
         {
-            get;
-            set;
+            this._Position = Position;
+            this._Scale = Scale;
+            this._Rotation = Rotation;
+            Update();
         }
-        Matrix WorldToThis
+        public Matrix ThisToWorld;
+        public Matrix WorldToThis;
+
+        private Vector _Position;
+        public Vector Position
         {
-            get;
-            set;
+            get => _Position;
+            set
+            {
+                _Position = value;
+                Update();
+            }
         }
 
-        Vector Position
+        private Vector _Scale;
+        public Vector Scale
         {
-            get;
-            set;
-        }
-        Vector Scale
-        {
-            get;
-            set;
-        }
-        Matrix Rotation
-        {
-            get;
-            set;
+            get => _Scale;
+            set
+            {
+                _Scale = value;
+                Update();
+            }
         }
 
-        Vector QAngles
+        private Matrix _Rotation;
+        public Matrix Rotation
         {
-            get;
-            set;
+            get => _Rotation;
+            set
+            {
+                _Rotation = value;
+                Update();
+            }
+        }
+
+        public Vector QAngles
+        {
+            get
+            {
+                Vector angles = new();
+                if ( Rotation.Columns[ 0 ][ 1 ] > 0.998 )
+                { // singularity at north pole
+                    angles.y = MathF.Atan2( Rotation.Columns[ 2 ][ 0 ], Rotation.Columns[ 2 ][ 2 ] ) * 180 / MathF.PI;
+                    angles.x = 180;
+                    angles.z = 0;
+                    return angles;
+                }
+                if ( Rotation.Columns[ 0 ][ 1 ] < -0.998 )
+                { // singularity at south pole
+                    angles.y = MathF.Atan2( Rotation.Columns[ 2 ][ 0 ], Rotation.Columns[ 2 ][ 2 ] ) * 180 / MathF.PI;
+                    angles.x = -180;
+                    angles.z = 0;
+                    return angles;
+                }
+                angles.x = MathF.Asin( Rotation.Columns[ 0 ][ 1 ] ) * 180 / MathF.PI;
+                angles.y = MathF.Atan2( -Rotation.Columns[ 0 ][ 2 ], Rotation.Columns[ 0 ][ 0 ] ) * 180 / MathF.PI;
+                angles.z = MathF.Atan2( -Rotation.Columns[ 2 ][ 1 ], Rotation.Columns[ 1 ][ 1 ] ) * 180 / MathF.PI;
+                return angles;
+            }
+            set
+            {
+                Rotation = Matrix.RotMatrix( value.y, new Vector( 0, 1, 0 ) ) * Matrix.RotMatrix( value.x, new Vector( 1, 0, 0 ) ) * Matrix.RotMatrix( value.z, new Vector( 0, 0, 1 ) );
+                Update();
+            }
+        }
+
+        public void Update()
+        {
+            ThisToWorld = Matrix.Translate( Position ) * Rotation * Matrix.Scale( Scale );
+            WorldToThis = -ThisToWorld;
+        }
+
+        public byte[] ToBytes()
+        {
+            int MatrixSize = Marshal.SizeOf( typeof( Matrix ) );
+            int VectorSize = Marshal.SizeOf( typeof( Vector ) );
+            byte[] ret = new byte[ 2 * VectorSize + MatrixSize ];
+            IntPtr RotPtr = Marshal.AllocHGlobal( MatrixSize );
+            IntPtr PosPtr = Marshal.AllocHGlobal( VectorSize );
+            IntPtr SclPtr = Marshal.AllocHGlobal( VectorSize );
+            Marshal.StructureToPtr( Rotation, RotPtr, false );
+            Marshal.StructureToPtr( Position, PosPtr, false );
+            Marshal.StructureToPtr( Scale, SclPtr, false );
+            Marshal.Copy( PosPtr, ret, 0, VectorSize );
+            Marshal.Copy( SclPtr, ret, MatrixSize, VectorSize );
+            Marshal.Copy( RotPtr, ret, VectorSize * 2, MatrixSize );
+            Marshal.FreeHGlobal( RotPtr );
+            Marshal.FreeHGlobal( SclPtr );
+            Marshal.FreeHGlobal( PosPtr );
+            return ret;
+        }
+        public static Transform FromBytes( byte[] Bytes )
+        {
+            int MatrixSize = Marshal.SizeOf( typeof( Matrix ) );
+            int VectorSize = Marshal.SizeOf( typeof( Vector ) );
+            byte[] RotBytes = new byte[ MatrixSize ];
+
+            for ( int i = 0; i < MatrixSize; ++i )
+                RotBytes[ i ] = Bytes[ i ];
+            byte[] PosBytes = new byte[ VectorSize ];
+            for ( int i = 0; i < VectorSize; ++i )
+                PosBytes[ i ] = Bytes[ i + MatrixSize ];
+            byte[] SclBytes = new byte[ VectorSize ];
+            for ( int i = 0; i < VectorSize; ++i )
+                SclBytes[ i ] = Bytes[ i + MatrixSize + VectorSize ]; 
+
+            GCHandle RotPtr = GCHandle.Alloc( RotBytes, GCHandleType.Pinned );
+            GCHandle PosPtr = GCHandle.Alloc( PosBytes, GCHandleType.Pinned );
+            GCHandle SclPtr = GCHandle.Alloc( SclBytes, GCHandleType.Pinned );
+            Matrix Rot = Marshal.PtrToStructure<Matrix>( RotPtr.AddrOfPinnedObject() );
+            Vector Scl = Marshal.PtrToStructure<Vector>( SclPtr.AddrOfPinnedObject() );
+            Vector Pos = Marshal.PtrToStructure<Vector>( PosPtr.AddrOfPinnedObject() );
+            RotPtr.Free();
+            PosPtr.Free();
+            SclPtr.Free();
+            return new Transform( Pos, Scl, Rot );
         }
     }
 
     public interface IWorldHandle
     {
-        IEntHandle[] GetEntList();
+        BaseEntity[] GetEntList();
         IPhysHandle[] GetPhysObjList();
-        IPhysHandle GetEntPhysics( IEntHandle ent );
+        IPhysHandle GetEntPhysics( BaseEntity ent );
     }
     public interface IPhysHandle
     {
-        IEntHandle LinkedEnt
+        BaseEntity LinkedEnt
         {
             get;
             set;
