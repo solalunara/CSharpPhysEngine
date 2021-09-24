@@ -7,7 +7,7 @@ using RenderInterface;
 
 namespace Physics
 {
-    public class PhysObj : IPhysHandle
+    public class PhysObj : BasePhysics
     {
         public static readonly Vector Default_Coeffs = new( 1, 1, 1 );
 
@@ -15,58 +15,16 @@ namespace Physics
         const float AirDensity = 1.255f; //kg/m^3
 
 
-        public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity )
+        public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity ) : base( LinkedEnt )
         {
-            this.LinkedEnt = LinkedEnt;
             this.AirDragCoeffs = AirDragCoeffs;
             this.Mass = Mass;
             this.RotInertia = RotInertia;
             this.Velocity = Velocity;
-            ForceChannels = new();
         }
 
-        private BaseEntity _LinkedEnt;
-        public BaseEntity LinkedEnt
-        {
-            get => _LinkedEnt;
-            set => _LinkedEnt = value;
-        }
-
-        public Vector AirDragCoeffs;
-
-        private float _Mass;
-        public float Mass { get => _Mass; set => _Mass = value; }
-        public float RotInertia;
-
-        public Vector Momentum;
-        public Vector Velocity
-        {
-            get => Momentum / Mass;
-            set => Momentum = value * Mass;
-        }
-
-        public Vector AirVelocity;
-
-        public Vector AngularMomentum;
-        public Vector AngularVelocity
-        {
-            get => AngularMomentum / RotInertia;
-            set => AngularMomentum = value * RotInertia;
-        }
         internal Vector LastAngVelocity;
 
-        internal Vector NetForce;
-        public Vector Torque;
-
-        internal List<int> ForceChannels;
-        public void AddForce( Vector force, int Channel )
-        {
-            if ( !ForceChannels.Contains( Channel ) )
-            {
-                NetForce += force;
-                ForceChannels.Add( Channel );
-            }
-        }
         public void AddForceAtPoint( Vector Force, Vector WorldPt )
         {
             NetForce += Force;
@@ -213,34 +171,9 @@ namespace Physics
 
         }
 
-        public void TestCollision( IWorldHandle world, out bool bCollision, out bool TopCollision )
-        {
-            bCollision = false;
-            TopCollision = false;
+        
 
-            if ( LinkedEnt.Meshes.Length == 0 )
-                return;
-
-            for ( int i = 0; i < world.GetEntList().Length; ++i )
-            {
-                BaseEntity WorldEnt = world.GetEntList()[ i ];
-                if ( WorldEnt == LinkedEnt )
-                    continue; //prevent self collisions
-                if ( WorldEnt.Meshes.Length == 0 )
-                    continue; //nothing to collide with
-
-                if ( BaseEntity.BinaryTestCollision( WorldEnt, LinkedEnt ) )
-                {
-                    bCollision = true;
-
-                    Vector vCollisionNormal = WorldEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() ).Normal;
-                    if ( vCollisionNormal.y > .7f )
-                        TopCollision = true;
-                }
-            }
-        }
-
-        public static List<(PhysObj, PhysObj)> GetCollisionPairs( IWorldHandle world )
+        public static List<(PhysObj, PhysObj)> GetCollisionPairs( BaseWorld world )
         {
             List<(PhysObj, PhysObj)> Pairs = new();
             IPhysHandle[] PhysList = world.GetPhysObjList();

@@ -148,6 +148,25 @@ namespace RenderInterface
 
         public void Render( Shader shader ) => RenderMesh( shader, this );
 
+        public byte[] ToBytes()
+        {
+            int Size = Marshal.SizeOf( typeof( FaceMesh ) );
+            byte[] ret = new byte[ Size ];
+            IntPtr Ptr = Marshal.AllocHGlobal( Size );
+            Marshal.StructureToPtr( this, Ptr, false );
+            Marshal.Copy( Ptr, ret, 0, Size );
+            Marshal.FreeHGlobal( Ptr );
+            return ret;
+        }
+        public static FaceMesh FromBytes( byte[] Bytes )
+        {
+            int Size = Marshal.SizeOf( typeof( FaceMesh ) );
+            GCHandle Ptr = GCHandle.Alloc( Bytes, GCHandleType.Pinned );
+            FaceMesh Mesh = Marshal.PtrToStructure<FaceMesh>( Ptr.AddrOfPinnedObject() );
+            Ptr.Free();
+            return Mesh;
+        }
+
         //api init
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         private static extern void InitMesh( int VertLength, float[] vertices, int IndLength, int[] indices, Texture textureptr, Vector Normal, out FaceMesh face );

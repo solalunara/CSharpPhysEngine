@@ -7,18 +7,18 @@ namespace Physics
 {
     class SimulationData
     {
-        public SimulationData( IWorldHandle world, float PhysSimTime )
+        public SimulationData( BaseWorld world, float PhysSimTime )
         {
             this.world = world;
             this.PhysSimTime = PhysSimTime;
         }
-        public IWorldHandle world;
+        public BaseWorld world;
         public float PhysSimTime;
         public bool Paused = false;
     }
     public class PhysicsSimulator
     {
-        public PhysicsSimulator( float PhysFrameTime, PhysicsEnvironment SimEnvironment, IWorldHandle world )
+        public PhysicsSimulator( float PhysFrameTime, PhysicsEnvironment SimEnvironment, BaseWorld world )
         {
             int iPhysFrameTime = (int) ( PhysFrameTime * 1000 );
             //timer = new( SimEnvironment.Simulate, Data, 0, iPhysFrameTime );
@@ -67,7 +67,7 @@ namespace Physics
         {
             LastSimTime = DateTime.Now;
             float dt = Data.PhysSimTime;
-            IWorldHandle world = Data.world;
+            BaseWorld world = Data.world;
             System.Diagnostics.Debug.Assert( !Data.Paused ); //shouldn't be called if we're paused
 
             List<(PhysObj, PhysObj)> Pairs = PhysObj.GetCollisionPairs( world );

@@ -150,6 +150,42 @@ namespace RenderInterface
             return planes[ MaxIndex ];
         }
 
+        public byte[] ToBytes()
+        {
+            byte[] TransformBytes = LocalTransform.ToBytes();
+            List<byte[]> MeshBytes = new();
+            for ( int i = 0; i < Meshes.Length; ++i )
+            {
+                MeshBytes.Add( Meshes[ i ].ToBytes() );
+            }
+            byte NumMeshes = (byte)Meshes.Length;
+            List<byte> ret = new();
+            ret.AddRange( TransformBytes );
+            ret.Add( NumMeshes );
+            for ( int i = 0; i < NumMeshes; ++i )
+            {
+                ret.AddRange( MeshBytes[ i ] );
+            }
+            return ret.ToArray();
+        }
+        public static BaseEntity FromBytes( byte[] Bytes )
+        {
+            Transform LT = Transform.FromBytes( Bytes );
+            int TransformSize = 2 * Marshal.SizeOf( typeof( Vector ) ) + Marshal.SizeOf( typeof( Matrix ) );
+            int MeshCount = Bytes[ TransformSize ];
+            FaceMesh[] Meshes = new FaceMesh[ MeshCount ];
+            int Index = TransformSize + 1;
+            for ( int i = 0; i < MeshCount; ++i )
+            {
+                List<byte> bs = new();
+                for ( int j = 0; j < Marshal.SizeOf( typeof( FaceMesh ) ); ++j )
+                    bs.Add( Bytes[ Index + j ] );
+                Meshes[ i ] = FaceMesh.FromBytes( bs.ToArray() );
+                Index += Marshal.SizeOf( Meshes[ i ] );
+            }
+            return new BaseEntity( Meshes, LT );
+        }
+
         //static members
         public static ( Vector, Vector ) TestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
         {
@@ -382,37 +418,89 @@ namespace RenderInterface
         }
     }
 
-    public interface IWorldHandle
+    public class BaseWorld
     {
-        BaseEntity[] GetEntList();
-        IPhysHandle[] GetPhysObjList();
-        IPhysHandle GetEntPhysics( BaseEntity ent );
+        public BaseWorld()
+        {
+            WorldEnts = new();
+            PhysicsObjects = new();
+        }
+        public List<BaseEntity> WorldEnts;
+        public List<BasePhysics> PhysicsObjects;
+        public BaseEntity[] GetEntList() => WorldEnts.ToArray();
+        public BasePhysics[] GetPhysObjList() => PhysicsObjects.ToArray();
+
+        public BasePhysics GetEntPhysics( BaseEntity ent )
+        {
+            for ( int i = 0; i < PhysicsObjects.Count; ++i )
+            {
+                if ( PhysicsObjects[ i ].LinkedEnt == ent )
+                    return PhysicsObjects[ i ];
+            }
+            return null;
+        }
     }
-    public interface IPhysHandle
+    public class BasePhysics
     {
-        BaseEntity LinkedEnt
+        public BasePhysics( BaseEntity LinkedEnt )
         {
-            get;
-            set;
+            this.LinkedEnt = LinkedEnt;
+            ForceChannels = new();
         }
+        public readonly BaseEntity LinkedEnt;
 
-        Vector Velocity
+        public Vector Momentum;
+        public Vector Velocity
+        { get => Momentum / Mass; set => Momentum = value * Mass; }
+        public Vector AngularMomentum;
+        public Vector AngularVelocity
         {
-            get;
-            set;
+            get => AngularMomentum / RotInertia;
+            set => AngularMomentum = value * RotInertia;
         }
-        Vector AngularVelocity
-        {
-            get;
-            set;
-        }
-        float Mass
-        {
-            get;
-            set;
-        }
+        public Vector AirDragCoeffs;
 
-        void AddForce( Vector force, int Channel );
-        void TestCollision( IWorldHandle world, out bool Collide, out bool TopCollide );
+        public Vector AirVelocity;
+        public float Mass;
+        public float RotInertia;
+
+        public Vector NetForce;
+        public Vector Torque;
+
+        internal List<int> ForceChannels;
+        public void AddForce( Vector force, int Channel )
+        {
+            if ( !ForceChannels.Contains( Channel ) )
+            {
+                NetForce += force;
+                ForceChannels.Add( Channel );
+            }
+        }
+        public void TestCollision( BaseWorld world, out bool bCollision, out bool TopCollision )
+        {
+            bCollision = false;
+            TopCollision = false;
+
+            if ( LinkedEnt.Meshes.Length == 0 )
+                return;
+
+            for ( int i = 0; i < world.GetEntList().Length; ++i )
+            {
+                BaseEntity WorldEnt = world.GetEntList()[ i ];
+                if ( WorldEnt == LinkedEnt )
+                    continue; //prevent self collisions
+                if ( WorldEnt.Meshes.Length == 0 )
+                    continue; //nothing to collide with
+
+                if ( BaseEntity.BinaryTestCollision( WorldEnt, LinkedEnt ) )
+                {
+                    bCollision = true;
+
+                    Vector vCollisionNormal = WorldEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() ).Normal;
+                    if ( vCollisionNormal.y > .7f )
+                        TopCollision = true;
+                }
+            }
+        }
     }
 }

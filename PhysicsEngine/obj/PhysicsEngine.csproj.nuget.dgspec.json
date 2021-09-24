@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\PhysicsEngine.csproj": {}
+    "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\PhysicsEngine.csproj": {}
   },
   "projects": {
-    "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\PhysicsEngine.csproj": {
+    "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\PhysicsEngine.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
+        "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
         "projectName": "PhysicsEngine",
-        "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
+        "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
         "packagesPath": "C:\\Users\\FVP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\obj\\",
+        "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -25,14 +25,15 @@
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {}
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj": {
-                "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj"
+              "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj": {
+                "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj"
               }
             }
           }
@@ -65,14 +66,14 @@
         }
       }
     },
-    "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj": {
+    "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj",
+        "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj",
         "projectName": "Physics",
-        "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj",
+        "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj",
         "packagesPath": "C:\\Users\\FVP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\obj\\",
+        "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -86,14 +87,15 @@
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {}
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\RenderInterface\\RenderInterface.csproj": {
-                "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\RenderInterface\\RenderInterface.csproj"
+              "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\RenderInterface\\RenderInterface.csproj": {
+                "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\RenderInterface\\RenderInterface.csproj"
               }
             }
           }
@@ -126,14 +128,14 @@
         }
       }
     },
-    "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\RenderInterface\\RenderInterface.csproj": {
+    "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\RenderInterface\\RenderInterface.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\RenderInterface\\RenderInterface.csproj",
+        "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\RenderInterface\\RenderInterface.csproj",
         "projectName": "RenderInterface",
-        "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\RenderInterface\\RenderInterface.csproj",
+        "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\RenderInterface\\RenderInterface.csproj",
         "packagesPath": "C:\\Users\\FVP\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\RenderInterface\\obj\\",
+        "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\RenderInterface\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -147,7 +149,8 @@
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {}
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {

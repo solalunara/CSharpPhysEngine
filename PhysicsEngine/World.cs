@@ -25,38 +25,18 @@ namespace PhysEngine
         public Vector vNormal;
         public BaseEntity HitEnt;
     }
-    class World : IWorldHandle
+    class World : BaseWorld
     {
-        public World( Vector Gravity, float PhysSimTime )
+        public World( Vector Gravity, float PhysSimTime ) : base()
         {
-            WorldEnts = new();
-            PhysicsObjects = new();
-
             Environment = new( Gravity );
             Simulator = new( PhysSimTime, Environment, this );
         }
-        public World( params BaseEntity[] Ents )
-        {
-            WorldEnts = new( Ents );
-        }
-        public List<BaseEntity> WorldEnts;
-        public List<IPhysHandle> PhysicsObjects;
 
         public PhysicsEnvironment Environment;
         public PhysicsSimulator Simulator;
 
-        public BaseEntity[] GetEntList() => WorldEnts.ToArray();
-        public IPhysHandle[] GetPhysObjList() => PhysicsObjects.ToArray();
-
-        public IPhysHandle GetEntPhysics( BaseEntity ent )
-        {
-            for ( int i = 0; i < PhysicsObjects.Count; ++i )
-            {
-                if ( PhysicsObjects[ i ].LinkedEnt == ent )
-                    return PhysicsObjects[ i ];
-            }
-            return null;
-        }
+        
 
         public void Add( params BaseEntity[] ent )
         {
@@ -66,9 +46,9 @@ namespace PhysEngine
         {
             foreach ( IPhysHandle p in pobjs )
             {
-                if ( !WorldEnts.Contains( (BaseEntity) p.LinkedEnt ) )
+                if ( !WorldEnts.Contains( p.LinkedEnt ) )
                 {
-                    WorldEnts.Add( (BaseEntity) p.LinkedEnt );
+                    WorldEnts.Add( p.LinkedEnt );
                 }
             }
             PhysicsObjects.AddRange( pobjs );
