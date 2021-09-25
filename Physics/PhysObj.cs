@@ -123,53 +123,31 @@ namespace Physics
                 }
             }
 
-            /*
             Vector[] WorldPts = LinkedEnt.GetWorldVerts();
-            float[] Dists = new float[ WorldPts.Length ];
-            List<int> PenetrationIndexes = new();
+            List<Vector> ContactPoints = new();
             for ( int i = 0; i < WorldPts.Length; ++i )
             {
-
                 if ( OtherEnt.TestCollision( WorldPts[ i ] ) )
-                {
-                    Dists[ i ] = CollisionPlane.DistanceFromPointToPlane( WorldPts[ i ] );
-                    PenetrationIndexes.Add( i );
-                }
+                    ContactPoints.Add( WorldPts[ i ] );
             }
 
             Vector CollisionPoint = new();
-
-            //technically the result would be the same, but this is just an optimization
-            //since the case of 1 point is a lot simpler and doesn't require all the list allocations
-            /*
-            if ( PenetrationIndexes.Count == 1 ) //single point of contact
+            if ( ContactPoints.Count == 0 ) //no points of contact
             {
-                int PenetrationIndex = PenetrationIndexes[ 0 ];
-                CollisionPoint = WorldPts[ PenetrationIndex ] + CollisionPlane.Normal * -Dists[ PenetrationIndex ];
+                CollisionPoint = LinkedEnt.GetAbsOrigin();
             }
-            else if ( PenetrationIndexes.Count > 0 ) //multiple points of contact
+            else //points of contact
             {
-                Vector[] CollisionPoints = new Vector[ PenetrationIndexes.Count ];
-                for ( int i = 0; i < CollisionPoints.Length; ++i )
-                    CollisionPoints[ i ] = WorldPts[ PenetrationIndexes[ i ] ];
-
-                for ( int i = 0; i < CollisionPoints.Length; ++i )
-                    CollisionPoint += CollisionPoints[ i ];
-                CollisionPoint /= CollisionPoints.Length;
-
-                CollisionPoint = CollisionPlane.ClosestPointOnPlane( CollisionPoint );
+                for ( int i = 0; i < ContactPoints.Count; ++i )
+                    CollisionPoint += ContactPoints[ i ];
+                CollisionPoint /= ContactPoints.Count;
             }
-            else //no obvious point of contact
-            {
-                CollisionPoint = CollisionPlane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() );
-            }
-            */
 
             //solve penetration
             LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + CollisionNormal * CollisionDepth );
 
             Vector Force = Vector.Dot( -Gravity * Mass, CollisionNormal ) * CollisionNormal; 
-            AddForceAtPoint( Force, LinkedEnt.GetAbsOrigin() );
+            AddForceAtPoint( Force, CollisionPoint );
         }
 
         

@@ -1,4 +1,5 @@
-﻿using System;
+﻿global using static System.Diagnostics.Debug;
+using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
@@ -208,7 +209,7 @@ namespace RenderInterface
         {
             if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
             {
-                Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
+                Assert( false, "Objects not colliding!" ); //don't make it quiet
                 return new();
             }
             Vector[] Points1 = ent1.GetWorldVerts();
@@ -227,7 +228,7 @@ namespace RenderInterface
 
             int NormEnt1 = NormsEnt1.IndexOf( NormsEnt1.Min() );
             int NormEnt2 = NormsEnt2.IndexOf( NormsEnt2.Min() );
-            if ( NormEnt1 < NormEnt2 )
+            if ( NormsEnt1.Min() < NormsEnt2.Min() )
             {
                 return ent1.TransformDirection( ent1.Meshes[ NormEnt1 ].Normal );
             }
@@ -240,7 +241,7 @@ namespace RenderInterface
         {
             if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
             {
-                Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
+                Assert( false, "Objects not colliding!" ); //don't make it quiet
                 return 0;
             }
 
@@ -252,7 +253,9 @@ namespace RenderInterface
                 Points2[ i ] += offset2;
 
             Vector Norm = TestCollision( ent1, ent2, offset1, offset2 );
-            return TestCollision( Norm, Points1, Points2 );
+            float CollisionDepth = TestCollision( Norm, Points1, Points2 );
+            Assert( CollisionDepth < 1 );
+            return CollisionDepth;
         }
         public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
         {
@@ -297,6 +300,11 @@ namespace RenderInterface
 
             //if ( Small1 >= Large2 || Small2 >= Large1 )
             //    return 0;
+
+            if ( amin > bmin && amax < bmax )
+                return float.PositiveInfinity; //a enclosed in b
+            if ( bmin > amin && bmax < amax )
+                return float.PositiveInfinity; //b enclosed in a
 
             if ( amin < bmax && amin > bmin )
                 return bmax - amin;

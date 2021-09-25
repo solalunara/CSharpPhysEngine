@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace RenderInterface
 {
-    public class Renderer
+    public static class Renderer
     {
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -50,7 +51,42 @@ namespace RenderInterface
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void WindowSizeChanged( int width, int height );
     }
+    public static class SaveRestore
+    {
+        public static byte[] StructToBytes<T>( T Struct )
+        {
+            int Size = Marshal.SizeOf( Struct );
+            byte[] ret = new byte[ Size ];
+            IntPtr Ptr = Marshal.AllocHGlobal( Size );
+            Marshal.StructureToPtr( Struct, Ptr, false );
+            Marshal.Copy( Ptr, ret, 0, Size );
+            Marshal.FreeHGlobal( Ptr );
+            return ret;
+        }
+        public static T BytesToStruct<T>( byte[] Bytes, int ByteOffset = 0 )
+        {
+            int Size = Marshal.SizeOf( typeof( T ) );
+            byte[] SubBytes = new byte[ Size ];
+            for ( int i = 0; i < Size; ++i )
+                SubBytes[ i ] = Bytes[ ByteOffset + i ];
 
+            GCHandle Ptr = GCHandle.Alloc( Bytes, GCHandleType.Pinned );
+            T Struct = Marshal.PtrToStructure<T>( Ptr.AddrOfPinnedObject() );
+            Ptr.Free();
+            return Struct;
+        }
+        public static byte[] ClassToBytes<T>( T Class )
+        {
+            List<byte> ClassBytes = new();
+            Type ClassType = typeof( T );
+            FieldInfo[] ClassFields = ClassType.GetFields();
+            for ( int i = 0; i < ClassFields.Length; ++i )
+            {
+                if ( ClassFields[ i ].FieldType.IsValueType )
+                    ClassBytes.AddRange( StructToBytes( ClassType. ) );
+            }
+        }
+    }
     public struct Point2<T>
     {
         public Point2( T x, T y )
@@ -61,7 +97,7 @@ namespace RenderInterface
         public T x;
         public T y;
     }
-    public class Mouse
+    public static class Mouse
     {
         public static Point2<double> GetMouseOffset( IntPtr window )
         {
@@ -85,7 +121,7 @@ namespace RenderInterface
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void ShowMouse( IntPtr window );
     }
-    public class Util
+    public static class Util
     {
         public static byte[] ToCString( string s )
         {
@@ -140,24 +176,6 @@ namespace RenderInterface
         public void Close() => DestructMesh( this );
 
         public void Render( Shader shader ) => RenderMesh( shader, this );
-
-        public byte[] ToBytes()
-        {
-            int Size = Marshal.SizeOf( typeof( FaceMesh ) );
-            byte[] ret = new byte[ Size ];
-            IntPtr Ptr = Marshal.AllocHGlobal( Size );
-            Marshal.StructureToPtr( this, Ptr, false );
-            Marshal.Copy( Ptr, ret, 0, Size );
-            Marshal.FreeHGlobal( Ptr );
-            return ret;
-        }
-        public static FaceMesh FromBytes( byte[] Bytes )
-        {
-            GCHandle Ptr = GCHandle.Alloc( Bytes, GCHandleType.Pinned );
-            FaceMesh Mesh = Marshal.PtrToStructure<FaceMesh>( Ptr.AddrOfPinnedObject() );
-            Ptr.Free();
-            return Mesh;
-        }
 
         //api init
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
@@ -290,7 +308,7 @@ namespace RenderInterface
                         w = value;
                         break;
                     default:
-                        System.Diagnostics.Debug.Assert( false, "tried to set vector element out of bounds" );
+                        Assert( false, "tried to set vector element out of bounds" );
                         break;
                 }
             }
@@ -441,7 +459,7 @@ namespace RenderInterface
                         z = value;
                         break;
                     default:
-                        System.Diagnostics.Debug.Assert( false, "tried to set vector element out of bounds" );
+                        Assert( false, "tried to set vector element out of bounds" );
                         break;
                 }
             }

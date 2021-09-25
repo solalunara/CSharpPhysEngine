@@ -1,4 +1,5 @@
-﻿using System;
+﻿global using static System.Diagnostics.Debug;
+using System;
 using System.Collections.Generic;
 using System.Timers;
 using RenderInterface;
@@ -69,7 +70,7 @@ namespace Physics
             LastSimTime = DateTime.Now;
             float dt = Data.PhysSimTime;
             BaseWorld world = Data.world;
-            System.Diagnostics.Debug.Assert( !Data.Paused ); //shouldn't be called if we're paused
+            Assert( !Data.Paused ); //shouldn't be called if we're paused
 
             List<(PhysObj, PhysObj)> Pairs = PhysObj.GetCollisionPairs( world );
             foreach ( (PhysObj, PhysObj) Pair in Pairs )

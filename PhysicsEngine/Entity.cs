@@ -97,7 +97,7 @@ namespace PhysEngine
                         Meshes[ i ] = new FaceMesh( Verts[ i ], inds, tx[ i ], Normals[ i ] );
                     break;
                 default:
-                    Debug.Assert( false );
+                    Assert( false );
                     break;
             }
 

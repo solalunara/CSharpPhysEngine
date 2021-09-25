@@ -36,3 +36,4 @@ C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\ref\PhysicsEngine.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.pdb
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.genruntimeconfig.cache
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.csproj.CopyComplete

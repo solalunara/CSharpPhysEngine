@@ -1,6 +1,6 @@
 ﻿global using Physics;
 global using RenderInterface;
-global using System.Diagnostics;
+global using static System.Diagnostics.Debug;
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace PhysEngine
         static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
         static Move MoveTracker = Move.MOVE_NONE;
         static World MainWorld;
-        static List<(Texture, string)> Textures = new();
+        static readonly List<(Texture, string)> Textures = new();
         static Texture FindTexture( string Name )
         {
             for ( int i = 0; i < Textures.Count; ++i )
@@ -26,7 +26,7 @@ namespace PhysEngine
                 if ( Textures[ i ].Item2 == Name )
                     return Textures[ i ].Item1;
             }
-            Debug.Assert( false, "Failed to find texture with given name" );
+            Assert( false, "Failed to find texture with given name" );
             return new Texture();
         }
 
@@ -35,7 +35,6 @@ namespace PhysEngine
         const float farclip = 1000.0f;
         const float Movespeed_Air = 5.0f;
         const float Movespeed_Gnd = 20.0f;
-
         const float Max_Player_Speed = 5.0f;
 
         static void Main( string[] args )
