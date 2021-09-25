@@ -1,4 +1,8 @@
-﻿using System;
+﻿global using Physics;
+global using RenderInterface;
+global using System.Diagnostics;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,24 +10,21 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Reflection;
-using RenderInterface;
-using Physics;
-using System.Diagnostics;
 
 namespace PhysEngine
 {
     static class Program
     {
-        static string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
+        static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
         static Move MoveTracker = Move.MOVE_NONE;
         static World MainWorld;
-        static List<Texture> Textures = new();
+        static List<(Texture, string)> Textures = new();
         static Texture FindTexture( string Name )
         {
             for ( int i = 0; i < Textures.Count; ++i )
             {
-                if ( Textures[ i ].TextureName == Name )
-                    return Textures[ i ];
+                if ( Textures[ i ].Item2 == Name )
+                    return Textures[ i ].Item1;
             }
             Debug.Assert( false, "Failed to find texture with given name" );
             return new Texture();
@@ -41,6 +42,12 @@ namespace PhysEngine
         {
             try
             {
+                Renderer.Init( out IntPtr window );
+                string[] TextureNames = Directory.EnumerateFiles( DirName + "\\Textures" ).ToArray();
+                for ( int i = 0; i < TextureNames.Length; ++i )
+                {
+                    Textures.Add( (new Texture( TextureNames[ i ] ), TextureNames[ i ]) );
+                }
                 if ( args.Length > 0 )
                 {
                     for ( int i = 0; i < args.Length; ++i )
@@ -48,16 +55,16 @@ namespace PhysEngine
                         switch ( args[ i ].ToLower() )
                         {
                             case "-2d":
-                                Run2D();
+                                Run2D( window );
                                 break;
                             case "-3d":
-                                Run3D();
+                                Run3D( window );
                                 break;
                         }
                     }
                 }
                 else
-                    Run3D();
+                    Run3D( window );
             }
             finally
             {
@@ -65,18 +72,10 @@ namespace PhysEngine
             }
         }
 
-        public static void Run3D()
+        public static void Run3D( IntPtr window )
         {
-            Renderer.Init( out IntPtr window );
-
-            string[] TextureNames = Directory.EnumerateFiles( DirName + "/Textures" ).ToArray();
-            for ( int i = 0; i < TextureNames.Length; ++i )
-            {
-                Textures.Add( new Texture( TextureNames[ i ] ) );
-            }
-
-            Shader shader = new( DirName + "/Shaders/VertexShader.vert", DirName + "/Shaders/FragmentShader.frag" );
-            Shader GUI = new( DirName + "/Shaders/GUIVert.vert", DirName + "/Shaders/GUIFrag.frag" );
+            Shader shader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\FragmentShader.frag" );
+            Shader GUI = new( DirName + "\\Shaders\\GUIVert.vert", DirName + "\\Shaders\\GUIFrag.frag" );
             shader.SetAmbientLight( 0.0f );
 
             Light[] testlights = 
@@ -97,13 +96,13 @@ namespace PhysEngine
                 -.05f, 0.05f, 0.0f,     0.0f, 1.0f
             };
             int[] CrosshairInds = { 0, 1, 3, 1, 2, 3 };
-            FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, new Texture( DirName + "/Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
+            FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, new Texture( DirName + "\\Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
 
 
             MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
 
-            Texture[] dirt = { FindTexture( DirName + "/Textures\\dirt.png" ) };
-            Texture[] grass = { FindTexture( DirName + "/Textures\\grass.png" ) };
+            Texture[] dirt = { FindTexture( DirName + "\\Textures\\dirt.png" ) };
+            Texture[] grass = { FindTexture( DirName + "\\Textures\\grass.png" ) };
             MainWorld.player = new Player3D( persp, PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
             //player = new Player2D();
             MainWorld.Add
@@ -232,25 +231,23 @@ namespace PhysEngine
             //world.ToFile( DirName + "/Worlds/world1.worldmap" );
         }
 
-        public static void Run2D()
+        public static void Run2D( IntPtr window )
         {
-            string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
-            Renderer.Init( out IntPtr window );
 
-            string[] TextureNames = Directory.EnumerateFiles( DirName + "/Textures" ).ToArray();
+            string[] TextureNames = Directory.EnumerateFiles( DirName + "\\Textures" ).ToArray();
             for ( int i = 0; i < TextureNames.Length; ++i )
             {
-                Textures.Add( new Texture( TextureNames[ i ] ) );
+                Textures.Add( ( new Texture( TextureNames[ i ] ), TextureNames[ i ] ) );
             }
 
-            Shader shader = new( DirName + "/Shaders/VertexShader.vert", DirName + "/Shaders/FragmentShader.frag" );
+            Shader shader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\FragmentShader.frag" );
             MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
-            Texture[] dirt = { FindTexture( DirName + "/Textures/dirt.png" ) };
-            Texture button = FindTexture( DirName + "/Textures/button.png" );
+            Texture[] dirt = { FindTexture( DirName + "\\Textures\\dirt.png" ) };
+            Texture button = FindTexture( DirName + "\\Textures\\button.png" );
 
-            Texture Sun = FindTexture( DirName + "/Textures/Sun.png" );
-            Texture Earth = FindTexture( DirName + "/Textures/Earth.png" );
-            Texture Jupiter = FindTexture( DirName + "/Textures/Jupiter.png" );
+            Texture Sun = FindTexture( DirName + "\\Textures\\Sun.png" );
+            Texture Earth = FindTexture( DirName + "\\Textures\\Earth.png" );
+            Texture Jupiter = FindTexture( DirName + "\\Textures\\Jupiter.png" );
 
             MainWorld.Add
             (
@@ -357,7 +354,7 @@ namespace PhysEngine
                         {
                             Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                             Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                            RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                            RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                             if ( hit.bHit )
                             {
                                 PhysObj HitPhys = (PhysObj)MainWorld.GetEntPhysics( hit.HitEnt );
@@ -374,7 +371,7 @@ namespace PhysEngine
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
-                        Vector ptCenter = new();
+                        Vector ptCenter;
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
                         else
@@ -382,7 +379,7 @@ namespace PhysEngine
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
-                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { FindTexture( DirName + "/Textures/grass.png" ) } ) );
+                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { FindTexture( DirName + "\\Textures\\grass.png" ) } ) );
                         break;
                     }
                     case Keys.X:
@@ -390,7 +387,7 @@ namespace PhysEngine
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
                         RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
-                        Vector ptCenter = new();
+                        Vector ptCenter;
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
                         else
@@ -398,7 +395,7 @@ namespace PhysEngine
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
-                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { FindTexture( DirName + "/Textures/dirt.png" ) } ) );
+                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { FindTexture( DirName + "\\Textures\\dirt.png" ) } ) );
                         break;
                     }
                     case Keys.F:

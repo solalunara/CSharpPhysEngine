@@ -189,7 +189,7 @@ namespace RenderInterface
                 return new BaseEntity( Meshes, LT );
             else
             {
-                BaseEntity b = new BaseEntity( Meshes, LT );
+                BaseEntity b = new( Meshes, LT );
                 List<byte> ParentBytes = new();
                 while ( Index < Bytes.Length )
                 {
@@ -202,14 +202,15 @@ namespace RenderInterface
         }
 
         //static members
-        public static ( Vector, Vector ) TestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
+        //Worth noting: this function gives an AXIS of collision, not a normal of collision
+        //  what to do with the axis and how to orient it is up to implementers
+        public static Vector TestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
         {
             if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
             {
                 Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
-                return ( new Vector(), new Vector() );
+                return new();
             }
-            Vector Direction = ent1.GetAbsOrigin() + offset1 - ent2.GetAbsOrigin() - offset2;
             Vector[] Points1 = ent1.GetWorldVerts();
             Vector[] Points2 = ent2.GetWorldVerts();
             for ( int i = 0; i < Points1.Length; ++i )
@@ -226,16 +227,23 @@ namespace RenderInterface
 
             int NormEnt1 = NormsEnt1.IndexOf( NormsEnt1.Min() );
             int NormEnt2 = NormsEnt2.IndexOf( NormsEnt2.Min() );
-            Vector Norm1 = ent1.TransformDirection( ent1.Meshes[ NormEnt1 ].Normal );
-            Vector Norm2 = ent2.TransformDirection( ent2.Meshes[ NormEnt2 ].Normal );
-            if ( Vector.Dot( Norm1, -Direction ) < 0 )
-                Norm1 = -Norm1;
-            if ( Vector.Dot( Norm2, Direction ) < 0 )
-                Norm2 = -Norm2;
-            return ( Norm1, Norm2 );
+            if ( NormEnt1 < NormEnt2 )
+            {
+                return ent1.TransformDirection( ent1.Meshes[ NormEnt1 ].Normal );
+            }
+            else
+            {
+                return ent2.TransformDirection( ent2.Meshes[ NormEnt2 ].Normal );
+            }
         }
-        public static ( float, float ) TestCollisionDepth( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
+        public static float TestCollisionDepth( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
         {
+            if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
+            {
+                Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
+                return 0;
+            }
+
             Vector[] Points1 = ent1.GetWorldVerts();
             Vector[] Points2 = ent2.GetWorldVerts();
             for ( int i = 0; i < Points1.Length; ++i )
@@ -243,14 +251,8 @@ namespace RenderInterface
             for ( int i = 0; i < Points2.Length; ++i )
                 Points2[ i ] += offset2;
 
-            if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
-            {
-                Debug.Assert( false, "Objects not colliding!" ); //don't make it quiet
-                return (0, 0);
-            }
-
-            (Vector, Vector) Norms = TestCollision( ent1, ent2, offset1, offset2 );
-            return (TestCollision( Norms.Item1, Points1, Points2 ), TestCollision( Norms.Item2, Points1, Points2 ));
+            Vector Norm = TestCollision( ent1, ent2, offset1, offset2 );
+            return TestCollision( Norm, Points1, Points2 );
         }
         public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
         {
@@ -512,8 +514,8 @@ namespace RenderInterface
                 {
                     bCollision = true;
 
-                    Vector vCollisionNormal = WorldEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() ).Normal;
-                    if ( vCollisionNormal.y > .7f )
+                    Vector CollisionNormal = BaseEntity.TestCollision( LinkedEnt, WorldEnt );
+                    if ( MathF.Abs( CollisionNormal.y ) > .7f )
                         TopCollision = true;
                 }
             }

@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
-using RenderInterface;
-using Physics;
 
 namespace PhysEngine
 {
@@ -47,6 +45,8 @@ namespace PhysEngine
                     PhysicsObjects.Add( _Player.Body );
                 if ( !WorldEnts.Contains( _Player.camera ) )
                     WorldEnts.Add( _Player.camera );
+                if ( !Environment.PObjs.Contains( _Player.Body ) )
+                    Environment.PObjs.Add( _Player.Body );
             } 
         }
 

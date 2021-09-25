@@ -9,8 +9,6 @@ namespace RenderInterface
 {
     public class Renderer
     {
-        [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
-        public static extern void SetFlag( ref uint ToSet, uint flag, bool val );
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void Init( out IntPtr window );
@@ -155,7 +153,6 @@ namespace RenderInterface
         }
         public static FaceMesh FromBytes( byte[] Bytes )
         {
-            int Size = Marshal.SizeOf( typeof( FaceMesh ) );
             GCHandle Ptr = GCHandle.Alloc( Bytes, GCHandleType.Pinned );
             FaceMesh Mesh = Marshal.PtrToStructure<FaceMesh>( Ptr.AddrOfPinnedObject() );
             Ptr.Free();
@@ -205,11 +202,11 @@ namespace RenderInterface
         public Texture( string filepath )
         {
             InitTexture( Util.ToCString( filepath ), out this );
-            TextureName = filepath;
+            //TextureName = filepath;
         }
         public Texture()
         {
-            TextureName = "";
+            //TextureName = "";
             Initialized = false;
             ID = 0;
             Unit = 0;
@@ -218,8 +215,6 @@ namespace RenderInterface
         public bool Initialized;
         public uint ID;
         public uint Unit;
-
-        public string TextureName;
 
         public void Close() => DestructTexture( ref this );
 

@@ -32,7 +32,6 @@ C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.AssemblyInfoInputs.cache
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.AssemblyInfo.cs
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.csproj.CoreCompileInputs.cache
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.csproj.CopyComplete
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\ref\PhysicsEngine.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0\PhysicsEngine.pdb

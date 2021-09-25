@@ -104,19 +104,18 @@ namespace Physics
         //collide a physics object with the world
         public void Collide( BaseEntity OtherEnt, Vector Gravity )
         {
-            Vector CollisionNormal = -BaseEntity.TestCollision( LinkedEnt, OtherEnt ).Item1;
-            float CollisionDepth = BaseEntity.TestCollisionDepth( LinkedEnt, OtherEnt ).Item1;
-
-            Plane CollisionPlane = OtherEnt.GetCollisionPlane( LinkedEnt.GetAbsOrigin() );
-            //Is the center of mass above the object?
-            bool COMAbove = OtherEnt.TestCollision( CollisionPlane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() ) );
+            Vector Direction = OtherEnt.GetAbsOrigin() - LinkedEnt.GetAbsOrigin();
+            Vector CollisionNormal = BaseEntity.TestCollision( LinkedEnt, OtherEnt );
+            if ( Vector.Dot( Direction, CollisionNormal ) > 0 )
+                CollisionNormal = -CollisionNormal;
+            float CollisionDepth = BaseEntity.TestCollisionDepth( LinkedEnt, OtherEnt );
 
             //If the velocity is going into the plane, zero the component of the plane
-            if ( Vector.Dot( CollisionPlane.Normal, Velocity ) <= 0 && COMAbove )
+            if ( Vector.Dot( CollisionNormal, Velocity ) <= 0 )
             {
                 for ( int i = 0; i < 3; ++i )
                 {
-                    if ( Math.Abs( CollisionPlane.Normal[ i ] ) > .75f )
+                    if ( Math.Abs( CollisionNormal[ i ] ) > .75f )
                     {
                         Momentum[ i ] = 0.0f;
                         break;
@@ -124,6 +123,7 @@ namespace Physics
                 }
             }
 
+            /*
             Vector[] WorldPts = LinkedEnt.GetWorldVerts();
             float[] Dists = new float[ WorldPts.Length ];
             List<int> PenetrationIndexes = new();
@@ -141,6 +141,7 @@ namespace Physics
 
             //technically the result would be the same, but this is just an optimization
             //since the case of 1 point is a lot simpler and doesn't require all the list allocations
+            /*
             if ( PenetrationIndexes.Count == 1 ) //single point of contact
             {
                 int PenetrationIndex = PenetrationIndexes[ 0 ];
@@ -162,13 +163,13 @@ namespace Physics
             {
                 CollisionPoint = CollisionPlane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() );
             }
+            */
 
             //solve penetration
             LinkedEnt.SetAbsOrigin( LinkedEnt.GetAbsOrigin() + CollisionNormal * CollisionDepth );
 
             Vector Force = Vector.Dot( -Gravity * Mass, CollisionNormal ) * CollisionNormal; 
-            AddForceAtPoint( Force, CollisionPoint );
-
+            AddForceAtPoint( Force, LinkedEnt.GetAbsOrigin() );
         }
 
         
