@@ -8,10 +8,10 @@ namespace PhysEngine
 {
     class Dim2Box : BoxEnt
     {
-        public Dim2Box( Point2<float> Mins, Point2<float> Maxs, Texture tex ) : base( new( Mins.x, Mins.y, -1 ), new( Maxs.x, Maxs.y, 1 ), Array.Empty<Texture>() )
+        public Dim2Box( Point2<float> Mins, Point2<float> Maxs, Texture tex ) : base( new( Mins.x, Mins.y, -1 ), new( Maxs.x, Maxs.y, 1 ), Array.Empty<(Texture, string)>() )
         {
             for ( int i = 0; i < Meshes.Length; ++i )
-                Meshes[ i ].texture = tex;
+                Meshes[ i ].Item1.texture = tex;
         }
         public virtual bool IsButton() => false;
     }

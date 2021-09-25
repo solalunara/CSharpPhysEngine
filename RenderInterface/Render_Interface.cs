@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,6 +56,9 @@ namespace RenderInterface
     {
         public static byte[] StructToBytes<T>( T Struct )
         {
+            if ( Struct is string )
+                return StringToBytes( Struct as string );
+
             int Size = Marshal.SizeOf( Struct );
             byte[] ret = new byte[ Size ];
             IntPtr Ptr = Marshal.AllocHGlobal( Size );
@@ -63,8 +67,18 @@ namespace RenderInterface
             Marshal.FreeHGlobal( Ptr );
             return ret;
         }
+        public static byte[] StringToBytes( string s )
+        {
+            List<byte> ret = new();
+            ret.AddRange( StructToBytes( s.Length ) );
+            ret.AddRange( Encoding.UTF8.GetBytes( s ) );
+            return ret.ToArray();
+        }
         public static T BytesToStruct<T>( byte[] Bytes, int ByteOffset = 0 )
         {
+            if ( typeof( T ) == typeof( string ) )
+                return (T) (dynamic) BytesToString( Bytes, ByteOffset );
+
             int Size = Marshal.SizeOf( typeof( T ) );
             byte[] SubBytes = new byte[ Size ];
             for ( int i = 0; i < Size; ++i )
@@ -75,16 +89,13 @@ namespace RenderInterface
             Ptr.Free();
             return Struct;
         }
-        public static byte[] ClassToBytes<T>( T Class )
+        public static string BytesToString( byte[] Bytes, int ByteOffset = 0 )
         {
-            List<byte> ClassBytes = new();
-            Type ClassType = typeof( T );
-            FieldInfo[] ClassFields = ClassType.GetFields();
-            for ( int i = 0; i < ClassFields.Length; ++i )
-            {
-                if ( ClassFields[ i ].FieldType.IsValueType )
-                    ClassBytes.AddRange( StructToBytes( ClassType. ) );
-            }
+            int Length = BytesToStruct<int>( Bytes, ByteOffset );
+            byte[] SubBytes = new byte[ Length ];
+            for ( int i = 0; i < Length; ++i )
+                SubBytes[ i ] = Bytes[ ByteOffset + i + sizeof( int ) ];
+            return Encoding.UTF8.GetString( SubBytes );
         }
     }
     public struct Point2<T>

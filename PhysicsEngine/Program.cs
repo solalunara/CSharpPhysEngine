@@ -18,8 +18,8 @@ namespace PhysEngine
         static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
         static Move MoveTracker = Move.MOVE_NONE;
         static World MainWorld;
-        static readonly List<(Texture, string)> Textures = new();
-        static Texture FindTexture( string Name )
+        public static readonly List<(Texture, string)> Textures = new();
+        public static Texture FindTexture( string Name )
         {
             for ( int i = 0; i < Textures.Count; ++i )
             {
@@ -100,8 +100,8 @@ namespace PhysEngine
 
             MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
 
-            Texture[] dirt = { FindTexture( DirName + "\\Textures\\dirt.png" ) };
-            Texture[] grass = { FindTexture( DirName + "\\Textures\\grass.png" ) };
+            (Texture, string)[] dirt = { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") };
+            (Texture, string)[] grass = { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") };
             MainWorld.player = new Player3D( persp, PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
             //player = new Player2D();
             MainWorld.Add
@@ -192,7 +192,6 @@ namespace PhysEngine
                     if ( rtMech.HasFlag( RuntimeMechanics.SAVE ) )
                     {
                         rtMech &= ~RuntimeMechanics.SAVE;
-                        //world.ToFile( DirName + "/Worlds/world1.worldmap" );
                     }
                     if ( rtMech.HasFlag( RuntimeMechanics.LOAD ) )
                     {
@@ -216,12 +215,12 @@ namespace PhysEngine
                 foreach ( BaseEntity b in MainWorld.WorldEnts )
                 {
                     Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
-                    foreach ( FaceMesh m in b.Meshes )
+                    foreach ( (FaceMesh, string) m in b.Meshes )
                     {
-                        if ( !m.texture.Initialized )
+                        if ( !m.Item1.texture.Initialized )
                             continue; //nothing to render
 
-                        m.Render( shader );
+                        m.Item1.Render( shader );
                     }
                 }
                 CrosshairMesh.Render( GUI );
@@ -293,12 +292,12 @@ namespace PhysEngine
                 {
                     b.SetAbsRot( Matrix.RotMatrix( 0.5f, new( 0, 1, 1 ) ) * b.GetAbsRot() );
                     Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
-                    foreach ( FaceMesh m in b.Meshes )
+                    foreach ( (FaceMesh, string) m in b.Meshes )
                     {
-                        if ( !m.texture.Initialized )
+                        if ( !m.Item1.texture.Initialized )
                             continue; //nothing to render
 
-                        m.Render( shader );
+                        m.Item1.Render( shader );
                     }
                 };
                 Renderer.EndFrame( window );
@@ -320,9 +319,18 @@ namespace PhysEngine
                 switch ( key )
                 {
                     case Keys.F6:
+                    {
+                        MainWorld.ToFile( DirName + "/Worlds/world1.worldmap" );
                         break;
+                    }
                     case Keys.F7:
+                    {
+                        MainWorld.Close();
+                        MainWorld = World.FromFile( DirName + "/Worlds/world1.worldmap" );
+                        Renderer.GetWindowSize( window, out int width, out int height );
+                        MainWorld.player.camera.Perspective = Matrix.Perspective( fov, width / height, nearclip, farclip );
                         break;
+                    }
                     case Keys.Q:
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
@@ -378,7 +386,7 @@ namespace PhysEngine
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
-                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { FindTexture( DirName + "\\Textures\\grass.png" ) } ) );
+                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") } ) );
                         break;
                     }
                     case Keys.X:
@@ -394,7 +402,7 @@ namespace PhysEngine
 
                         Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
                         Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
-                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { FindTexture( DirName + "\\Textures\\dirt.png" ) } ) );
+                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") } ) );
                         break;
                     }
                     case Keys.F:

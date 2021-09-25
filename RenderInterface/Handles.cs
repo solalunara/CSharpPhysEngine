@@ -13,14 +13,14 @@ namespace RenderInterface
     public class BaseEntity
     {
         //constructor
-        public BaseEntity( FaceMesh[] Meshes, Transform LocalTransform )
+        public BaseEntity( (FaceMesh, string)[] Meshes, Transform LocalTransform )
         {
             this.Meshes = Meshes;
             this.LocalTransform = LocalTransform;
         }
 
         //member data
-        public FaceMesh[] Meshes;
+        public (FaceMesh, string)[] Meshes;
         public Transform LocalTransform;
 
         //sort of member data
@@ -44,9 +44,9 @@ namespace RenderInterface
         //member methods
         public void Close()
         {
-            foreach ( FaceMesh m in Meshes )
+            foreach ( (FaceMesh, string) m in Meshes )
             {
-                m.Close();
+                m.Item1.Close();
             }
         }
         public void SetLocalOrigin( Vector pt ) => LocalTransform.Position = pt;
@@ -98,7 +98,7 @@ namespace RenderInterface
             HashSet<Vector> Verts = new();
             for ( int i = 0; i < Meshes.Length; ++i )
             {
-                Verts.UnionWith( Meshes[ i ].GetVerts() );
+                Verts.UnionWith( Meshes[ i ].Item1.GetVerts() );
             }
             return Verts.ToArray();
         }
@@ -117,7 +117,7 @@ namespace RenderInterface
             Vector[] Points2 = { pt };
             for ( int i = 0; i < Meshes.Length; ++i )
             {
-                if ( TestCollision( Meshes[ i ].Normal, Points1, Points2 ) == 0 )
+                if ( TestCollision( Meshes[ i ].Item1.Normal, Points1, Points2 ) == 0 )
                     return false;
             }
             return true;
@@ -127,8 +127,8 @@ namespace RenderInterface
             Plane[] planes = new Plane[ Meshes.Length ];
             for ( int i = 0; i < planes.Length; ++i )
             {
-                Vector WorldPoint = TransformPoint( Meshes[ i ].GetVerts()[ 0 ] );
-                planes[ i ] = new Plane( TransformDirection( Meshes[ i ].Normal ), Vector.Dot( TransformDirection( Meshes[ i ].Normal ), WorldPoint ) );
+                Vector WorldPoint = TransformPoint( Meshes[ i ].Item1.GetVerts()[ 0 ] );
+                planes[ i ] = new Plane( TransformDirection( Meshes[ i ].Item1.Normal ), Vector.Dot( TransformDirection( Meshes[ i ].Item1.Normal ), WorldPoint ) );
             }
 
             float[] PlaneDists = new float[ planes.Length ];
@@ -153,53 +153,47 @@ namespace RenderInterface
 
         public byte[] ToBytes()
         {
-            byte[] TransformBytes = LocalTransform.ToBytes();
-            List<byte[]> MeshBytes = new();
+            List<byte> ret = new();
+            ret.AddRange( LocalTransform.ToBytes() );
+            ret.AddRange( SaveRestore.StructToBytes( Meshes.Length ) );
             for ( int i = 0; i < Meshes.Length; ++i )
             {
-                MeshBytes.Add( Meshes[ i ].ToBytes() );
+                ret.AddRange( SaveRestore.StructToBytes( Meshes[ i ].Item1 ) );
+                ret.AddRange( SaveRestore.StructToBytes( Meshes[ i ].Item2 ) );
             }
-            byte NumMeshes = (byte)Meshes.Length;
-            List<byte> ret = new();
-            ret.AddRange( TransformBytes );
-            ret.Add( NumMeshes );
-            for ( int i = 0; i < NumMeshes; ++i )
-            {
-                ret.AddRange( MeshBytes[ i ] );
-            }
+
+            ret.Add( Parent == null ? (byte)0b0000_0000 : (byte)0b1111_1111 );
             if ( Parent != null )
                 ret.AddRange( Parent.ToBytes() );
+
             return ret.ToArray();
         }
-        public static BaseEntity FromBytes( byte[] Bytes )
+        public static BaseEntity FromBytes( byte[] Bytes, int Offset = 0 )
         {
-            Transform LT = Transform.FromBytes( Bytes );
-            int TransformSize = 2 * Marshal.SizeOf( typeof( Vector ) ) + Marshal.SizeOf( typeof( Matrix ) );
-            int MeshCount = Bytes[ TransformSize ];
-            FaceMesh[] Meshes = new FaceMesh[ MeshCount ];
-            int Index = TransformSize + 1;
+            Transform LT = Transform.FromBytes( Bytes, Offset: 0 );
+            int TransformSize = LT.ToBytes().Length;
+            int MeshCount = SaveRestore.BytesToStruct<int>( Bytes, ByteOffset: Offset + TransformSize );
+            (FaceMesh, string)[] Meshes = new (FaceMesh, string)[ MeshCount ];
+            int Index = Offset + TransformSize + sizeof( int );
             for ( int i = 0; i < MeshCount; ++i )
             {
-                List<byte> bs = new();
-                for ( int j = 0; j < Marshal.SizeOf( typeof( FaceMesh ) ); ++j )
-                    bs.Add( Bytes[ Index + j ] );
-                Meshes[ i ] = FaceMesh.FromBytes( bs.ToArray() );
-                Index += Marshal.SizeOf( Meshes[ i ] );
+                FaceMesh m = SaveRestore.BytesToStruct<FaceMesh>( Bytes, Index );
+                Index += Marshal.SizeOf( m );
+                string TexName = SaveRestore.BytesToStruct<string>( Bytes, Index );
+                Index += SaveRestore.StringToBytes( TexName ).Length;
+                Meshes[ i ] = (new FaceMesh( m.Verts, m.VertLength, m.Inds, m.IndLength, new Texture( TexName ), m.Normal ), TexName);
+
+                if ( m.texture.Initialized )
+                    m.texture.Close();
             }
-            if ( Index >= Bytes.Length)
-                return new BaseEntity( Meshes, LT );
-            else
-            {
-                BaseEntity b = new( Meshes, LT );
-                List<byte> ParentBytes = new();
-                while ( Index < Bytes.Length )
-                {
-                    ParentBytes.Add( Bytes[ Index ] );
-                    ++Index;
-                }
-                b.Parent = FromBytes( ParentBytes.ToArray() );
+            BaseEntity b = new( Meshes, LT );
+            bool ParentExists = Bytes[ Index ] != (byte)0b0000_0000;
+            if ( !ParentExists )
                 return b;
-            }
+
+            ++Index;
+            b.Parent = FromBytes( Bytes, Index );
+            return b;
         }
 
         //static members
@@ -222,19 +216,19 @@ namespace RenderInterface
             List<float> NormsEnt1 = new();
             List<float> NormsEnt2 = new();
             for ( int i = 0; i < ent1.Meshes.Length; ++i )
-                NormsEnt1.Add( TestCollision( ent1.TransformDirection( ent1.Meshes[ i ].Normal ), Points1, Points2 ) );
+                NormsEnt1.Add( TestCollision( ent1.TransformDirection( ent1.Meshes[ i ].Item1.Normal ), Points1, Points2 ) );
             for ( int i = 0; i < ent2.Meshes.Length; ++i )
-                NormsEnt2.Add( TestCollision( ent2.TransformDirection( ent2.Meshes[ i ].Normal ), Points1, Points2 ) );
+                NormsEnt2.Add( TestCollision( ent2.TransformDirection( ent2.Meshes[ i ].Item1.Normal ), Points1, Points2 ) );
 
             int NormEnt1 = NormsEnt1.IndexOf( NormsEnt1.Min() );
             int NormEnt2 = NormsEnt2.IndexOf( NormsEnt2.Min() );
             if ( NormsEnt1.Min() < NormsEnt2.Min() )
             {
-                return ent1.TransformDirection( ent1.Meshes[ NormEnt1 ].Normal );
+                return ent1.TransformDirection( ent1.Meshes[ NormEnt1 ].Item1.Normal );
             }
             else
             {
-                return ent2.TransformDirection( ent2.Meshes[ NormEnt2 ].Normal );
+                return ent2.TransformDirection( ent2.Meshes[ NormEnt2 ].Item1.Normal );
             }
         }
         public static float TestCollisionDepth( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
@@ -273,7 +267,7 @@ namespace RenderInterface
                 BaseEntity Ent = ents[ EntIndex ];
                 for ( int i = 0; i < Ent.Meshes.Length; ++i )
                 {
-                    if ( TestCollision( Ent.TransformDirection( Ent.Meshes[ i ].Normal ), Points1, Points2 ) == 0 )
+                    if ( TestCollision( Ent.TransformDirection( Ent.Meshes[ i ].Item1.Normal ), Points1, Points2 ) == 0 )
                         return false;
                 }
             }
@@ -398,47 +392,19 @@ namespace RenderInterface
 
         public byte[] ToBytes()
         {
-            int MatrixSize = Marshal.SizeOf( typeof( Matrix ) );
-            int VectorSize = Marshal.SizeOf( typeof( Vector ) );
-            byte[] ret = new byte[ 2 * VectorSize + MatrixSize ];
-            IntPtr RotPtr = Marshal.AllocHGlobal( MatrixSize );
-            IntPtr PosPtr = Marshal.AllocHGlobal( VectorSize );
-            IntPtr SclPtr = Marshal.AllocHGlobal( VectorSize );
-            Marshal.StructureToPtr( Rotation, RotPtr, false );
-            Marshal.StructureToPtr( Position, PosPtr, false );
-            Marshal.StructureToPtr( Scale, SclPtr, false );
-            Marshal.Copy( PosPtr, ret, 0, VectorSize );
-            Marshal.Copy( SclPtr, ret, MatrixSize, VectorSize );
-            Marshal.Copy( RotPtr, ret, VectorSize * 2, MatrixSize );
-            Marshal.FreeHGlobal( RotPtr );
-            Marshal.FreeHGlobal( SclPtr );
-            Marshal.FreeHGlobal( PosPtr );
-            return ret;
+            List<byte> ret = new();
+            ret.AddRange( SaveRestore.StructToBytes( Rotation ) );
+            ret.AddRange( SaveRestore.StructToBytes( Position ) );
+            ret.AddRange( SaveRestore.StructToBytes( Scale ) );
+            return ret.ToArray();
         }
-        public static Transform FromBytes( byte[] Bytes )
+        public static Transform FromBytes( byte[] Bytes, int Offset = 0 )
         {
             int MatrixSize = Marshal.SizeOf( typeof( Matrix ) );
             int VectorSize = Marshal.SizeOf( typeof( Vector ) );
-            byte[] RotBytes = new byte[ MatrixSize ];
-
-            for ( int i = 0; i < MatrixSize; ++i )
-                RotBytes[ i ] = Bytes[ i ];
-            byte[] PosBytes = new byte[ VectorSize ];
-            for ( int i = 0; i < VectorSize; ++i )
-                PosBytes[ i ] = Bytes[ i + MatrixSize ];
-            byte[] SclBytes = new byte[ VectorSize ];
-            for ( int i = 0; i < VectorSize; ++i )
-                SclBytes[ i ] = Bytes[ i + MatrixSize + VectorSize ]; 
-
-            GCHandle RotPtr = GCHandle.Alloc( RotBytes, GCHandleType.Pinned );
-            GCHandle PosPtr = GCHandle.Alloc( PosBytes, GCHandleType.Pinned );
-            GCHandle SclPtr = GCHandle.Alloc( SclBytes, GCHandleType.Pinned );
-            Matrix Rot = Marshal.PtrToStructure<Matrix>( RotPtr.AddrOfPinnedObject() );
-            Vector Scl = Marshal.PtrToStructure<Vector>( SclPtr.AddrOfPinnedObject() );
-            Vector Pos = Marshal.PtrToStructure<Vector>( PosPtr.AddrOfPinnedObject() );
-            RotPtr.Free();
-            PosPtr.Free();
-            SclPtr.Free();
+            Matrix Rot = SaveRestore.BytesToStruct<Matrix>( Bytes, ByteOffset: Offset );
+            Vector Pos = SaveRestore.BytesToStruct<Vector>( Bytes, ByteOffset: Offset + MatrixSize );
+            Vector Scl = SaveRestore.BytesToStruct<Vector>( Bytes, ByteOffset: Offset + MatrixSize + VectorSize );
             return new Transform( Pos, Scl, Rot );
         }
     }

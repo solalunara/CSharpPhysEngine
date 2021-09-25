@@ -9,8 +9,8 @@ namespace PhysEngine
 {
     class BoxEnt : BaseEntity
     {
-        public BoxEnt( Vector mins, Vector maxs, Texture[] tx, bool NormalizeBox = true ) :
-            base( new FaceMesh[ 6 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+        public BoxEnt( Vector mins, Vector maxs, (Texture, string)[] tx, bool NormalizeBox = true ) :
+            base( new (FaceMesh, string)[ 6 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
         {
             if ( NormalizeBox )
             {
@@ -86,15 +86,15 @@ namespace PhysEngine
             {
                 case 0:
                     for ( int i = 0; i < 6; ++i )
-                        Meshes[ i ] = new FaceMesh( Verts[ i ], inds, new Texture(), Normals[ i ] );
+                        Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, new Texture(), Normals[ i ] ), "");
                     break;
                 case 1:
                     for ( int i = 0; i < 6; ++i )
-                        Meshes[ i ] = new FaceMesh( Verts[ i ], inds, tx[ 0 ], Normals[ i ] );
+                        Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ 0 ].Item1, Normals[ i ] ), tx[ 0 ].Item2);
                     break;
                 case 6:
                     for ( int i = 0; i < 6; ++i )
-                        Meshes[ i ] = new FaceMesh( Verts[ i ], inds, tx[ i ], Normals[ i ] );
+                        Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ i ].Item1, Normals[ i ] ), tx[ i ].Item2);
                     break;
                 default:
                     Assert( false );
@@ -109,7 +109,7 @@ namespace PhysEngine
 
     class Camera : BaseEntity
     {
-        public Camera( Matrix Perspective ) : base( Array.Empty<FaceMesh>(), new( new(), new( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+        public Camera( Matrix Perspective ) : base( Array.Empty<(FaceMesh, string)>(), new( new(), new( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
         {
             this.Perspective = Perspective;
         }
@@ -139,16 +139,15 @@ namespace PhysEngine
         public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
         public static readonly BBox PLAYER_NORMAL_BBOX = new( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
         public static readonly BBox PLAYER_CROUCH_BBOX = new( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, 0.5f, .5f ) );
-        //depending on how the compiler works, this may cause a memory leak. Prob won't though
-        public static readonly FaceMesh[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<Texture>() ).Meshes;
-        public static readonly FaceMesh[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, Array.Empty<Texture>() ).Meshes;
+        public static readonly (FaceMesh, string)[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ).Meshes;
+        public static readonly (FaceMesh, string)[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, Array.Empty<(Texture, string)>() ).Meshes;
         public const float PLAYER_MASS = 50.0f;
         public const float PLAYER_ROTI = float.PositiveInfinity;
 
         public Player3D( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
         {
             _crouched = false;
-            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<Texture>() ), Coeffs, Mass, RotI, new() );
+            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ), Coeffs, Mass, RotI, new() );
             camera = new Camera( Perspective )
             {
                 Parent = Body.LinkedEnt
