@@ -166,6 +166,8 @@ namespace RenderInterface
             {
                 ret.AddRange( MeshBytes[ i ] );
             }
+            if ( Parent != null )
+                ret.AddRange( Parent.ToBytes() );
             return ret.ToArray();
         }
         public static BaseEntity FromBytes( byte[] Bytes )
@@ -183,7 +185,20 @@ namespace RenderInterface
                 Meshes[ i ] = FaceMesh.FromBytes( bs.ToArray() );
                 Index += Marshal.SizeOf( Meshes[ i ] );
             }
-            return new BaseEntity( Meshes, LT );
+            if ( Index >= Bytes.Length)
+                return new BaseEntity( Meshes, LT );
+            else
+            {
+                BaseEntity b = new BaseEntity( Meshes, LT );
+                List<byte> ParentBytes = new();
+                while ( Index < Bytes.Length )
+                {
+                    ParentBytes.Add( Bytes[ Index ] );
+                    ++Index;
+                }
+                b.Parent = FromBytes( ParentBytes.ToArray() );
+                return b;
+            }
         }
 
         //static members
@@ -468,6 +483,7 @@ namespace RenderInterface
         public Vector Torque;
 
         internal List<int> ForceChannels;
+        public void ClearChannels() => ForceChannels.Clear();
         public void AddForce( Vector force, int Channel )
         {
             if ( !ForceChannels.Contains( Channel ) )

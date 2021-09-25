@@ -6,24 +6,6 @@ using System.Threading.Tasks;
 
 namespace PhysEngine
 {
-    [Flags]
-    enum RuntimeMechanics
-    {
-        NONE =      0,
-        PAUSED =    1 << 0,
-        SAVE =      1 << 1,
-        LOAD =      1 << 2,
-        FIREQ =     1 << 3,
-        FIREE =     1 << 4,
-        FIREZ =     1 << 5,
-        FIREX =     1 << 6,
-        FIREF =     1 << 7,
-        FIRER =     1 << 8,
-        FIREC =     1 << 9,
-        FIREV =     1 << 10,
-        FIRELEFT =  1 << 11,
-        FIRERIGHT = 1 << 12
-    }
     enum Keys
     {
         W = 87,
@@ -62,7 +44,7 @@ namespace PhysEngine
         MOVE_BACKWARD   = 1 << 1,
         MOVE_LEFT       = 1 << 2,
         MOVE_RIGHT      = 1 << 3,
-        MOVE_JUMP       = 1 << 4,
+        MOVE_JUMP       = 1 << 4
     }
     enum Space
     {

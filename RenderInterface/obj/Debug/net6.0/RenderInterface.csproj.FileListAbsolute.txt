@@ -13,7 +13,6 @@ C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterfac
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\bin\Debug\net6.0\RenderInterface.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\bin\Debug\net6.0\ref\RenderInterface.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\bin\Debug\net6.0\RenderInterface.pdb
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\obj\Debug\net6.0\RenderInterface.csproj.AssemblyReference.cache
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\obj\Debug\net6.0\RenderInterface.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\obj\Debug\net6.0\RenderInterface.AssemblyInfoInputs.cache
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\RenderInterface\obj\Debug\net6.0\RenderInterface.AssemblyInfo.cs

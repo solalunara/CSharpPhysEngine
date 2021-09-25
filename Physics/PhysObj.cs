@@ -176,7 +176,7 @@ namespace Physics
         public static List<(PhysObj, PhysObj)> GetCollisionPairs( BaseWorld world )
         {
             List<(PhysObj, PhysObj)> Pairs = new();
-            IPhysHandle[] PhysList = world.GetPhysObjList();
+            BasePhysics[] PhysList = world.GetPhysObjList();
             for ( int i = 0; i < PhysList.Length; ++i )
             {
                 for ( int j = i + 1; j < PhysList.Length; ++j )
@@ -192,25 +192,3 @@ namespace Physics
         
     }
 }
-
-/*
-Vector CollisionPoint = collisionplane.ClosestPointOnPlane( LinkedEnt.GetAbsOrigin() );
-//anti-penetration
-if ( LinkedEnt.AABB.TestCollisionPoint( CollisionPoint, LinkedEnt.GetAbsOrigin() ) )
-{
-    Vector Mins = LinkedEnt.ent.AABB.mins;
-    Vector Maxs = LinkedEnt.ent.AABB.maxs;
-    for ( int i = 0; i < 3; ++i )
-    {
-        if ( Math.Abs( collisionplane.Normal[ i ] ) > .9f )
-        {
-            if ( collisionplane.Normal[ i ] > .9f )
-                CollisionPoint[ i ] -= Mins[ i ];
-            else //if normal[i] < -.9f
-                CollisionPoint[ i ] -= Maxs[ i ];
-            break;
-        }
-    }
-    LinkedEnt.Transform.SetAbsPos( CollisionPoint );
-}
-*/

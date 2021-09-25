@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PhysicsEngine": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

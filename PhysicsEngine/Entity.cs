@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Physics;
 using RenderInterface;
+using Physics;
 
 namespace PhysEngine
 {
@@ -121,7 +121,7 @@ namespace PhysEngine
     abstract class Player
     {
         public Camera camera;
-        public IPhysHandle Body;
+        public PhysObj Body;
     }
 
     class Player2D : Player

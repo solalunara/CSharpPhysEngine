@@ -53,29 +53,24 @@ namespace RenderInterface
         public static extern void WindowSizeChanged( int width, int height );
     }
 
-    public struct Point2
+    public struct Point2<T>
     {
-        public Point2( float x, float y )
+        public Point2( T x, T y )
         {
             this.x = x;
             this.y = y;
         }
-        public Point2( double x, double y )
-        {
-            this.x = (float) x;
-            this.y = (float) y;
-        }
-        public float x;
-        public float y;
+        public T x;
+        public T y;
     }
     public class Mouse
     {
-        public static Point2 GetMouseOffset( IntPtr window )
+        public static Point2<double> GetMouseOffset( IntPtr window )
         {
             GetMouseOffset( window, out double x, out double y );
             return new( x, y );
         }
-        public static Point2 GetMouseNormalizedPos( IntPtr window )
+        public static Point2<double> GetMouseNormalizedPos( IntPtr window )
         {
             GetMouseNormalizedPos( window, out double x, out double y );
             return new( x, y );
@@ -210,12 +205,21 @@ namespace RenderInterface
         public Texture( string filepath )
         {
             InitTexture( Util.ToCString( filepath ), out this );
+            TextureName = filepath;
+        }
+        public Texture()
+        {
+            TextureName = "";
+            Initialized = false;
+            ID = 0;
+            Unit = 0;
         }
 
         public bool Initialized;
         public uint ID;
         public uint Unit;
 
+        public string TextureName;
 
         public void Close() => DestructTexture( ref this );
 

@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
-using Physics;
 using RenderInterface;
+using Physics;
 
 namespace PhysEngine
 {
@@ -36,15 +36,27 @@ namespace PhysEngine
         public PhysicsEnvironment Environment;
         public PhysicsSimulator Simulator;
 
-        
+        private Player _Player;
+        public Player player
+        { 
+            get => _Player; 
+            set
+            {
+                _Player = value;
+                if ( !PhysicsObjects.Contains( _Player.Body ) )
+                    PhysicsObjects.Add( _Player.Body );
+                if ( !WorldEnts.Contains( _Player.camera ) )
+                    WorldEnts.Add( _Player.camera );
+            } 
+        }
 
         public void Add( params BaseEntity[] ent )
         {
             WorldEnts.AddRange( ent );
         }
-        public void Add( params IPhysHandle[] pobjs )
+        public void Add( params PhysObj[] pobjs )
         {
-            foreach ( IPhysHandle p in pobjs )
+            foreach ( PhysObj p in pobjs )
             {
                 if ( !WorldEnts.Contains( p.LinkedEnt ) )
                 {

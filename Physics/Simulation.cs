@@ -39,6 +39,7 @@ namespace Physics
         {
             timer.AutoReset = !Paused;
         }
+        public bool Paused() => !timer.AutoReset;
         public void SetFrameTime( float ft )
         {
             timer.Interval = ft;
@@ -58,7 +59,7 @@ namespace Physics
 
         public DateTime LastSimTime;
 
-        public List<IPhysHandle> PObjs;
+        public List<BasePhysics> PObjs;
         public Vector Gravity;
 
         internal SimulationData Data;
@@ -113,7 +114,7 @@ namespace Physics
 
                 p.Torque = new();
                 p.NetForce = new();
-                p.ForceChannels.Clear();
+                p.ClearChannels();
 
                 p.DragSimulate( Collide, Gravity );
             }
