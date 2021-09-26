@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -150,8 +151,6 @@ namespace Physics
             AddForceAtPoint( Force, CollisionPoint );
         }
 
-        
-
         public static List<(PhysObj, PhysObj)> GetCollisionPairs( BaseWorld world )
         {
             List<(PhysObj, PhysObj)> Pairs = new();
@@ -168,6 +167,37 @@ namespace Physics
             }
             return Pairs;
         }
-        
+
+        public static PhysObj FromBytes( byte[] Bytes, int ByteOffset = 0 )
+        {
+            int Index = ByteOffset;
+
+            BaseEntity LinkedEnt = SaveRestore.BytesToStruct<BaseEntity>( Bytes, Index );
+            Index += Marshal.SizeOf( LinkedEnt );
+
+            Vector Momentum = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Index += Marshal.SizeOf( Momentum );
+
+            Vector AngularMomentum = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Index += Marshal.SizeOf( AngularMomentum );
+
+            Vector AirDragCoeffs = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Index += Marshal.SizeOf( AirDragCoeffs );
+
+            Vector AirVelocity = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Index += Marshal.SizeOf( AirVelocity );
+
+            float Mass = SaveRestore.BytesToStruct<float>( Bytes, Index );
+            Index += Marshal.SizeOf( Mass );
+
+            float RotInertia = SaveRestore.BytesToStruct<float>( Bytes, Index );
+
+            PhysObj ret = new( LinkedEnt, AirDragCoeffs, Mass, RotInertia, Momentum / Mass )
+            {
+                AngularMomentum = AngularMomentum,
+                AirVelocity = AirVelocity
+            };
+            return ret;
+        }
     }
 }

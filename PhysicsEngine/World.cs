@@ -107,6 +107,11 @@ namespace PhysEngine
                 byte[] EntBytes = entlist[ i ].ToBytes();
                 bw.Write( EntBytes.Length );
                 bw.Write( EntBytes );
+
+                bool IsPlayerCamera = entlist[ i ] == player.camera;
+                bool IsPlayerBody = entlist[ i ] == player.Body.LinkedEnt;
+                bw.Write( IsPlayerCamera );
+                bw.Write( IsPlayerBody );
             }
 
             fs.Close();
@@ -119,12 +124,21 @@ namespace PhysEngine
             BinaryReader br = new( sr.BaseStream );
 
             World w = new( PhysicsEnvironment.Default_Gravity, 0.02f );
+            w.player = new Player3D( Matrix.IdentityMatrix(), PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
 
             int EntListLength = br.ReadInt32();
             for ( int i = 0; i < EntListLength; ++i )
             {
                 int EntByteLength = br.ReadInt32();
-                w.Add( BaseEntity.FromBytes( br.ReadBytes( EntByteLength ) ) );
+                BaseEntity ent = BaseEntity.FromBytes( br.ReadBytes( EntByteLength ) );
+                w.Add( ent );
+
+                bool IsPlayerCamera = br.ReadBoolean();
+                bool IsPlayerBody = br.ReadBoolean();
+                if ( IsPlayerCamera )
+                    w.player.camera = new Camera( ent );
+                if ( IsPlayerBody )
+                    w.player.Body.LinkedEnt = ent;
             }
 
             sr.Close();

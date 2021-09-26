@@ -1,6 +1,7 @@
 ﻿global using Physics;
 global using RenderInterface;
 global using static System.Diagnostics.Debug;
+global using static RenderInterface.Renderer;
 
 using System;
 using System.Collections.Generic;
@@ -18,17 +19,6 @@ namespace PhysEngine
         static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
         static Move MoveTracker = Move.MOVE_NONE;
         static World MainWorld;
-        public static readonly List<(Texture, string)> Textures = new();
-        public static Texture FindTexture( string Name )
-        {
-            for ( int i = 0; i < Textures.Count; ++i )
-            {
-                if ( Textures[ i ].Item2 == Name )
-                    return Textures[ i ].Item1;
-            }
-            Assert( false, "Failed to find texture with given name" );
-            return new Texture();
-        }
 
         const float fov = 75.0f;
         const float nearclip = 0.01f;
@@ -41,11 +31,11 @@ namespace PhysEngine
         {
             try
             {
-                Renderer.Init( out IntPtr window );
+                Init( out IntPtr window );
                 string[] TextureNames = Directory.EnumerateFiles( DirName + "\\Textures" ).ToArray();
                 for ( int i = 0; i < TextureNames.Length; ++i )
                 {
-                    Textures.Add( (new Texture( TextureNames[ i ] ), TextureNames[ i ]) );
+                    AddTexture( TextureNames[ i ] );
                 }
                 if ( args.Length > 0 )
                 {
@@ -54,11 +44,19 @@ namespace PhysEngine
                         switch ( args[ i ].ToLower() )
                         {
                             case "-2d":
+                            {
                                 Run2D( window );
                                 break;
+                            }
                             case "-3d":
+                            {
                                 Run3D( window );
                                 break;
+                            }
+                        }
+                        if ( args[ i ].ToLower().Contains( ".worldmap" ) )
+                        {
+                            MainWorld = World.FromFile( args[ i ] );
                         }
                     }
                 }
@@ -67,7 +65,7 @@ namespace PhysEngine
             }
             finally
             {
-                Renderer.Terminate();
+                Terminate();
             }
         }
 
@@ -84,7 +82,7 @@ namespace PhysEngine
             };
             shader.SetLights( testlights );
 
-            Renderer.GetWindowSize( window, out int width, out int height );
+            GetWindowSize( window, out int width, out int height );
             Matrix persp = Matrix.Perspective( fov, (float) width / height, nearclip, farclip );
 
             float[] CrosshairVerts =
@@ -95,7 +93,7 @@ namespace PhysEngine
                 -.05f, 0.05f, 0.0f,     0.0f, 1.0f
             };
             int[] CrosshairInds = { 0, 1, 3, 1, 2, 3 };
-            FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, new Texture( DirName + "\\Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
+            FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, FindTexture( DirName + "\\Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
 
 
             MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
@@ -106,7 +104,7 @@ namespace PhysEngine
             //player = new Player2D();
             MainWorld.Add
             (
-                new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 20, new() )
+                new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 5, new() )
             );
             MainWorld.Add
             (
@@ -128,17 +126,17 @@ namespace PhysEngine
             );
 
             InputHandle inptptr = Input;
-            Renderer.SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr ) );
+            SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr ) );
             WindowHandle wndptr = WindowMove;
-            Renderer.SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
+            SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
             MouseHandle msptr = MouseClick;
-            Renderer.SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
+            SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
 
-            float lasttime = Renderer.GetTime();
+            float lasttime = GetTime();
 
-            while ( !Renderer.ShouldTerminate( window ) )
+            while ( !ShouldTerminate( window ) )
             {
-                float time = Renderer.GetTime();
+                float time = GetTime();
                 float frametime = time - lasttime;
                 lasttime = time;
                 if ( frametime > 1.0f )
@@ -187,22 +185,6 @@ namespace PhysEngine
                     {
                         CamPhys.Velocity = CamPhys.Velocity.Normalized() * Max_Player_Speed;
                     }
-
-                    /*
-                    if ( rtMech.HasFlag( RuntimeMechanics.SAVE ) )
-                    {
-                        rtMech &= ~RuntimeMechanics.SAVE;
-                    }
-                    if ( rtMech.HasFlag( RuntimeMechanics.LOAD ) )
-                    {
-                        rtMech &= ~RuntimeMechanics.LOAD;
-                        //world.Close();
-                        //world = World.FromFile( DirName + "/Worlds/world1.worldmap" );
-                        //Renderer.GetWindowSize( window, out width, out height );
-                        //Matrix.GLMPerspective( fov, (float) width / height, nearclip, farclip, out persp );
-                        //world.player.Perspective = persp;
-                    }
-                    */
                 }
                 else
                     Mouse.ShowMouse( window );
@@ -210,11 +192,11 @@ namespace PhysEngine
 
                 TimeSpan TimeDiff = DateTime.Now - MainWorld.Environment.LastSimTime;
 
-                Renderer.StartFrame( window );
-                Renderer.SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
+                StartFrame( window );
+                SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in MainWorld.WorldEnts )
                 {
-                    Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
+                    SetRenderValues( shader, b.CalcEntMatrix() );
                     foreach ( (FaceMesh, string) m in b.Meshes )
                     {
                         if ( !m.Item1.texture.Initialized )
@@ -224,7 +206,7 @@ namespace PhysEngine
                     }
                 }
                 CrosshairMesh.Render( GUI );
-                Renderer.EndFrame( window );
+                EndFrame( window );
             }
             //world.ToFile( DirName + "/Worlds/world1.worldmap" );
         }
@@ -235,7 +217,7 @@ namespace PhysEngine
             string[] TextureNames = Directory.EnumerateFiles( DirName + "\\Textures" ).ToArray();
             for ( int i = 0; i < TextureNames.Length; ++i )
             {
-                Textures.Add( ( new Texture( TextureNames[ i ] ), TextureNames[ i ] ) );
+                AddTexture( TextureNames[ i ] );
             }
 
             Shader shader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\FragmentShader.frag" );
@@ -256,15 +238,15 @@ namespace PhysEngine
             shader.SetAmbientLight( 1.0f );
 
             InputHandle inptptr = Input;
-            Renderer.SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr = Input ) );
+            SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr = Input ) );
             WindowHandle wndptr = WindowMove;
-            Renderer.SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
+            SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
             MouseHandle msptr = MouseClick;
-            Renderer.SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
+            SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
 
             MainWorld.player = new Player2D();
 
-            while ( !Renderer.ShouldTerminate( window ) )
+            while ( !ShouldTerminate( window ) )
             {
                 /*
                 if ( rtMech.HasFlag( RuntimeMechanics.FIRELEFT ) )
@@ -285,13 +267,13 @@ namespace PhysEngine
                     }
                 }
                 */
-                Renderer.StartFrame( window );
+                StartFrame( window );
                 Matrix Cam = -MainWorld.player.camera.CalcEntMatrix();
-                Renderer.SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
+                SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
                 foreach ( BaseEntity b in MainWorld.WorldEnts )
                 {
                     b.SetAbsRot( Matrix.RotMatrix( 0.5f, new( 0, 1, 1 ) ) * b.GetAbsRot() );
-                    Renderer.SetRenderValues( shader, b.CalcEntMatrix() );
+                    SetRenderValues( shader, b.CalcEntMatrix() );
                     foreach ( (FaceMesh, string) m in b.Meshes )
                     {
                         if ( !m.Item1.texture.Initialized )
@@ -300,7 +282,7 @@ namespace PhysEngine
                         m.Item1.Render( shader );
                     }
                 };
-                Renderer.EndFrame( window );
+                EndFrame( window );
             }
 
             dirt[ 0 ].Close();
@@ -327,7 +309,7 @@ namespace PhysEngine
                     {
                         MainWorld.Close();
                         MainWorld = World.FromFile( DirName + "/Worlds/world1.worldmap" );
-                        Renderer.GetWindowSize( window, out int width, out int height );
+                        GetWindowSize( window, out int width, out int height );
                         MainWorld.player.camera.Perspective = Matrix.Perspective( fov, width / height, nearclip, farclip );
                         break;
                     }
@@ -335,7 +317,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         if ( hit.bHit )
                         {
                             PhysObj HitPhys = (PhysObj)MainWorld.GetEntPhysics( hit.HitEnt );
@@ -377,7 +359,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         Vector ptCenter;
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
@@ -393,7 +375,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         Vector ptCenter;
                         if ( hit.bHit )
                             ptCenter = hit.ptHit + hit.vNormal * 0.5f;
@@ -409,7 +391,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         if ( hit.bHit )
                             MainWorld.WorldEnts.Remove( hit.HitEnt );
                         break;
@@ -418,7 +400,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         if ( hit.bHit || MainWorld.GetEntPhysics( hit.HitEnt ) == null )
                             MainWorld.Add( new PhysObj( hit.HitEnt, PhysObj.Default_Coeffs, 25, 1, new() ) );
                         break;
@@ -427,7 +409,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         if ( hit.bHit )
                         {
                             BaseEntity HitEnt = hit.HitEnt;
@@ -439,7 +421,7 @@ namespace PhysEngine
                     {
                         Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                         Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt );
+                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
                         if ( hit.bHit )
                         {
                             BaseEntity HitEnt = hit.HitEnt;
@@ -506,7 +488,7 @@ namespace PhysEngine
         public delegate void WindowHandle( IntPtr window, int width, int height );
         public static void WindowMove( IntPtr window, int width, int height )
         {
-            Renderer.WindowSizeChanged( width, height );
+            WindowSizeChanged( width, height );
             MainWorld.player.camera.Perspective = Matrix.Perspective( fov, (float) width / height, 0.01f, 1000.0f );
         }
         public delegate void MouseHandle( IntPtr window, MouseButton mouse, Actions act, int mods );

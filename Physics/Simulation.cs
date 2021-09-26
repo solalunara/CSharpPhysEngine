@@ -67,57 +67,64 @@ namespace Physics
 
         public void Simulate( object source, ElapsedEventArgs e )
         {
-            LastSimTime = DateTime.Now;
-            float dt = Data.PhysSimTime;
-            BaseWorld world = Data.world;
-            Assert( !Data.Paused ); //shouldn't be called if we're paused
-
-            List<(PhysObj, PhysObj)> Pairs = PhysObj.GetCollisionPairs( world );
-            foreach ( (PhysObj, PhysObj) Pair in Pairs )
+            try
             {
-                Collision.Collide( Pair.Item1, Pair.Item2, dt );
-            }
+                LastSimTime = DateTime.Now;
+                float dt = Data.PhysSimTime;
+                BaseWorld world = Data.world;
+                Assert( !Data.Paused ); //shouldn't be called if we're paused
 
-            foreach ( PhysObj p in PObjs )
-            {
-                if ( p.LinkedEnt.Parent != null )
-                    continue; //don't update physics objects in hierarchy 
-
-                bool Collide = false;
-                foreach ( BaseEntity ent in world.GetEntList() )
+                List<(PhysObj, PhysObj)> Pairs = PhysObj.GetCollisionPairs( world );
+                foreach ( (PhysObj, PhysObj) Pair in Pairs )
                 {
-                    if ( ent == p.LinkedEnt )
-                        continue; //prevent self collisions
-                    if ( world.GetEntPhysics( ent ) != null )
-                        continue; //physics objects have their own collision detection
+                    Collision.Collide( Pair.Item1, Pair.Item2, dt );
+                }
 
-                    if ( BaseEntity.BinaryTestCollision( ent, p.LinkedEnt ) )
+                foreach ( PhysObj p in PObjs )
+                {
+                    if ( p.LinkedEnt.Parent != null )
+                        continue; //don't update physics objects in hierarchy 
+
+                    bool Collide = false;
+                    foreach ( BaseEntity ent in world.GetEntList() )
                     {
-                        Collide = true;
-                        p.Collide( ent, Gravity );
+                        if ( ent == p.LinkedEnt )
+                            continue; //prevent self collisions
+                        if ( world.GetEntPhysics( ent ) != null )
+                            continue; //physics objects have their own collision detection
+
+                        if ( BaseEntity.BinaryTestCollision( ent, p.LinkedEnt ) )
+                        {
+                            Collide = true;
+                            p.Collide( ent, Gravity );
+                        }
                     }
+
+                    //p.TestCollision( world, out _, out bool TopCollision );
+
+                    p.NetForce += Gravity * p.Mass;
+
+                    p.Momentum += p.NetForce * dt;
+                    p.LinkedEnt.SetAbsOrigin( p.LinkedEnt.GetAbsOrigin() + p.Velocity * dt );
+
+                    p.AngularMomentum += p.Torque * dt;
+                    if ( p.AngularVelocity.Length() > 0.1f )
+                    {
+                        p.LinkedEnt.SetAbsRot( Matrix.RotMatrix( p.AngularVelocity.Length() * dt * 180 / MathF.PI, p.AngularMomentum.Normalized() ) * p.LinkedEnt.GetAbsRot() );
+                    }
+
+
+                    p.Torque = new();
+                    p.NetForce = new();
+                    p.ClearChannels();
+
+                    p.DragSimulate( Collide, Gravity );
+                    p.LastAngVelocity = p.AngularVelocity;
                 }
-
-                //p.TestCollision( world, out _, out bool TopCollision );
-
-                p.NetForce += Gravity * p.Mass;
-
-                p.Momentum += p.NetForce * dt;
-                p.LinkedEnt.SetAbsOrigin( p.LinkedEnt.GetAbsOrigin() + p.Velocity * dt );
-
-                p.LastAngVelocity = p.AngularVelocity;
-                p.AngularMomentum += p.Torque * dt;
-                if ( p.AngularVelocity.Length() > 0.1f )
-                {
-                    p.LinkedEnt.SetAbsRot( Matrix.RotMatrix( p.AngularVelocity.Length() * dt * 180 / MathF.PI, p.AngularMomentum.Normalized() ) * p.LinkedEnt.GetAbsRot() );
-                }
-
-
-                p.Torque = new();
-                p.NetForce = new();
-                p.ClearChannels();
-
-                p.DragSimulate( Collide, Gravity );
+            }
+            catch ( Exception ex )
+            {
+                Console.WriteLine( ex );
             }
         }
 

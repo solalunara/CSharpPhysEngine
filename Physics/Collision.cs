@@ -11,8 +11,9 @@ namespace Physics
     {
         internal static void Collide( PhysObj Obj1, PhysObj Obj2, float FrameTime )
         {
-            Vector DeltaVel1 = -Obj1.Velocity;
-            Vector DeltaVel2 = -Obj2.Velocity;
+            /*
+            Vector DeltaVel1 = -Obj1.Velocity * 2;
+            Vector DeltaVel2 = -Obj2.Velocity * 2;
 
             //newton's second law
             Vector Obj1Force = Obj1.Mass * DeltaVel1 / FrameTime;
@@ -22,6 +23,13 @@ namespace Physics
             Obj2.NetForce += Obj1Force;
             Obj1.NetForce += Obj2Force;
             Obj2.NetForce -= Obj2Force;
+            */
+            float m1 = Obj1.Mass;
+            float m2 = Obj2.Mass;
+            Vector u1 = Obj1.Velocity;
+            Vector u2 = Obj2.Velocity;
+            Obj1.Velocity = u1 * ( m1 - m2 ) / ( m1 + m2 ) + 2 * u2 * ( m2 ) / ( m1 + m2 );
+            Obj2.Velocity = 2 * u1 * ( m1 ) / ( m1 + m2 ) + u2 * ( m2 - m1 ) / ( m1 + m2 );
         }
     }
 }

@@ -113,6 +113,7 @@ namespace PhysEngine
         {
             this.Perspective = Perspective;
         }
+        public Camera( BaseEntity ent ) : base( ent ) { this.Perspective = Matrix.IdentityMatrix(); }
         public Matrix Perspective;
     }
 

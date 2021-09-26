@@ -11,6 +11,21 @@ namespace RenderInterface
 {
     public static class Renderer
     {
+        internal static readonly List<(Texture, string)> Textures = new();
+        public static Texture FindTexture( string Name )
+        {
+            for ( int i = 0; i < Textures.Count; ++i )
+            {
+                if ( Textures[ i ].Item2 == Name )
+                    return Textures[ i ].Item1;
+            }
+            Assert( Name == "", "Failed to find texture with given name" );
+            return new Texture();
+        }
+        public static void AddTexture( string Path )
+        {
+            Textures.Add( ( new Texture( Path ), Path ) );
+        }
 
         [DllImport( "render", CallingConvention = CallingConvention.Cdecl )]
         public static extern void Init( out IntPtr window );
@@ -84,7 +99,7 @@ namespace RenderInterface
             for ( int i = 0; i < Size; ++i )
                 SubBytes[ i ] = Bytes[ ByteOffset + i ];
 
-            GCHandle Ptr = GCHandle.Alloc( Bytes, GCHandleType.Pinned );
+            GCHandle Ptr = GCHandle.Alloc( SubBytes, GCHandleType.Pinned );
             T Struct = Marshal.PtrToStructure<T>( Ptr.AddrOfPinnedObject() );
             Ptr.Free();
             return Struct;

@@ -18,6 +18,12 @@ namespace RenderInterface
             this.Meshes = Meshes;
             this.LocalTransform = LocalTransform;
         }
+        public BaseEntity( BaseEntity clone )
+        {
+            Meshes = clone.Meshes;
+            LocalTransform = clone.LocalTransform;
+            _Parent = clone._Parent;
+        }
 
         //member data
         public (FaceMesh, string)[] Meshes;
@@ -117,7 +123,7 @@ namespace RenderInterface
             Vector[] Points2 = { pt };
             for ( int i = 0; i < Meshes.Length; ++i )
             {
-                if ( TestCollision( Meshes[ i ].Item1.Normal, Points1, Points2 ) == 0 )
+                if ( TestCollision( Meshes[ i ].Item1.Normal, Points1, Points2 ) is null )
                     return false;
             }
             return true;
@@ -162,7 +168,7 @@ namespace RenderInterface
                 ret.AddRange( SaveRestore.StructToBytes( Meshes[ i ].Item2 ) );
             }
 
-            ret.Add( Parent == null ? (byte)0b0000_0000 : (byte)0b1111_1111 );
+            ret.Add( Parent == null ? (byte)0 : (byte)0b1111_1111 );
             if ( Parent != null )
                 ret.AddRange( Parent.ToBytes() );
 
@@ -170,7 +176,7 @@ namespace RenderInterface
         }
         public static BaseEntity FromBytes( byte[] Bytes, int Offset = 0 )
         {
-            Transform LT = Transform.FromBytes( Bytes, Offset: 0 );
+            Transform LT = Transform.FromBytes( Bytes, Offset: Offset );
             int TransformSize = LT.ToBytes().Length;
             int MeshCount = SaveRestore.BytesToStruct<int>( Bytes, ByteOffset: Offset + TransformSize );
             (FaceMesh, string)[] Meshes = new (FaceMesh, string)[ MeshCount ];
@@ -181,10 +187,7 @@ namespace RenderInterface
                 Index += Marshal.SizeOf( m );
                 string TexName = SaveRestore.BytesToStruct<string>( Bytes, Index );
                 Index += SaveRestore.StringToBytes( TexName ).Length;
-                Meshes[ i ] = (new FaceMesh( m.Verts, m.VertLength, m.Inds, m.IndLength, new Texture( TexName ), m.Normal ), TexName);
-
-                if ( m.texture.Initialized )
-                    m.texture.Close();
+                Meshes[ i ] = (new FaceMesh( m.Verts, m.VertLength, m.Inds, m.IndLength, Renderer.FindTexture( TexName ), m.Normal ), TexName);
             }
             BaseEntity b = new( Meshes, LT );
             bool ParentExists = Bytes[ Index ] != (byte)0b0000_0000;
@@ -203,7 +206,7 @@ namespace RenderInterface
         {
             if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
             {
-                Assert( false, "Objects not colliding!" ); //don't make it quiet
+                //Assert( false, "Objects not colliding!" ); //don't make it quiet
                 return new();
             }
             Vector[] Points1 = ent1.GetWorldVerts();
@@ -215,10 +218,24 @@ namespace RenderInterface
 
             List<float> NormsEnt1 = new();
             List<float> NormsEnt2 = new();
+            NormsEnt1.Add( float.PositiveInfinity );
+            NormsEnt2.Add( float.PositiveInfinity );
             for ( int i = 0; i < ent1.Meshes.Length; ++i )
-                NormsEnt1.Add( TestCollision( ent1.TransformDirection( ent1.Meshes[ i ].Item1.Normal ), Points1, Points2 ) );
+            {
+                float? val = TestCollision( ent1.TransformDirection( ent1.Meshes[ i ].Item1.Normal ), Points1, Points2 );
+                if ( val is not null )
+                    NormsEnt1.Add( val.Value );
+                else
+                    NormsEnt1.Add( float.MaxValue );
+            }
             for ( int i = 0; i < ent2.Meshes.Length; ++i )
-                NormsEnt2.Add( TestCollision( ent2.TransformDirection( ent2.Meshes[ i ].Item1.Normal ), Points1, Points2 ) );
+            {
+                float? val = TestCollision( ent2.TransformDirection( ent2.Meshes[ i ].Item1.Normal ), Points1, Points2 );
+                if ( val is not null )
+                    NormsEnt2.Add( val.Value );
+                else
+                    NormsEnt2.Add( float.MaxValue );
+            }
 
             int NormEnt1 = NormsEnt1.IndexOf( NormsEnt1.Min() );
             int NormEnt2 = NormsEnt2.IndexOf( NormsEnt2.Min() );
@@ -235,7 +252,7 @@ namespace RenderInterface
         {
             if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
             {
-                Assert( false, "Objects not colliding!" ); //don't make it quiet
+                //Assert( false, "Objects not colliding!" ); //don't make it quiet
                 return 0;
             }
 
@@ -247,12 +264,17 @@ namespace RenderInterface
                 Points2[ i ] += offset2;
 
             Vector Norm = TestCollision( ent1, ent2, offset1, offset2 );
-            float CollisionDepth = TestCollision( Norm, Points1, Points2 );
-            Assert( CollisionDepth < 1 );
-            return CollisionDepth;
+            float? CollisionDepth = TestCollision( Norm, Points1, Points2 );
+            Assert( CollisionDepth < 1 && CollisionDepth is not null );
+            return CollisionDepth.Value;
         }
         public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
         {
+            if ( ent1 == ent2 )
+                return false;
+            if ( ent1.Parent == ent2 || ent2.Parent == ent1 )
+                return false;
+
             BaseEntity[] ents = { ent1, ent2 };
 
             Vector[] Points1 = ent1.GetWorldVerts();
@@ -267,16 +289,20 @@ namespace RenderInterface
                 BaseEntity Ent = ents[ EntIndex ];
                 for ( int i = 0; i < Ent.Meshes.Length; ++i )
                 {
-                    if ( TestCollision( Ent.TransformDirection( Ent.Meshes[ i ].Item1.Normal ), Points1, Points2 ) == 0 )
+                    float? f = TestCollision( Ent.TransformDirection( Ent.Meshes[ i ].Item1.Normal ), Points1, Points2 );
+                    if ( f is null )
                         return false;
                 }
             }
             return true;
         }
-        public static float TestCollision( Vector Normal, Vector[] Points1, Vector[] Points2 )
+        //returns: a nullable float
+        //  null: no collision on this normal
+        //  PositiveInfinity: enclosed on this normal
+        public static float? TestCollision( Vector Normal, Vector[] Points1, Vector[] Points2 )
         {
             if ( Points1.Length == 0 || Points2.Length == 0 )
-                return 0;
+                return null;
 
             float[] ProjectedPoints1 = new float[ Points1.Length ];
             float[] ProjectedPoints2 = new float[ Points2.Length ];
@@ -292,9 +318,6 @@ namespace RenderInterface
             float bmin = ProjectedPoints2.Min();
             float bmax = ProjectedPoints2.Max();
 
-            //if ( Small1 >= Large2 || Small2 >= Large1 )
-            //    return 0;
-
             if ( amin > bmin && amax < bmax )
                 return float.PositiveInfinity; //a enclosed in b
             if ( bmin > amin && bmax < amax )
@@ -305,7 +328,7 @@ namespace RenderInterface
             else if ( bmin < amax && bmin > amin )
                 return amax - bmin;
             else
-                return 0;
+                return null;
         }
     }
     public class Transform
@@ -438,7 +461,7 @@ namespace RenderInterface
             this.LinkedEnt = LinkedEnt;
             ForceChannels = new();
         }
-        public readonly BaseEntity LinkedEnt;
+        public BaseEntity LinkedEnt;
 
         public Vector Momentum;
         public Vector Velocity
@@ -458,6 +481,21 @@ namespace RenderInterface
         public Vector NetForce;
         public Vector Torque;
 
+        public virtual byte[] ToBytes()
+        {
+            List<byte> ret = new();
+            byte[] EntBytes = LinkedEnt.ToBytes();
+            ret.AddRange( SaveRestore.StructToBytes( EntBytes.Length ) );
+            ret.AddRange( EntBytes );
+            ret.AddRange( SaveRestore.StructToBytes( Momentum ) );
+            ret.AddRange( SaveRestore.StructToBytes( AngularMomentum ) );
+            ret.AddRange( SaveRestore.StructToBytes( AirDragCoeffs ) );
+            ret.AddRange( SaveRestore.StructToBytes( AirVelocity ) );
+            ret.AddRange( SaveRestore.StructToBytes( Mass ) );
+            ret.AddRange( SaveRestore.StructToBytes( RotInertia ) );
+            return ret.ToArray();
+        }
+
         internal List<int> ForceChannels;
         public void ClearChannels() => ForceChannels.Clear();
         public void AddForce( Vector force, int Channel )
@@ -476,9 +514,9 @@ namespace RenderInterface
             if ( LinkedEnt.Meshes.Length == 0 )
                 return;
 
-            for ( int i = 0; i < world.GetEntList().Length; ++i )
+            for ( int i = 0; i < world.WorldEnts.Count; ++i )
             {
-                BaseEntity WorldEnt = world.GetEntList()[ i ];
+                BaseEntity WorldEnt = world.WorldEnts[ i ];
                 if ( WorldEnt == LinkedEnt )
                     continue; //prevent self collisions
                 if ( WorldEnt.Meshes.Length == 0 )
@@ -488,7 +526,7 @@ namespace RenderInterface
                 {
                     bCollision = true;
 
-                    Vector CollisionNormal = BaseEntity.TestCollision( LinkedEnt, WorldEnt );
+                    Vector CollisionNormal = BaseEntity.TestCollision( WorldEnt, LinkedEnt );
                     if ( MathF.Abs( CollisionNormal.y ) > .7f )
                         TopCollision = true;
                 }
