@@ -10,7 +10,7 @@ namespace Physics
 {
     public class PhysObj : BasePhysics
     {
-        public static readonly Vector Default_Coeffs = new( 1, 1, 1 );
+        public static readonly Vector Default_Coeffs = Vector.One;
 
         const float GroundDragCoeff = 0.6f;
         const float AirDensity = 1.255f; //kg/m^3
@@ -37,31 +37,30 @@ namespace Physics
         {
             //Objects sometimes have a hard time coming to rest on a surface, because they'll keep alternating direction of rotation.
             //Here we try to help those objects out a little bit by detecting their condition then rounding their angles to rest nicely on the surface.
-            if ( Vector.Dot( LastAngVelocity.Normalized(), AngularVelocity.Normalized() ) < -.75f )
+            /*
+            if ( Vector.Dot( LastAngVelocity.Normalized(), AngularVelocity.Normalized() ) < -.5f && GroundFriction )
             {
                 AngularMomentum = new();
                 Matrix Rot = LinkedEnt.GetAbsRot();
-                for ( int i = 0; i < 3; ++i )
+                for ( int i = 0; i < 2; ++i )
                 {
-                    for ( int j = 0; j < 3; ++j )
+                    for ( int j = 0; j < 2; ++j )
                     {
                         Rot.Columns[ i ][ j ] = MathF.Round( Rot.Columns[ i ][ j ] * 180 / MathF.PI ) * MathF.PI / 180;
                     }
                 }
                 LinkedEnt.SetAbsRot( Rot );
             }
+            */
 
             //if the object is almost stopped, force it to stop.
             //drag in this case commonly overshoots.
-            if ( AngularMomentum.Length() < 0.5f )
-            {
-                AngularMomentum = new();
-            }
             if ( Velocity.Length() < 0.1f )
             {
                 Velocity = new();
                 return;
             }
+
 
             Vector Drag;
 

@@ -456,6 +456,9 @@ namespace RenderInterface
         public float y;
         public float z;
 
+        public static Vector One
+        { get => new( 1, 1, 1 ); }
+
         public override string ToString() => "x: " + x + " y: " + y + " z: " + z;
         public override bool Equals( object obj ) => obj.GetType() == typeof( Vector ) && (Vector) obj == this;
         public override int GetHashCode() => Tuple.Create( x, y, z ).GetHashCode();

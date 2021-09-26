@@ -265,7 +265,9 @@ namespace RenderInterface
 
             Vector Norm = TestCollision( ent1, ent2, offset1, offset2 );
             float? CollisionDepth = TestCollision( Norm, Points1, Points2 );
-            Assert( CollisionDepth < 1 && CollisionDepth is not null );
+            //Assert( CollisionDepth < 1 && CollisionDepth is not null );
+            if ( CollisionDepth >= 1 || CollisionDepth is null )
+                return 0;
             return CollisionDepth.Value;
         }
         public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
