@@ -50,3 +50,4 @@ C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Editor\obj
 C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Editor\obj\Debug\net6.0-windows\ref\Editor.dll
 C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Editor\obj\Debug\net6.0-windows\Editor.pdb
 C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\Editor\obj\Debug\net6.0-windows\Editor.genruntimeconfig.cache
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Editor\obj\Debug\net6.0-windows\Editor.csproj.CopyComplete

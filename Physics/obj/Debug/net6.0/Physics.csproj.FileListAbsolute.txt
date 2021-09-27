@@ -27,3 +27,4 @@ C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\De
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net6.0\Physics.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net6.0\ref\Physics.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net6.0\Physics.pdb
+C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Physics\obj\Debug\net6.0\Physics.csproj.CopyComplete
