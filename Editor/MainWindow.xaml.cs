@@ -14,8 +14,11 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Globalization;
 using RenderInterface;
+using static RenderInterface.Renderer;
 using Physics;
 using Vector = RenderInterface.Vector;
+using Matrix = RenderInterface.Matrix;
+using Transform = RenderInterface.Transform;
 
 namespace Editor
 {
@@ -26,8 +29,19 @@ namespace Editor
     {
         public static bool Started;
         public static MainWindow? Instance;
-
         public BaseWorld? World;
+        public void SetShader( string ApplicationDirectory )
+        { 
+            if ( !ShaderSet )
+                shader = new( ApplicationDirectory + "\\Shaders\\VertexShader.vert", ApplicationDirectory + "\\Shaders\\FragmentShader.frag" );
+            ShaderSet = true;
+        }
+
+        private IntPtr Window;
+        private Matrix Perspective;
+        private Transform Camera;
+        private Shader shader;
+        private bool ShaderSet;
 
         private BaseEntity? _SelectedEntity;
         public BaseEntity? SelectedEntity
@@ -65,12 +79,16 @@ namespace Editor
             Started = true;
             Instance = this;
             InitializeComponent();
+            Init( out Window );
+            Perspective = Matrix.Ortho( 10, 10, 10, 10, 0.01f, 1000 );
+            Camera = new( new(), new( 1, 1, 1 ), Matrix.IdentityMatrix() );
         }
 
         private void CloseWindow( object sender, EventArgs e )
         {
             Started = false;
             Instance = null;
+            Terminate();
         }
 
         private void CreateNewEnt( object sender, RoutedEventArgs e )
@@ -161,7 +179,7 @@ namespace Editor
 
         private void UpdateEnt( object sender, RoutedEventArgs e )
         {
-            if ( SelectedEntity is null )
+            if ( SelectedEntity is null || World is null )
                 return;
 
             try
@@ -177,6 +195,22 @@ namespace Editor
             {
                 MessageBox.Show( ex.StackTrace, ex.Message );
             }
+
+            StartFrame( Window );
+            
+            SetCameraValues( shader, Perspective, Camera.WorldToThis );
+            foreach ( BaseEntity b in World.WorldEnts )
+            {
+                SetRenderValues( shader, b.CalcEntMatrix() );
+                foreach ( (FaceMesh, string) m in b.Meshes )
+                {
+                    if ( !m.Item1.texture.Initialized )
+                        continue; //nothing to render
+
+                    m.Item1.Render( shader );
+                }
+            }
+            EndFrame( Window );
         }
     }
 }

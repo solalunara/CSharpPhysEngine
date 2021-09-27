@@ -29,7 +29,6 @@ namespace PhysEngine
         public const float Movespeed_Gnd = 20.0f;
         public const float Max_Player_Speed = 5.0f;
         
-        [STAThread]
         public static void Main( string[] args )
         {
             Thread t = new( () => App.Main() );
@@ -510,6 +509,7 @@ namespace PhysEngine
                     {
                         if ( MainWindow.Started ) //editor open
                         {
+                            MainWindow.Instance.SetShader( DirName );
                             Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                             Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
                             RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
