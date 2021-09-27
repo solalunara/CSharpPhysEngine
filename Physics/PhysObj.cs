@@ -53,8 +53,13 @@ namespace Physics
             }
             */
 
+            //we can do this to simulate rotational drag because physframes are always the same time
+            AngularMomentum *= .99f;
+
             //if the object is almost stopped, force it to stop.
             //drag in this case commonly overshoots.
+            if ( AngularMomentum.Length() < 0.1f )
+                AngularMomentum = new();
             if ( Velocity.Length() < 0.1f )
             {
                 Velocity = new();

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31605.320
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31717.71
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "render", "render\render.vcxproj", "{04D05156-5164-4EC4-9392-0F83E8592465}"
 EndProject
@@ -10,6 +10,13 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhysicsEngine", "PhysicsEngine\PhysicsEngine.csproj", "{533B2346-4CA9-440E-93F4-03C6E090322B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RenderInterface", "RenderInterface\RenderInterface.csproj", "{378E9E9F-578F-4B99-B09A-2D66D47D4414}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "Editor\Editor.csproj", "{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C33089A9-1A71-4642-9E41-874ECF8E1B84}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +75,18 @@ Global
 		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x64.Build.0 = Release|Any CPU
 		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x86.ActiveCfg = Release|Any CPU
 		{378E9E9F-578F-4B99-B09A-2D66D47D4414}.Release|x86.Build.0 = Release|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Debug|x64.Build.0 = Debug|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Debug|x86.Build.0 = Debug|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Release|x64.ActiveCfg = Release|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Release|x64.Build.0 = Release|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Release|x86.ActiveCfg = Release|Any CPU
+		{21DE2EC4-1AEF-45A2-886F-8AF3BBE65D28}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

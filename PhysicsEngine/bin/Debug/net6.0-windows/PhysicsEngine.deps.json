@@ -1,0 +1,64 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "PhysicsEngine/1.0.0": {
+        "dependencies": {
+          "Editor": "1.0.0",
+          "Physics": "1.0.0"
+        },
+        "runtime": {
+          "PhysicsEngine.dll": {}
+        }
+      },
+      "Editor/1.0.0": {
+        "dependencies": {
+          "Physics": "1.0.0",
+          "RenderInterface": "1.0.0"
+        },
+        "runtime": {
+          "Editor.dll": {}
+        }
+      },
+      "Physics/1.0.0": {
+        "dependencies": {
+          "RenderInterface": "1.0.0"
+        },
+        "runtime": {
+          "Physics.dll": {}
+        }
+      },
+      "RenderInterface/1.0.0": {
+        "runtime": {
+          "RenderInterface.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "PhysicsEngine/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Editor/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Physics/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "RenderInterface/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

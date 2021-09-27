@@ -9,6 +9,12 @@ using System.Threading.Tasks;
 
 namespace RenderInterface
 {
+    [Serializable]
+    public class WhatTheFuckException : Exception
+    {
+        public WhatTheFuckException( string s ) : base( s ) { }
+    }
+
     // Interfaces for projects that don't include PhysicsEngine
     public class BaseEntity
     {
@@ -127,6 +133,29 @@ namespace RenderInterface
                     return false;
             }
             return true;
+        }
+        public float GetPointDistance( Vector Normal, Vector Point )
+        {
+            Vector[] Points = GetWorldVerts();
+            float[] ProjectedPoints = new float[ Points.Length ];
+            float ExtPoint = Vector.Dot( Point, Normal );
+
+            for ( int i = 0; i < Points.Length; ++i )
+                ProjectedPoints[ i ] = Vector.Dot( Points[ i ], Normal );
+
+            float EntMin = ProjectedPoints.Min();
+            float EntMax = ProjectedPoints.Max();
+
+            if ( ExtPoint > EntMin && ExtPoint < EntMax )
+                return TestCollision( Normal, Points, new[] { Point } ).Value; //point enclosed
+
+            //Outside of volume, should always be negative
+            if ( ExtPoint >= EntMax )
+                return EntMax - ExtPoint;
+            if ( ExtPoint <= EntMin )
+                return ExtPoint - EntMin;
+
+            throw new WhatTheFuckException( "what?" );
         }
         public Plane GetCollisionPlane( Vector pt )
         {
@@ -270,7 +299,7 @@ namespace RenderInterface
                 return 0;
             return CollisionDepth.Value;
         }
-        public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = new Vector(), Vector offset2 = new Vector() )
+        public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
         {
             if ( ent1 == ent2 )
                 return false;
@@ -331,6 +360,102 @@ namespace RenderInterface
                 return amax - bmin;
             else
                 return null;
+        }
+    }
+
+    public class BoxEnt : BaseEntity
+    {
+        public BoxEnt( Vector mins, Vector maxs, (Texture, string)[] tx, bool NormalizeBox = true ) :
+            base( new (FaceMesh, string)[ 6 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+        {
+            if ( NormalizeBox )
+            {
+                LocalTransform.Position = ( mins + maxs ) / 2;
+                mins -= LocalTransform.Position;
+                maxs -= LocalTransform.Position;
+            }
+
+            int[] inds =
+            {
+                0, 1, 3,
+                1, 2, 3
+            };
+
+            float[] ZMins =
+            {
+                mins.x, mins.y, mins.z, 1.0f, 0.0f,
+                maxs.x, mins.y, mins.z, 0.0f, 0.0f,
+                maxs.x, maxs.y, mins.z, 0.0f, 1.0f,
+                mins.x, maxs.y, mins.z, 1.0f, 1.0f,
+            };
+            float[] ZMaxs =
+            {
+                mins.x, mins.y, maxs.z, 0.0f, 0.0f,
+                maxs.x, mins.y, maxs.z, 1.0f, 0.0f,
+                maxs.x, maxs.y, maxs.z, 1.0f, 1.0f,
+                mins.x, maxs.y, maxs.z, 0.0f, 1.0f,
+            };
+            float[] YMins =
+            {
+                mins.x, mins.y, mins.z, 0.0f, 0.0f,
+                maxs.x, mins.y, mins.z, 1.0f, 0.0f,
+                maxs.x, mins.y, maxs.z, 1.0f, 1.0f,
+                mins.x, mins.y, maxs.z, 0.0f, 1.0f,
+            };
+            float[] YMaxs =
+            {
+                mins.x, maxs.y, mins.z, 1.0f, 0.0f,
+                maxs.x, maxs.y, mins.z, 0.0f, 0.0f,
+                maxs.x, maxs.y, maxs.z, 0.0f, 1.0f,
+                mins.x, maxs.y, maxs.z, 1.0f, 1.0f,
+            };
+            float[] XMins =
+            {
+                mins.x, mins.y, mins.z, 0.0f, 0.0f,
+                mins.x, maxs.y, mins.z, 0.0f, 1.0f,
+                mins.x, maxs.y, maxs.z, 1.0f, 1.0f,
+                mins.x, mins.y, maxs.z, 1.0f, 0.0f,
+            };
+            float[] XMaxs =
+            {
+                maxs.x, mins.y, mins.z, 1.0f, 0.0f,
+                maxs.x, maxs.y, mins.z, 1.0f, 1.0f,
+                maxs.x, maxs.y, maxs.z, 0.0f, 1.0f,
+                maxs.x, mins.y, maxs.z, 0.0f, 0.0f,
+            };
+
+            float[][] Verts = { ZMins, ZMaxs, YMins, YMaxs, XMins, XMaxs };
+
+            Vector[] Normals =
+            {
+                new Vector( 0, 0,-1 ),
+                new Vector( 0, 0, 1 ),
+                new Vector( 0,-1, 0 ),
+                new Vector( 0, 1, 0 ),
+                new Vector(-1, 0, 0 ),
+                new Vector( 1, 0, 0 )
+            };
+
+            switch ( tx.Length )
+            {
+                case 0:
+                for ( int i = 0; i < 6; ++i )
+                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, new Texture(), Normals[ i ] ), "");
+                break;
+                case 1:
+                for ( int i = 0; i < 6; ++i )
+                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ 0 ].Item1, Normals[ i ] ), tx[ 0 ].Item2);
+                break;
+                case 6:
+                for ( int i = 0; i < 6; ++i )
+                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ i ].Item1, Normals[ i ] ), tx[ i ].Item2);
+                break;
+                default:
+                Assert( false );
+                break;
+            }
+
+
         }
     }
     public class Transform
@@ -434,7 +559,7 @@ namespace RenderInterface
         }
     }
 
-    public class BaseWorld
+    public abstract class BaseWorld
     {
         public BaseWorld()
         {
@@ -455,6 +580,9 @@ namespace RenderInterface
             }
             return null;
         }
+
+        public abstract void AddPhysicsObject( BasePhysics p );
+        public abstract void RemovePhysicsObject( BasePhysics p );
     }
     public class BasePhysics
     {

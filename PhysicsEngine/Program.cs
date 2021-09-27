@@ -11,24 +11,30 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Reflection;
+using System.Threading;
+using Editor;
 
 namespace PhysEngine
 {
-    static class Program
+    internal static class Program
     {
-        static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
-        static Move MoveTracker = Move.MOVE_NONE;
-        static World MainWorld;
+        public static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
+        private static Move MoveTracker = Move.MOVE_NONE;
+        private static World MainWorld;
 
-        const float fov = 75.0f;
-        const float nearclip = 0.01f;
-        const float farclip = 1000.0f;
-        const float Movespeed_Air = 5.0f;
-        const float Movespeed_Gnd = 20.0f;
-        const float Max_Player_Speed = 5.0f;
-
-        static void Main( string[] args )
+        public const float fov = 75.0f;
+        public const float nearclip = 0.01f;
+        public const float farclip = 1000.0f;
+        public const float Movespeed_Air = 5.0f;
+        public const float Movespeed_Gnd = 20.0f;
+        public const float Max_Player_Speed = 5.0f;
+        
+        [STAThread]
+        public static void Main( string[] args )
         {
+            Thread t = new( () => App.Main() );
+            t.SetApartmentState( ApartmentState.STA );
+            t.Start();
             try
             {
                 Init( out IntPtr window );
@@ -97,6 +103,8 @@ namespace PhysEngine
 
 
             MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
+            if ( MainWindow.Started ) //editor open
+                MainWindow.Instance.World = MainWorld;
 
             (Texture, string)[] dirt = { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") };
             (Texture, string)[] grass = { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") };
@@ -499,7 +507,19 @@ namespace PhysEngine
                 switch ( mouse )
                 {
                     case MouseButton.LEFT:
+                    {
+                        if ( MainWindow.Started ) //editor open
+                        {
+                            Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
+                            Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
+                            RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
+                            if ( hit.bHit )
+                            {
+                                MainWindow.Instance.SelectedEntity = hit.HitEnt;
+                            }
+                        }
                         break;
+                    }
                     case MouseButton.RIGHT:
                         break;
                     default:

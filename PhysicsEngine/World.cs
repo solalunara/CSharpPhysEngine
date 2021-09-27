@@ -66,6 +66,16 @@ namespace PhysEngine
             PhysicsObjects.AddRange( pobjs );
             Environment.PObjs.AddRange( pobjs );
         }
+        public override void AddPhysicsObject( BasePhysics p )
+        {
+            PhysicsObjects.Add( p );
+            Environment.PObjs.Add( p );
+        }
+        public override void RemovePhysicsObject( BasePhysics p )
+        {
+            PhysicsObjects.Remove( p );
+            Environment.PObjs.Remove( p );
+        }
         public void Close()
         {
             for ( int i = 0; i < WorldEnts.Count; ++i )

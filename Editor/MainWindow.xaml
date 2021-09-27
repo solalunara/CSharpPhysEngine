@@ -1,0 +1,48 @@
+﻿<Window x:Class="Editor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Editor"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800"
+        Closed="CloseWindow">
+    <Grid>
+        <TextBlock HorizontalAlignment="Left" Margin="110,60,0,0" TextWrapping="Wrap" Text="Mins:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="110,100,0,0" TextWrapping="Wrap" Text="Maxs:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="184,295,0,0" TextWrapping="Wrap" Text="Position:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="224,315,0,0" TextWrapping="Wrap" Text="X:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="224,335,0,0" TextWrapping="Wrap" Text="Y:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="224,355,0,0" TextWrapping="Wrap" Text="Z:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="334,295,0,0" TextWrapping="Wrap" Text="Rotation:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="374,315,0,0" TextWrapping="Wrap" Text="X:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="374,335,0,0" TextWrapping="Wrap" Text="Y:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="374,355,0,0" TextWrapping="Wrap" Text="Z:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="484,298,0,0" TextWrapping="Wrap" Text="Scale:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="524,315,0,0" TextWrapping="Wrap" Text="X:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="524,335,0,0" TextWrapping="Wrap" Text="Y:" VerticalAlignment="Top"/>
+        <TextBlock HorizontalAlignment="Left" Margin="524,355,0,0" TextWrapping="Wrap" Text="Z:" VerticalAlignment="Top"/>
+        <TextBox x:Name="Mins" HorizontalAlignment="Left" Margin="160,60,0,0" TextWrapping="Wrap" Text="0, 0, 0" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="Maxs" HorizontalAlignment="Left" Margin="160,100,0,0" TextWrapping="Wrap" Text="0, 0, 0" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="Pos0" HorizontalAlignment="Left" Margin="244,315,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Pos1" HorizontalAlignment="Left" Margin="244,335,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Pos2" HorizontalAlignment="Left" Margin="244,355,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Rot0" HorizontalAlignment="Left" Margin="394,315,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Rot1" HorizontalAlignment="Left" Margin="394,335,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Rot2" HorizontalAlignment="Left" Margin="394,355,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Scl0" HorizontalAlignment="Left" Margin="544,315,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Scl1" HorizontalAlignment="Left" Margin="544,335,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <TextBox x:Name="Scl2" HorizontalAlignment="Left" Margin="544,355,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="57" Height="16"/>
+        <Button Content="Create New Entity" HorizontalAlignment="Left" Margin="80,135,0,0" VerticalAlignment="Top" Click="CreateNewEnt"/>
+        <Button Content="Update Entity Transform" HorizontalAlignment="Center" Margin="0,385,0,0" VerticalAlignment="Top" Click="UpdateEnt"/>
+        <Button Content="Replace Current Entity" HorizontalAlignment="Left" Margin="210,136,0,0" VerticalAlignment="Top" Click="ReplaceEnt"/>
+        <Button Content="Destroy Current Entity" HorizontalAlignment="Left" Margin="150,176,0,0" VerticalAlignment="Top" Click="DestroyEnt"/>
+        <TextBlock HorizontalAlignment="Left" Margin="510,60,0,0" TextWrapping="Wrap" Text="Mass:" VerticalAlignment="Top"/>
+        <TextBox x:Name="Mass" HorizontalAlignment="Left" Margin="580,60,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="120"/>
+        <TextBlock HorizontalAlignment="Left" Margin="510,100,0,0" TextWrapping="Wrap" VerticalAlignment="Top"><Run Text="Rotational "/><LineBreak/><Run Text="Inertia:"/></TextBlock>
+        <TextBox x:Name="RotInertia" HorizontalAlignment="Left" Margin="580,107,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="120"/>
+        <Button Content="Add Physics To Entity" HorizontalAlignment="Left" Margin="550,150,0,0" VerticalAlignment="Top" Click="AddPhys"/>
+        <TextBlock HorizontalAlignment="Left" Margin="100,20,0,0" TextWrapping="Wrap" Text="Texture:" VerticalAlignment="Top"/>
+        <TextBox x:Name="Texture" HorizontalAlignment="Left" Margin="160,20,0,0" TextWrapping="Wrap" Text="C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\bin\Debug\net6.0-windows\Textures\dirt.png" VerticalAlignment="Top" Width="540" Height="35"/>
+    </Grid>
+</Window>

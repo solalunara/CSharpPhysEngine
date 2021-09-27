@@ -1,7 +1,24 @@
 {
   "version": 3,
   "targets": {
-    "net6.0": {
+    "net6.0-windows7.0": {
+      "Editor/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v6.0",
+        "dependencies": {
+          "Physics": "1.0.0",
+          "RenderInterface": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Editor.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Editor.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
+      },
       "Physics/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
@@ -28,6 +45,11 @@
     }
   },
   "libraries": {
+    "Editor/1.0.0": {
+      "type": "project",
+      "path": "../Editor/Editor.csproj",
+      "msbuildProject": "../Editor/Editor.csproj"
+    },
     "Physics/1.0.0": {
       "type": "project",
       "path": "../Physics/Physics.csproj",
@@ -40,7 +62,8 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net6.0": [
+    "net6.0-windows7.0": [
+      "Editor >= 1.0.0",
       "Physics >= 1.0.0"
     ]
   },
@@ -66,15 +89,18 @@
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
-        "net6.0"
+        "net6.0-windows7.0"
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {}
       },
       "frameworks": {
-        "net6.0": {
-          "targetAlias": "net6.0",
+        "net6.0-windows7.0": {
+          "targetAlias": "net6.0-windows",
           "projectReferences": {
+            "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Editor\\Editor.csproj": {
+              "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Editor\\Editor.csproj"
+            },
             "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj": {
               "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj"
             }
@@ -88,8 +114,8 @@
       }
     },
     "frameworks": {
-      "net6.0": {
-        "targetAlias": "net6.0",
+      "net6.0-windows7.0": {
+        "targetAlias": "net6.0-windows",
         "imports": [
           "net461",
           "net462",
