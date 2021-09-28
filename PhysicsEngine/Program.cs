@@ -201,18 +201,31 @@ namespace PhysEngine
 
                 StartFrame( window );
                 SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
-                foreach ( BaseEntity b in MainWorld.WorldEnts )
+                try
                 {
-                    SetRenderValues( shader, b.CalcEntMatrix() );
-                    foreach ( (FaceMesh, string) m in b.Meshes )
+                    foreach ( BaseEntity b in MainWorld.WorldEnts )
                     {
-                        if ( !m.Item1.texture.Initialized )
-                            continue; //nothing to render
+                        SetRenderValues( shader, b.CalcEntMatrix() );
+                        foreach ( (FaceMesh, string) m in b.Meshes )
+                        {
+                            if ( !m.Item1.texture.Initialized )
+                                continue; //nothing to render
 
-                        m.Item1.Render( shader );
+                            m.Item1.Render( shader );
+                        }
+                    }
+                    CrosshairMesh.Render( GUI );
+
+                    if ( MainWindow.Started )
+                    {
+                        if ( MainWindow.ShouldCreateEnt )
+                            MainWindow.ExternCreateEnt( MainWorld );
                     }
                 }
-                CrosshairMesh.Render( GUI );
+                catch ( InvalidOperationException )
+                {
+                    Console.WriteLine( "Entity list updated during frame" );
+                }
                 EndFrame( window );
             }
             //world.ToFile( DirName + "/Worlds/world1.worldmap" );
@@ -509,7 +522,6 @@ namespace PhysEngine
                     {
                         if ( MainWindow.Started ) //editor open
                         {
-                            MainWindow.Instance.SetShader( DirName );
                             Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
                             Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
                             RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );

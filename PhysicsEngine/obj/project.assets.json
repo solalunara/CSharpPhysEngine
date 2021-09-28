@@ -74,11 +74,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
+      "projectUniqueName": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
       "projectName": "PhysicsEngine",
-      "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
+      "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\PhysicsEngine.csproj",
       "packagesPath": "C:\\Users\\FVP\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\PhysicsEngine\\obj\\",
+      "outputPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\PhysicsEngine\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -92,17 +92,18 @@
         "net6.0-windows7.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {}
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net6.0-windows7.0": {
           "targetAlias": "net6.0-windows",
           "projectReferences": {
-            "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Editor\\Editor.csproj": {
-              "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Editor\\Editor.csproj"
+            "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Editor\\Editor.csproj": {
+              "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Editor\\Editor.csproj"
             },
-            "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj": {
-              "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\opengl\\projects\\PhysEngine\\Physics\\Physics.csproj"
+            "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj": {
+              "projectPath": "C:\\Users\\FVP\\Documents\\programming\\cpp\\CSharpPhysEng\\CSharpPhysEngine\\Physics\\Physics.csproj"
             }
           }
         }

@@ -30,18 +30,7 @@ namespace Editor
         public static bool Started;
         public static MainWindow? Instance;
         public BaseWorld? World;
-        public void SetShader( string ApplicationDirectory )
-        { 
-            if ( !ShaderSet )
-                shader = new( ApplicationDirectory + "\\Shaders\\VertexShader.vert", ApplicationDirectory + "\\Shaders\\FragmentShader.frag" );
-            ShaderSet = true;
-        }
 
-        private IntPtr Window;
-        private Matrix Perspective;
-        private Transform Camera;
-        private Shader shader;
-        private bool ShaderSet;
 
         private BaseEntity? _SelectedEntity;
         public BaseEntity? SelectedEntity
@@ -79,36 +68,38 @@ namespace Editor
             Started = true;
             Instance = this;
             InitializeComponent();
-            Init( out Window );
-            Perspective = Matrix.Ortho( 10, 10, 10, 10, 0.01f, 1000 );
-            Camera = new( new(), new( 1, 1, 1 ), Matrix.IdentityMatrix() );
         }
 
         private void CloseWindow( object sender, EventArgs e )
         {
             Started = false;
             Instance = null;
-            Terminate();
         }
 
         private void CreateNewEnt( object sender, RoutedEventArgs e )
         {
+            ShouldCreateEnt = true;
+            MinsElems = Mins.Text.Split( ',' );
+            MaxsElems = Maxs.Text.Split( ',' );
+            TexturePath = Texture.Text;
+        }
+
+        public static bool ShouldCreateEnt;
+        private static string[] MinsElems = Array.Empty<string>();
+        private static string[] MaxsElems = Array.Empty<string>();
+        private static string TexturePath = "";
+        public static void ExternCreateEnt( BaseWorld World )
+        {
+            ShouldCreateEnt = false;
+
             if ( World is null )
                 return;
 
             try
             {
-                string[] MinsElems = Mins.Text.Split( ',' );
-                string[] MaxsElems = Maxs.Text.Split( ',' );
-                //remove parenthases
-                //MinsElems[ 0 ] = MinsElems[ 0 ][ 1.. ];
-                //MinsElems[ ^1 ] = MinsElems[ ^1 ][ ..MinsElems.Length ];
-                //MaxsElems[ 0 ] = MaxsElems[ 0 ][ 1.. ];
-                //MaxsElems[ ^1 ] = MaxsElems[ ^1 ][ ..MaxsElems.Length ];
-
                 Vector vMins = new( float.Parse( MinsElems[ 0 ], CultureInfo.CurrentCulture ), float.Parse( MinsElems[ 1 ], CultureInfo.CurrentCulture ), float.Parse( MinsElems[ 2 ], CultureInfo.CurrentCulture ) );
                 Vector vMaxs = new( float.Parse( MaxsElems[ 0 ], CultureInfo.CurrentCulture ), float.Parse( MaxsElems[ 1 ], CultureInfo.CurrentCulture ), float.Parse( MaxsElems[ 2 ], CultureInfo.CurrentCulture ) );
-                World.WorldEnts.Add( new BoxEnt( vMins, vMaxs, new[] { (Renderer.FindTexture( Texture.Text ), Texture.Text) } ) );
+                World.WorldEnts.Add( new BoxEnt( vMins, vMaxs, new[] { (FindTexture( TexturePath ), TexturePath) } ) );
             }
             catch ( Exception ex )
             {
@@ -122,17 +113,10 @@ namespace Editor
                 return;
             try
             {
-                string[] MinsElems = Mins.Text.Split( ',' );
-                string[] MaxsElems = Maxs.Text.Split( ',' );
-                //remove parenthases
-                MinsElems[ 0 ] = MinsElems[ 0 ][ 1.. ];
-                MinsElems[ ^1 ] = MinsElems[ ^1 ][ ..( MinsElems.Length - 1 ) ];
-                MaxsElems[ 0 ] = MaxsElems[ 0 ][ 1.. ];
-                MaxsElems[ ^1 ] = MaxsElems[ ^1 ][ ..( MinsElems.Length - 1 ) ];
-
-                Vector vMins = new( float.Parse( MinsElems[ 0 ], CultureInfo.CurrentCulture ), float.Parse( MinsElems[ 1 ], CultureInfo.CurrentCulture ), float.Parse( MinsElems[ 2 ], CultureInfo.CurrentCulture ) );
-                Vector vMaxs = new( float.Parse( MaxsElems[ 0 ], CultureInfo.CurrentCulture ), float.Parse( MaxsElems[ 1 ], CultureInfo.CurrentCulture ), float.Parse( MaxsElems[ 2 ], CultureInfo.CurrentCulture ) );
-                World.WorldEnts.Add( new BoxEnt( vMins, vMaxs, new[] { (Renderer.FindTexture( Texture.Text ), Texture.Text) } ) );
+                ShouldCreateEnt = true;
+                MinsElems = Mins.Text.Split( ',' );
+                MaxsElems = Maxs.Text.Split( ',' );
+                TexturePath = Texture.Text;
 
                 if ( World.GetEntPhysics( SelectedEntity ) is BasePhysics Phys )
                     World.RemovePhysicsObject( Phys );
@@ -195,22 +179,6 @@ namespace Editor
             {
                 MessageBox.Show( ex.StackTrace, ex.Message );
             }
-
-            StartFrame( Window );
-            
-            SetCameraValues( shader, Perspective, Camera.WorldToThis );
-            foreach ( BaseEntity b in World.WorldEnts )
-            {
-                SetRenderValues( shader, b.CalcEntMatrix() );
-                foreach ( (FaceMesh, string) m in b.Meshes )
-                {
-                    if ( !m.Item1.texture.Initialized )
-                        continue; //nothing to render
-
-                    m.Item1.Render( shader );
-                }
-            }
-            EndFrame( Window );
         }
     }
 }
