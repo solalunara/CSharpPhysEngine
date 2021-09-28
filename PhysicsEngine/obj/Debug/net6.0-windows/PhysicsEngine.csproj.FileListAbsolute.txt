@@ -22,7 +22,6 @@ C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0-windows\ref\PhysicsEngine.dll
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0-windows\PhysicsEngine.pdb
 C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0-windows\PhysicsEngine.genruntimeconfig.cache
-C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\obj\Debug\net6.0-windows\PhysicsEngine.csproj.CopyComplete
 C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\PhysicsEngine\bin\Debug\net6.0-windows\Editor.deps.json
 C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\PhysicsEngine\bin\Debug\net6.0-windows\Editor.runtimeconfig.json
 C:\Users\FVP\Documents\programming\cpp\CSharpPhysEng\CSharpPhysEngine\PhysicsEngine\bin\Debug\net6.0-windows\Editor.exe
