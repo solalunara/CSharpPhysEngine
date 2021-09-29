@@ -401,6 +401,7 @@ namespace PhysEngine
                             if ( hit.bHit )
                             {
                                 MainWindow.Instance.SelectedEntity = hit.HitEnt;
+                                MainWindow.Instance.SelectedFace = hit.HitFace;
                             }
                         }
                         break;
