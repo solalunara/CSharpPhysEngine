@@ -10,9 +10,13 @@ using System.Threading.Tasks;
 namespace RenderInterface
 {
     [Serializable]
-    public class WhatTheFuckException : Exception
+    public class WhatTheFuckException : ApplicationException
     {
         public WhatTheFuckException( string s ) : base( s ) { }
+
+        protected WhatTheFuckException( System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext ) : base( serializationInfo, streamingContext )
+        {
+        }
     }
 
     // Interfaces for projects that don't include PhysicsEngine

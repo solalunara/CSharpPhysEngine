@@ -44,5 +44,6 @@
         <Button Content="Add Physics To Entity" HorizontalAlignment="Left" Margin="550,150,0,0" VerticalAlignment="Top" Click="AddPhys"/>
         <TextBlock HorizontalAlignment="Left" Margin="100,20,0,0" TextWrapping="Wrap" Text="Texture:" VerticalAlignment="Top"/>
         <TextBox x:Name="Texture" HorizontalAlignment="Left" Margin="160,20,0,0" TextWrapping="Wrap" Text="C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\bin\Debug\net6.0-windows\Textures\dirt.png" VerticalAlignment="Top" Width="540" Height="35"/>
+        <Button Content="Set Current Face to Texture" HorizontalAlignment="Center" Margin="0,70,0,0" VerticalAlignment="Top" Click="SetFaceTexture"/>
     </Grid>
 </Window>

@@ -14,11 +14,10 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Globalization;
 using RenderInterface;
+using static System.Diagnostics.Debug;
 using static RenderInterface.Renderer;
 using Physics;
 using Vector = RenderInterface.Vector;
-using Matrix = RenderInterface.Matrix;
-using Transform = RenderInterface.Transform;
 
 namespace Editor
 {
@@ -62,6 +61,7 @@ namespace Editor
                 RotInertia.Dispatcher.Invoke( new Action( () => RotInertia.Text = Physics.RotInertia.ToString( CultureInfo.CurrentCulture ) ) );
             }
         }
+        public int SelectedFace;
 
         public MainWindow()
         {
@@ -179,6 +179,18 @@ namespace Editor
             {
                 MessageBox.Show( ex.StackTrace, ex.Message );
             }
+        }
+
+        private void SetFaceTexture( object sender, RoutedEventArgs e )
+        {
+            if ( SelectedEntity is null || SelectedFace >= SelectedEntity.Meshes.Length || SelectedFace < 0 )
+            {
+                Assert( false );
+                return;
+            }
+            TexturePath = Texture.Text;
+            SelectedEntity.Meshes[ SelectedFace ].Item2 = TexturePath;
+            SelectedEntity.Meshes[ SelectedFace ].Item1.texture = FindTexture( TexturePath );
         }
     }
 }

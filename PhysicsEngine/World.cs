@@ -11,17 +11,19 @@ namespace PhysEngine
 {
     struct RayHitInfo
     {
-        public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt )
+        public RayHitInfo( Vector ptHit, Vector vNormal, BaseEntity HitEnt, int HitFace )
         {
             this.bHit = true;
             this.ptHit = ptHit;
             this.vNormal = vNormal;
             this.HitEnt = HitEnt;
+            this.HitFace = HitFace;
         }
         public bool bHit;
         public Vector ptHit;
         public Vector vNormal;
         public BaseEntity HitEnt;
+        public int HitFace;
     }
     class World : BaseWorld
     {
@@ -96,7 +98,13 @@ namespace PhysEngine
                     if ( WorldEnts[ i ].TestCollision( ptStart ) )
                     {
                         Plane plane = WorldEnts[ i ].GetCollisionPlane( ptStart );
-                        return new RayHitInfo( ptStart, plane.Normal, WorldEnts[ i ] );
+                        int j;
+                        for ( j = 0; j < WorldEnts[ i ].Meshes.Length; ++j )
+                        {
+                            if ( plane.Normal == WorldEnts[ i ].Meshes[ j ].Item1.Normal )
+                                break;
+                        }
+                        return new RayHitInfo( ptStart, plane.Normal, WorldEnts[ i ], j );
                     }
                 }
                 ptStart += vDirection;
