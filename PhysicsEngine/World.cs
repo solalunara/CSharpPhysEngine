@@ -154,9 +154,15 @@ namespace PhysEngine
                 bool IsPlayerCamera = br.ReadBoolean();
                 bool IsPlayerBody = br.ReadBoolean();
                 if ( IsPlayerCamera )
+                {
+                    w.WorldEnts.Remove( w.player.camera );
                     w.player.camera = new Camera( ent );
+                }
                 if ( IsPlayerBody )
+                {
+                    w.WorldEnts.Remove( w.player.Body.LinkedEnt );
                     w.player.Body.LinkedEnt = ent;
+                }
             }
 
             w.player.camera.Parent = w.player.Body.LinkedEnt;

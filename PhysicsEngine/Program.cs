@@ -115,8 +115,6 @@ namespace PhysEngine
 
 
             MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
-            if ( MainWindow.Started ) //editor open
-                MainWindow.Instance.World = MainWorld;
 
             (Texture, string)[] dirt = { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") };
             (Texture, string)[] grass = { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") };
@@ -153,6 +151,9 @@ namespace PhysEngine
 
             while ( !ShouldTerminate( window ) )
             {
+                if ( MainWindow.Started && MainWindow.Instance.World is null ) //editor open
+                    MainWindow.Instance.World = MainWorld;
+
                 float time = GetTime();
                 float frametime = time - lasttime;
                 lasttime = time;
@@ -407,9 +408,13 @@ namespace PhysEngine
                         break;
                     }
                     case MouseButton.RIGHT:
+                    {
                         break;
+                    }
                     default:
+                    {
                         break;
+                    }
                 }
             }
         }
