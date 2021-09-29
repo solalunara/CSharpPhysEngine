@@ -1,4 +1,6 @@
-﻿global using Physics;
+﻿#define ALWAYS_USE_EDITOR
+
+global using Physics;
 global using RenderInterface;
 global using static System.Diagnostics.Debug;
 global using static RenderInterface.Renderer;
@@ -31,11 +33,11 @@ namespace PhysEngine
         
         public static void Main( string[] args )
         {
-            Thread t = new( () => App.Main() );
-            t.SetApartmentState( ApartmentState.STA );
-            t.Start();
             try
             {
+                Thread t = new( () => App.Main() );
+                t.SetApartmentState( ApartmentState.STA );
+
                 Init( out IntPtr window );
                 string[] TextureNames = Directory.EnumerateFiles( DirName + "\\Textures" ).ToArray();
                 for ( int i = 0; i < TextureNames.Length; ++i )
@@ -44,15 +46,20 @@ namespace PhysEngine
                 }
                 if ( args.Length > 0 )
                 {
+                    bool EditorStarted = false;
                     for ( int i = 0; i < args.Length; ++i )
                     {
+#if !ALWAYS_USE_EDITOR
+                        if ( args[ i ].ToLower() == "-editor" )
+#endif
+                        if ( !EditorStarted )
+                        {
+                            t.Start();
+                            EditorStarted = true;
+                        }
+
                         switch ( args[ i ].ToLower() )
                         {
-                            case "-2d":
-                            {
-                                Run2D( window );
-                                break;
-                            }
                             case "-3d":
                             {
                                 Run3D( window );
@@ -63,10 +70,16 @@ namespace PhysEngine
                         {
                             MainWorld = World.FromFile( args[ i ] );
                         }
+
                     }
                 }
                 else
+                {
+#if ALWAYS_USE_EDITOR
+                    t.Start();
+#endif
                     Run3D( window );
+                }
             }
             finally
             {
@@ -132,12 +145,9 @@ namespace PhysEngine
                 new BoxEnt( new Vector( -10, 5, -10 ), new Vector( 20, 6, 10 ), dirt )
             );
 
-            InputHandle inptptr = Input;
-            SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr ) );
-            WindowHandle wndptr = WindowMove;
-            SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
-            MouseHandle msptr = MouseClick;
-            SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
+            SetInputCallback( window, Marshal.GetFunctionPointerForDelegate<InputHandle>( Input ) );
+            SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate<WindowHandle>( WindowMove ) );
+            SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate<MouseHandle>( MouseClick ) );
 
             float lasttime = GetTime();
 
@@ -231,84 +241,6 @@ namespace PhysEngine
             //world.ToFile( DirName + "/Worlds/world1.worldmap" );
         }
 
-        public static void Run2D( IntPtr window )
-        {
-
-            string[] TextureNames = Directory.EnumerateFiles( DirName + "\\Textures" ).ToArray();
-            for ( int i = 0; i < TextureNames.Length; ++i )
-            {
-                AddTexture( TextureNames[ i ] );
-            }
-
-            Shader shader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\FragmentShader.frag" );
-            MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
-            Texture[] dirt = { FindTexture( DirName + "\\Textures\\dirt.png" ) };
-            Texture button = FindTexture( DirName + "\\Textures\\button.png" );
-
-            Texture Sun = FindTexture( DirName + "\\Textures\\Sun.png" );
-            Texture Earth = FindTexture( DirName + "\\Textures\\Earth.png" );
-            Texture Jupiter = FindTexture( DirName + "\\Textures\\Jupiter.png" );
-
-            MainWorld.Add
-            (
-                new Button( new( -9, -2.5f ), new( -4, 2.5f ), Sun, () => Console.WriteLine( "The sun" ) ),
-                new Button( new( -2.5f, -2.5f ), new( 2.5f, 2.5f ), Earth, () => Console.WriteLine( "The earth" ) ),
-                new Button( new( 4, -2.5f ), new( 9, 2.5f ), Jupiter, () => Console.WriteLine( "The planet jupiter" ) )
-            );
-            shader.SetAmbientLight( 1.0f );
-
-            InputHandle inptptr = Input;
-            SetInputCallback( window, Marshal.GetFunctionPointerForDelegate( inptptr = Input ) );
-            WindowHandle wndptr = WindowMove;
-            SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate( wndptr ) );
-            MouseHandle msptr = MouseClick;
-            SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate( msptr ) );
-
-            MainWorld.player = new Player2D();
-
-            while ( !ShouldTerminate( window ) )
-            {
-                /*
-                if ( rtMech.HasFlag( RuntimeMechanics.FIRELEFT ) )
-                {
-                    rtMech &= ~RuntimeMechanics.FIRELEFT;
-                    Point2<double> ms = Mouse.GetMouseNormalizedPos( window );
-                    Vector MousePos = MainWorld.player.camera.TransformPoint( new( (float) ms.x * 10, (float) ms.y * 10, 0 ) );
-                    MousePos.z = 0;
-                    for ( int i = 0; i < MainWorld.WorldEnts.Count; ++i )
-                    {
-                        if ( MainWorld.WorldEnts[ i ].GetType() == typeof( Button ) )
-                        {
-                            Button b = (Button)MainWorld.WorldEnts[ i ];
-                            if ( b.TestCollision( MousePos ) )
-                                b.ClickCallback();
-
-                        }
-                    }
-                }
-                */
-                StartFrame( window );
-                Matrix Cam = -MainWorld.player.camera.CalcEntMatrix();
-                SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
-                foreach ( BaseEntity b in MainWorld.WorldEnts )
-                {
-                    b.SetAbsRot( Matrix.RotMatrix( 0.5f, new( 0, 1, 1 ) ) * b.GetAbsRot() );
-                    SetRenderValues( shader, b.CalcEntMatrix() );
-                    foreach ( (FaceMesh, string) m in b.Meshes )
-                    {
-                        if ( !m.Item1.texture.Initialized )
-                            continue; //nothing to render
-
-                        m.Item1.Render( shader );
-                    }
-                };
-                EndFrame( window );
-            }
-
-            dirt[ 0 ].Close();
-            button.Close();
-            MainWorld.Close();
-        }
 
         public delegate void InputHandle( IntPtr window, Keys key, int scancode, Actions act, int mods );
         public static void Input( IntPtr window, Keys key, int scancode, Actions act, int mods )
@@ -335,20 +267,6 @@ namespace PhysEngine
                     }
                     case Keys.Q:
                     {
-                        Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
-                        Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
-                        if ( hit.bHit )
-                        {
-                            PhysObj HitPhys = (PhysObj)MainWorld.GetEntPhysics( hit.HitEnt );
-                            if ( HitPhys != null )
-                            {
-                                if ( HitPhys.AngularMomentum.y > 0 )
-                                    HitPhys.Torque -= new Vector( 0, 10, 10 );
-                                else
-                                    HitPhys.Torque += new Vector( 0, 10, 10 );
-                            }
-                        }
                         break;
                     }
                     case Keys.E:
@@ -377,34 +295,10 @@ namespace PhysEngine
                     }
                     case Keys.Z:
                     {
-                        Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
-                        Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
-                        Vector ptCenter;
-                        if ( hit.bHit )
-                            ptCenter = hit.ptHit + hit.vNormal * 0.5f;
-                        else
-                            ptCenter = MainWorld.player.camera.GetAbsOrigin() + TransformedForward / 10;
-
-                        Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
-                        Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
-                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") } ) );
                         break;
                     }
                     case Keys.X:
                     {
-                        Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
-                        Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
-                        Vector ptCenter;
-                        if ( hit.bHit )
-                            ptCenter = hit.ptHit + hit.vNormal * 0.5f;
-                        else
-                            ptCenter = MainWorld.player.camera.GetAbsOrigin() + TransformedForward / 10;
-
-                        Vector mins = ptCenter + new Vector( -.5f, -.5f, -.5f );
-                        Vector maxs = ptCenter + new Vector( 0.5f, 0.5f, 0.5f );
-                        MainWorld.Add( new BoxEnt( mins, maxs, new[] { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") } ) );
                         break;
                     }
                     case Keys.F:
@@ -418,35 +312,14 @@ namespace PhysEngine
                     }
                     case Keys.R:
                     {
-                        Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
-                        Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
-                        if ( hit.bHit || MainWorld.GetEntPhysics( hit.HitEnt ) == null )
-                            MainWorld.Add( new PhysObj( hit.HitEnt, PhysObj.Default_Coeffs, 25, 1, new() ) );
                         break;
                     }
                     case Keys.C:
                     {
-                        Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
-                        Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
-                        if ( hit.bHit )
-                        {
-                            BaseEntity HitEnt = hit.HitEnt;
-                            HitEnt.LocalTransform.Scale *= new Vector( 1.1f, 1.1f, 1.1f );
-                        }
                         break;
                     }
                     case Keys.V:
                     {
-                        Vector TransformedForward = (Vector)( MainWorld.player.camera.GetAbsRot() * new Vector4( 0, 0, -30, 1 ) );
-                        Vector EntPt = MainWorld.player.camera.GetAbsOrigin() + TransformedForward;
-                        RayHitInfo hit = MainWorld.TraceRay( MainWorld.player.camera.GetAbsOrigin(), EntPt, MainWorld.player.Body.LinkedEnt, MainWorld.player.camera );
-                        if ( hit.bHit )
-                        {
-                            BaseEntity HitEnt = hit.HitEnt;
-                            HitEnt.LocalTransform.Scale *= new Vector( 0.9f, 0.9f, 0.9f );
-                        }
                         break;
                     }
 

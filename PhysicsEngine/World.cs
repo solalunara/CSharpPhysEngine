@@ -151,7 +151,6 @@ namespace PhysEngine
                     w.player.Body.LinkedEnt = ent;
             }
 
-            Matrix PreAngles = w.player.camera.GetLocalRot();
             w.player.camera.Parent = w.player.Body.LinkedEnt;
             w.player.camera.SetLocalOrigin( Player3D.EYE_CENTER_OFFSET );
             w.player.camera.SetLocalRot( Matrix.IdentityMatrix() );
