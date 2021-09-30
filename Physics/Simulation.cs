@@ -19,13 +19,12 @@ namespace Physics
     }
     public class PhysicsSimulator
     {
-        public PhysicsSimulator( float PhysFrameTime, PhysicsEnvironment SimEnvironment, BaseWorld world )
+        public PhysicsSimulator( float PhysFrameTime, BaseWorld world, PhysicsEnvironment Environment  )
         {
-            int iPhysFrameTime = (int) ( PhysFrameTime * 1000 );
-            //timer = new( SimEnvironment.Simulate, Data, 0, iPhysFrameTime );
-            SimEnvironment.Data = new( world, PhysFrameTime );
+            this.Environment = Environment;
+            Environment.Data = new( world, PhysFrameTime );
             timer = new( PhysFrameTime );
-            timer.Elapsed += SimEnvironment.Simulate;
+            timer.Elapsed += Environment.Simulate;
             timer.AutoReset = true;
             timer.Enabled = true;
         }
@@ -34,16 +33,20 @@ namespace Physics
             timer.Dispose();
         }
 
+        public PhysicsEnvironment Environment;
+
         private readonly Timer timer;
 
         public void SetPause( bool Paused )
         {
             timer.AutoReset = !Paused;
+            Environment.Data.Paused = !timer.AutoReset;
         }
         public bool Paused() => !timer.AutoReset;
         public void SetFrameTime( float ft )
         {
             timer.Interval = ft;
+            Environment.Data.PhysSimTime = ft;
         }
         public void Close() => timer.Dispose();
     }

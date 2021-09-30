@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RenderInterface;
+using static RenderInterface.SaveRestore;
 
 namespace Physics
 {
@@ -14,7 +15,6 @@ namespace Physics
 
         const float GroundDragCoeff = 0.6f;
         const float AirDensity = 1.255f; //kg/m^3
-
 
         public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity ) : base( LinkedEnt )
         {
@@ -176,28 +176,28 @@ namespace Physics
         {
             int Index = ByteOffset;
 
-            int EntSize = SaveRestore.BytesToStruct<int>( Bytes, Index );
+            int EntSize = BytesToStruct<int>( Bytes, Index );
             Index += sizeof( int );
 
             BaseEntity LinkedEnt = BaseEntity.FromBytes( Bytes, Index );
             Index += EntSize;
 
-            Vector Momentum = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Vector Momentum = BytesToStruct<Vector>( Bytes, Index );
             Index += Marshal.SizeOf( Momentum );
 
-            Vector AngularMomentum = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Vector AngularMomentum = BytesToStruct<Vector>( Bytes, Index );
             Index += Marshal.SizeOf( AngularMomentum );
 
-            Vector AirDragCoeffs = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Vector AirDragCoeffs = BytesToStruct<Vector>( Bytes, Index );
             Index += Marshal.SizeOf( AirDragCoeffs );
 
-            Vector AirVelocity = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
+            Vector AirVelocity = BytesToStruct<Vector>( Bytes, Index );
             Index += Marshal.SizeOf( AirVelocity );
 
-            float Mass = SaveRestore.BytesToStruct<float>( Bytes, Index );
+            float Mass = BytesToStruct<float>( Bytes, Index );
             Index += Marshal.SizeOf( Mass );
 
-            float RotInertia = SaveRestore.BytesToStruct<float>( Bytes, Index );
+            float RotInertia = BytesToStruct<float>( Bytes, Index );
 
             PhysObj ret = new( LinkedEnt, AirDragCoeffs, Mass, RotInertia, Momentum / Mass )
             {

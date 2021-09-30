@@ -30,11 +30,9 @@ namespace PhysEngine
     {
         public World( Vector Gravity, float PhysSimTime ) : base()
         {
-            Environment = new( Gravity );
-            Simulator = new( PhysSimTime, Environment, this );
+            Simulator = new( PhysSimTime, this, new( Gravity ) );
         }
 
-        public PhysicsEnvironment Environment;
         public PhysicsSimulator Simulator;
 
         private Player _Player;
@@ -44,7 +42,7 @@ namespace PhysEngine
             set
             {
                 _Player = value;
-                if ( !Environment.PObjs.Contains( _Player.Body ) )
+                if ( !Simulator.Environment.PObjs.Contains( _Player.Body ) )
                     Add( _Player.Body );
                 if ( !WorldEnts.Contains( _Player.camera ) )
                     WorldEnts.Add( _Player.camera );
@@ -64,12 +62,12 @@ namespace PhysEngine
                     WorldEnts.Add( p.LinkedEnt );
                 }
             }
-            Environment.PObjs.AddRange( pobjs );
+            Simulator.Environment.PObjs.AddRange( pobjs );
         }
         public override void AddPhysicsObject( BasePhysics p ) => Add( (PhysObj)p );
         public override void RemovePhysicsObject( BasePhysics p )
         {
-            Environment.PObjs.Remove( p );
+            Simulator.Environment.PObjs.Remove( p );
             WorldEnts.Remove( p.LinkedEnt );
         }
         public void Close()
@@ -130,14 +128,14 @@ namespace PhysEngine
             }
 
 
-            bw.Write( Environment.PObjs.Count );
-            for ( int i = 0; i < Environment.PObjs.Count; ++i )
+            bw.Write( Simulator.Environment.PObjs.Count );
+            for ( int i = 0; i < Simulator.Environment.PObjs.Count; ++i )
             {
-                bool IsPlayerBody = Environment.PObjs[ i ] == player.Body;
+                bool IsPlayerBody = Simulator.Environment.PObjs[ i ] == player.Body;
                 bw.Write( !IsPlayerBody );
                 if ( !IsPlayerBody )
                 {
-                    byte[] PhysBytes = Environment.PObjs[ i ].ToBytes();
+                    byte[] PhysBytes = Simulator.Environment.PObjs[ i ].ToBytes();
                     bw.Write( PhysBytes.Length );
                     bw.Write( PhysBytes );
                 }
@@ -201,14 +199,14 @@ namespace PhysEngine
             return w;
         }
 
-        public override BasePhysics[] GetPhysObjList() => Environment.PObjs.ToArray();
+        public override BasePhysics[] GetPhysObjList() => Simulator.Environment.PObjs.ToArray();
 
         public override BasePhysics GetEntPhysics( BaseEntity ent )
         {
-            for ( int i = 0; i < Environment.PObjs.Count; ++i )
+            for ( int i = 0; i < Simulator.Environment.PObjs.Count; ++i )
             {
-                if ( Environment.PObjs[ i ].LinkedEnt == ent )
-                    return Environment.PObjs[ i ];
+                if ( Simulator.Environment.PObjs[ i ].LinkedEnt == ent )
+                    return Simulator.Environment.PObjs[ i ];
             }
             return null;
         }

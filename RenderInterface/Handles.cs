@@ -235,19 +235,15 @@ namespace RenderInterface
         //static members
         //Worth noting: this function gives an AXIS of collision, not a normal of collision
         //  what to do with the axis and how to orient it is up to implementers
-        public static Vector TestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
+        public static Vector TestCollision( BaseEntity ent1, BaseEntity ent2 )
         {
-            if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
+            if ( !BinaryTestCollision( ent1, ent2 ) )
             {
                 //Assert( false, "Objects not colliding!" ); //don't make it quiet
                 return new();
             }
             Vector[] Points1 = ent1.GetWorldVerts();
             Vector[] Points2 = ent2.GetWorldVerts();
-            for ( int i = 0; i < Points1.Length; ++i )
-                Points1[ i ] += offset1;
-            for ( int i = 0; i < Points2.Length; ++i )
-                Points2[ i ] += offset2;
 
             List<float> NormsEnt1 = new();
             List<float> NormsEnt2 = new();
@@ -281,9 +277,9 @@ namespace RenderInterface
                 return ent2.TransformDirection( ent2.Meshes[ NormEnt2 ].Item1.Normal );
             }
         }
-        public static float TestCollisionDepth( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
+        public static float TestCollisionDepth( BaseEntity ent1, BaseEntity ent2 )
         {
-            if ( !BinaryTestCollision( ent1, ent2, offset1, offset2 ) )
+            if ( !BinaryTestCollision( ent1, ent2 ) )
             {
                 //Assert( false, "Objects not colliding!" ); //don't make it quiet
                 return 0;
@@ -291,19 +287,15 @@ namespace RenderInterface
 
             Vector[] Points1 = ent1.GetWorldVerts();
             Vector[] Points2 = ent2.GetWorldVerts();
-            for ( int i = 0; i < Points1.Length; ++i )
-                Points1[ i ] += offset1;
-            for ( int i = 0; i < Points2.Length; ++i )
-                Points2[ i ] += offset2;
 
-            Vector Norm = TestCollision( ent1, ent2, offset1, offset2 );
+            Vector Norm = TestCollision( ent1, ent2 );
             float? CollisionDepth = TestCollision( Norm, Points1, Points2 );
             //Assert( CollisionDepth < 1 && CollisionDepth is not null );
             if ( CollisionDepth >= 1 || CollisionDepth is null )
                 return 0;
             return CollisionDepth.Value;
         }
-        public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2, Vector offset1 = default, Vector offset2 = default )
+        public static bool BinaryTestCollision( BaseEntity ent1, BaseEntity ent2 )
         {
             if ( ent1 == ent2 )
                 return false;
@@ -314,10 +306,6 @@ namespace RenderInterface
 
             Vector[] Points1 = ent1.GetWorldVerts();
             Vector[] Points2 = ent2.GetWorldVerts();
-            for ( int i = 0; i < Points1.Length; ++i )
-                Points1[ i ] += offset1;
-            for ( int i = 0; i < Points2.Length; ++i )
-                Points2[ i ] += offset2;
 
             for ( int EntIndex = 0; EntIndex < 2; ++EntIndex )
             {

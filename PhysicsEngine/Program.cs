@@ -1,4 +1,4 @@
-﻿#define ALWAYS_USE_EDITOR
+﻿//#define ALWAYS_USE_EDITOR
 
 global using Physics;
 global using RenderInterface;
@@ -114,7 +114,7 @@ namespace PhysEngine
             FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, FindTexture( DirName + "\\Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
 
 
-            MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.02f );
+            MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.03f );
 
             (Texture, string)[] dirt = { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") };
             (Texture, string)[] grass = { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") };
