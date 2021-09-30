@@ -176,8 +176,11 @@ namespace Physics
         {
             int Index = ByteOffset;
 
-            BaseEntity LinkedEnt = SaveRestore.BytesToStruct<BaseEntity>( Bytes, Index );
-            Index += Marshal.SizeOf( LinkedEnt );
+            int EntSize = SaveRestore.BytesToStruct<int>( Bytes, Index );
+            Index += sizeof( int );
+
+            BaseEntity LinkedEnt = BaseEntity.FromBytes( Bytes, Index );
+            Index += EntSize;
 
             Vector Momentum = SaveRestore.BytesToStruct<Vector>( Bytes, Index );
             Index += Marshal.SizeOf( Momentum );

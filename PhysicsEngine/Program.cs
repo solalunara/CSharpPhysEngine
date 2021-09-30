@@ -208,7 +208,7 @@ namespace PhysEngine
                     Mouse.ShowMouse( window );
 
 
-                TimeSpan TimeDiff = DateTime.Now - MainWorld.Environment.LastSimTime;
+                //TimeSpan TimeDiff = DateTime.Now - MainWorld.Environment.LastSimTime;
 
                 StartFrame( window );
                 SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
@@ -263,7 +263,7 @@ namespace PhysEngine
                         MainWorld.Close();
                         MainWorld = World.FromFile( DirName + "/Worlds/world1.worldmap" );
                         GetWindowSize( window, out int width, out int height );
-                        MainWorld.player.camera.Perspective = Matrix.Perspective( fov, width / height, nearclip, farclip );
+                        MainWorld.player.camera.Perspective = Matrix.Perspective( fov, (float) width / height, nearclip, farclip );
                         break;
                     }
                     case Keys.Q:

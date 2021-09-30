@@ -568,22 +568,12 @@ namespace RenderInterface
         public BaseWorld()
         {
             WorldEnts = new();
-            PhysicsObjects = new();
         }
         public List<BaseEntity> WorldEnts;
-        public List<BasePhysics> PhysicsObjects;
         public BaseEntity[] GetEntList() => WorldEnts.ToArray();
-        public BasePhysics[] GetPhysObjList() => PhysicsObjects.ToArray();
+        public abstract BasePhysics[] GetPhysObjList();
 
-        public BasePhysics GetEntPhysics( BaseEntity ent )
-        {
-            for ( int i = 0; i < PhysicsObjects.Count; ++i )
-            {
-                if ( PhysicsObjects[ i ].LinkedEnt == ent )
-                    return PhysicsObjects[ i ];
-            }
-            return null;
-        }
+        public abstract BasePhysics GetEntPhysics( BaseEntity ent );
 
         public abstract void AddPhysicsObject( BasePhysics p );
         public abstract void RemovePhysicsObject( BasePhysics p );

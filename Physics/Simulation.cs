@@ -45,6 +45,7 @@ namespace Physics
         {
             timer.Interval = ft;
         }
+        public void Close() => timer.Dispose();
     }
 
     public class PhysicsEnvironment

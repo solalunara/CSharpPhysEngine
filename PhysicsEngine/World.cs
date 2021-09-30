@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using static RenderInterface.SaveRestore;
 
 namespace PhysEngine
 {
@@ -43,12 +44,10 @@ namespace PhysEngine
             set
             {
                 _Player = value;
-                if ( !PhysicsObjects.Contains( _Player.Body ) )
-                    PhysicsObjects.Add( _Player.Body );
+                if ( !Environment.PObjs.Contains( _Player.Body ) )
+                    Add( _Player.Body );
                 if ( !WorldEnts.Contains( _Player.camera ) )
                     WorldEnts.Add( _Player.camera );
-                if ( !Environment.PObjs.Contains( _Player.Body ) )
-                    Environment.PObjs.Add( _Player.Body );
             } 
         }
 
@@ -65,23 +64,19 @@ namespace PhysEngine
                     WorldEnts.Add( p.LinkedEnt );
                 }
             }
-            PhysicsObjects.AddRange( pobjs );
             Environment.PObjs.AddRange( pobjs );
         }
-        public override void AddPhysicsObject( BasePhysics p )
-        {
-            PhysicsObjects.Add( p );
-            Environment.PObjs.Add( p );
-        }
+        public override void AddPhysicsObject( BasePhysics p ) => Add( (PhysObj)p );
         public override void RemovePhysicsObject( BasePhysics p )
         {
-            PhysicsObjects.Remove( p );
             Environment.PObjs.Remove( p );
+            WorldEnts.Remove( p.LinkedEnt );
         }
         public void Close()
         {
             for ( int i = 0; i < WorldEnts.Count; ++i )
                 WorldEnts[ i ].Close();
+            Simulator.Close();
         }
 
         public RayHitInfo TraceRay( Vector ptStart, Vector ptEnd, params BaseEntity[] IgnoreEnts )
@@ -122,15 +117,40 @@ namespace PhysEngine
             bw.Write( entlist.Length );
             for ( int i = 0; i < entlist.Length; ++i )
             {
-                byte[] EntBytes = entlist[ i ].ToBytes();
-                bw.Write( EntBytes.Length );
-                bw.Write( EntBytes );
-
                 bool IsPlayerCamera = entlist[ i ] == player.camera;
                 bool IsPlayerBody = entlist[ i ] == player.Body.LinkedEnt;
-                bw.Write( IsPlayerCamera );
-                bw.Write( IsPlayerBody );
+                bool HasPhysics = GetEntPhysics( entlist[ i ] ) is not null;
+                bw.Write( !IsPlayerBody && !IsPlayerCamera && !HasPhysics );
+                if ( !IsPlayerBody && !IsPlayerCamera && !HasPhysics )
+                {
+                    byte[] EntBytes = entlist[ i ].ToBytes();
+                    bw.Write( EntBytes.Length );
+                    bw.Write( EntBytes );
+                }
             }
+
+
+            bw.Write( Environment.PObjs.Count );
+            for ( int i = 0; i < Environment.PObjs.Count; ++i )
+            {
+                bool IsPlayerBody = Environment.PObjs[ i ] == player.Body;
+                bw.Write( !IsPlayerBody );
+                if ( !IsPlayerBody )
+                {
+                    byte[] PhysBytes = Environment.PObjs[ i ].ToBytes();
+                    bw.Write( PhysBytes.Length );
+                    bw.Write( PhysBytes );
+                }
+            }
+
+            byte[] CameraRot = StructToBytes( player.camera.GetLocalRot() );
+            byte[] BodyPos = StructToBytes( player.Body.LinkedEnt.GetAbsOrigin() );
+            byte[] BodyRot = StructToBytes( player.Body.LinkedEnt.GetAbsRot() );
+            byte[] BodyVel = StructToBytes( player.Body.Velocity );
+            bw.Write( CameraRot );
+            bw.Write( BodyPos );
+            bw.Write( BodyRot );
+            bw.Write( BodyVel );
 
             fs.Close();
             bw.Close();
@@ -147,32 +167,50 @@ namespace PhysEngine
             int EntListLength = br.ReadInt32();
             for ( int i = 0; i < EntListLength; ++i )
             {
-                int EntByteLength = br.ReadInt32();
-                BaseEntity ent = BaseEntity.FromBytes( br.ReadBytes( EntByteLength ) );
-                w.Add( ent );
-
-                bool IsPlayerCamera = br.ReadBoolean();
-                bool IsPlayerBody = br.ReadBoolean();
-                if ( IsPlayerCamera )
+                if ( br.ReadBoolean() )
                 {
-                    w.WorldEnts.Remove( w.player.camera );
-                    w.player.camera = new Camera( ent );
-                }
-                if ( IsPlayerBody )
-                {
-                    w.WorldEnts.Remove( w.player.Body.LinkedEnt );
-                    w.player.Body.LinkedEnt = ent;
+                    int EntByteLength = br.ReadInt32();
+                    BaseEntity ent = BaseEntity.FromBytes( br.ReadBytes( EntByteLength ) );
+                    w.Add( ent );
                 }
             }
 
-            w.player.camera.Parent = w.player.Body.LinkedEnt;
-            w.player.camera.SetLocalOrigin( Player3D.EYE_CENTER_OFFSET );
-            w.player.camera.SetLocalRot( Matrix.IdentityMatrix() );
+            int PhysObjCount = br.ReadInt32();
+            for ( int i = 0; i < PhysObjCount; ++i )
+            {
+                if ( br.ReadBoolean() )
+                {
+                    int PhysObjByteLength = br.ReadInt32();
+                    PhysObj p = PhysObj.FromBytes( br.ReadBytes( PhysObjByteLength ) );
+                    w.Add( p );
+                }
+            }
+
+            Matrix CameraRot = BytesToStruct<Matrix>( br.ReadBytes( Marshal.SizeOf( typeof( Matrix ) ) ) );
+            Vector BodyPos = BytesToStruct<Vector>( br.ReadBytes( Marshal.SizeOf( typeof( Vector ) ) ) );
+            Matrix BodyRot = BytesToStruct<Matrix>( br.ReadBytes( Marshal.SizeOf( typeof( Matrix ) ) ) );
+            Vector BodyVel = BytesToStruct<Vector>( br.ReadBytes( Marshal.SizeOf( typeof( Vector ) ) ) );
+            w.player.Body.LinkedEnt.SetAbsOrigin( BodyPos );
+            w.player.Body.LinkedEnt.SetAbsRot( BodyRot );
+            w.player.camera.SetLocalRot( CameraRot );
+            w.player.Body.Velocity = BodyVel;
 
             sr.Close();
             br.Close();
 
             return w;
+        }
+
+        public override BasePhysics[] GetPhysObjList() => Environment.PObjs.ToArray();
+
+        public override BasePhysics GetEntPhysics( BaseEntity ent )
+        {
+            for ( int i = 0; i < Environment.PObjs.Count; ++i )
+            {
+                if ( Environment.PObjs[ i ].LinkedEnt == ent )
+                    return Environment.PObjs[ i ];
+            }
+            return null;
         }
     }
 }
