@@ -360,6 +360,9 @@ namespace RenderInterface
         public BoxEnt( Vector mins, Vector maxs, (Texture, string)[] tx, bool NormalizeBox = true ) :
             base( new (FaceMesh, string)[ 6 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
         {
+            Mins = mins;
+            Maxs = maxs;
+
             if ( NormalizeBox )
             {
                 LocalTransform.Position = ( mins + maxs ) / 2;
@@ -449,6 +452,9 @@ namespace RenderInterface
 
 
         }
+
+        public Vector Mins;
+        public Vector Maxs;
     }
     public class Transform
     {
@@ -566,7 +572,7 @@ namespace RenderInterface
         public abstract void AddPhysicsObject( BasePhysics p );
         public abstract void RemovePhysicsObject( BasePhysics p );
     }
-    public class BasePhysics
+    public abstract class BasePhysics
     {
         public BasePhysics( BaseEntity LinkedEnt )
         {
@@ -593,6 +599,8 @@ namespace RenderInterface
         public Vector NetForce;
         public Vector Torque;
 
+        public Vector Gravity;
+
         public virtual byte[] ToBytes()
         {
             List<byte> ret = new();
@@ -605,6 +613,7 @@ namespace RenderInterface
             ret.AddRange( SaveRestore.StructToBytes( AirVelocity ) );
             ret.AddRange( SaveRestore.StructToBytes( Mass ) );
             ret.AddRange( SaveRestore.StructToBytes( RotInertia ) );
+            ret.AddRange( SaveRestore.StructToBytes( Gravity ) );
             return ret.ToArray();
         }
 

@@ -6,5 +6,5 @@ build_property.ProjectTypeGuids =
 build_property.InvariantGlobalization = 
 build_property.PlatformNeutralAssembly = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
-build_property.RootNamespace = PhysicsEngine
-build_property.ProjectDir = C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\PhysicsEngine\
+build_property.RootNamespace = Editor_3oxwfi0o_wpftmp
+build_property.ProjectDir = C:\Users\FVP\Documents\programming\cpp\opengl\projects\PhysEngine\Editor\

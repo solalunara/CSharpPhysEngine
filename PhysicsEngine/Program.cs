@@ -1,4 +1,4 @@
-﻿//#define ALWAYS_USE_EDITOR
+﻿#define ALWAYS_USE_EDITOR
 
 global using Physics;
 global using RenderInterface;
@@ -90,6 +90,7 @@ namespace PhysEngine
         public static void Run3D( IntPtr window )
         {
             Shader shader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\FragmentShader.frag" );
+            Shader SelectedShader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\Selected.frag" );
             Shader GUI = new( DirName + "\\Shaders\\GUIVert.vert", DirName + "\\Shaders\\GUIFrag.frag" );
             shader.SetAmbientLight( 0.0f );
 
@@ -114,7 +115,7 @@ namespace PhysEngine
             FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, FindTexture( DirName + "\\Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
 
 
-            MainWorld = new( PhysicsEnvironment.Default_Gravity, 0.03f );
+            MainWorld = new( 0.03f );
 
             (Texture, string)[] dirt = { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") };
             (Texture, string)[] grass = { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") };
@@ -122,25 +123,29 @@ namespace PhysEngine
             //player = new Player2D();
             MainWorld.Add
             (
-                new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 5, new() )
+                new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 5, new(), PhysicsEnvironment.Default_Gravity )
             );
+            BoxEnt GravityBox;
             MainWorld.Add
             (
                 //dirt floors
-                new BoxEnt( new Vector( -10, -11, -10 ), new Vector( 0, -10, 10 ), dirt ),
-                new BoxEnt( new Vector( 0, -12, -10 ), new Vector( 20, -11, 10 ), dirt ),
+                new BoxEnt( new( -10, -11, -10 ), new( 0, -10, 10 ), dirt ),
+                new BoxEnt( new( 0, -12, -10 ), new( 20, -11, 10 ), dirt ),
 
                 //grass walls
-                new BoxEnt( new Vector( -10, -10, -12 ), new Vector( 0, 5, -10 ), grass ),
-                new BoxEnt( new Vector( -10, -10, 10 ), new Vector( 0, 5, 12 ), grass ),
-                new BoxEnt( new Vector( 0, -11, -12 ), new Vector( 20, 5, -10 ), grass ),
-                new BoxEnt( new Vector( 0, -11, 10 ), new Vector( 20, 5, 12 ), grass ),
-                new BoxEnt( new Vector( -12, -10, -10 ), new Vector( -10, 5, 10 ), grass ),
-                new BoxEnt( new Vector( 10, -10, -10 ), new Vector( 12, 5, 10 ), grass ),
-                new BoxEnt( new Vector( 20, -11, -10 ), new Vector( 22, 5, 10 ), grass ),
+                new BoxEnt( new( -10, -10, -12 ), new( 0, 5, -10 ), grass ),
+                new BoxEnt( new( -10, -10, 10 ), new( 0, 5, 12 ), grass ),
+                new BoxEnt( new( 0, -11, -12 ), new( 20, 5, -10 ), grass ),
+                new BoxEnt( new( 0, -11, 10 ), new( 20, 5, 12 ), grass ),
+                new BoxEnt( new( -12, -10, -10 ), new( -10, 5, 10 ), grass ),
+                new BoxEnt( new( 10, -10, -10 ), new( 12, 5, 10 ), grass ),
+                new BoxEnt( new( 20, -11, -10 ), new( 22, 5, 10 ), grass ),
 
                 //dirt roof
-                new BoxEnt( new Vector( -10, 5, -10 ), new Vector( 20, 6, 10 ), dirt )
+                new BoxEnt( new Vector( -10, 5, -10 ), new Vector( 20, 6, 10 ), dirt ),
+
+                //gravity box
+                GravityBox = new BoxEnt( new( -1, -6, -1 ), new( 1, -4, 1 ), dirt )
             );
 
             SetInputCallback( window, Marshal.GetFunctionPointerForDelegate<InputHandle>( Input ) );
@@ -207,13 +212,17 @@ namespace PhysEngine
                 else
                     Mouse.ShowMouse( window );
 
+                Vector Radius = MainWorld.player.Body.LinkedEnt.GetAbsOrigin() - GravityBox.GetAbsOrigin();
+                MainWorld.player.Body.Gravity = 1 / ( -Radius * Radius.Length() );
+
 
                 //TimeSpan TimeDiff = DateTime.Now - MainWorld.Environment.LastSimTime;
 
                 StartFrame( window );
-                SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
+                //SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
                 try
                 {
+                    SetCameraValues( shader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
                     foreach ( BaseEntity b in MainWorld.WorldEnts )
                     {
                         SetRenderValues( shader, b.CalcEntMatrix() );
@@ -221,6 +230,7 @@ namespace PhysEngine
                         {
                             if ( !m.Item1.texture.Initialized )
                                 continue; //nothing to render
+
 
                             m.Item1.Render( shader );
                         }
@@ -231,6 +241,18 @@ namespace PhysEngine
                     {
                         if ( MainWindow.ShouldCreateEnt )
                             MainWindow.ExternCreateEnt( MainWorld );
+                        if ( MainWindow.Instance.SelectedEntity is not null )
+                        {
+                            SetCameraValues( SelectedShader, MainWorld.player.camera.Perspective, -MainWorld.player.camera.CalcEntMatrix() );
+                            foreach ( (FaceMesh, string) m in MainWindow.Instance.SelectedEntity.Meshes )
+                            {
+                                if ( !m.Item1.texture.Initialized )
+                                    continue; //nothing to render
+
+
+                                m.Item1.Render( SelectedShader );
+                            }
+                        }
                     }
                 }
                 catch ( InvalidOperationException )

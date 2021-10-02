@@ -22,19 +22,6 @@ namespace PhysEngine
         public Camera camera;
         public PhysObj Body;
     }
-
-    class Player2D : Player
-    {
-        public Player2D()
-        {
-            Body = new PhysObj( new Dim2Box( new( -.05f, -.1f ), new( 0.05f, 0.1f ), new() ), PhysObj.Default_Coeffs, 50, float.PositiveInfinity, new() );
-            camera = new( Matrix.Ortho( -10.0f, 10.0f, -10.0f, 10.0f, 0.01f, 1000.0f ) )
-            {
-                Parent = Body.LinkedEnt
-            };
-            camera.SetLocalOrigin( new( 0, 0, 10 ) );
-        }
-    }
     class Player3D : Player
     {
         public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
@@ -48,7 +35,7 @@ namespace PhysEngine
         public Player3D( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
         {
             _crouched = false;
-            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ), Coeffs, Mass, RotI, new() );
+            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ), Coeffs, Mass, RotI, new(), PhysicsEnvironment.Default_Gravity );
             camera = new Camera( Perspective )
             {
                 Parent = Body.LinkedEnt

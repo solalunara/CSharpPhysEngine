@@ -54,6 +54,14 @@ namespace Editor
                 Rot1.Dispatcher.Invoke( new Action( () => Rot1.Text = Rot.y.ToString( CultureInfo.CurrentCulture ) ) );
                 Rot2.Dispatcher.Invoke( new Action( () => Rot2.Text = Rot.z.ToString( CultureInfo.CurrentCulture ) ) );
 
+                if ( SelectedEntity is BoxEnt Box )
+                {
+                    Vector vMins = Box.Mins;
+                    Mins.Dispatcher.Invoke( new Action( () => Mins.Text = $"{vMins.x}, {vMins.y}, {vMins.z}" ) );
+                    Vector vMaxs = Box.Maxs;
+                    Maxs.Dispatcher.Invoke( new Action( () => Maxs.Text = $"{vMaxs.x}, {vMaxs.y}, {vMaxs.z}" ) );
+                }
+
                 BasePhysics? Physics = World.GetEntPhysics( SelectedEntity );
                 if ( Physics is null )
                     return;
@@ -152,7 +160,7 @@ namespace Editor
             {
                 float fMass = float.Parse( Mass.Text, CultureInfo.CurrentCulture );
                 float fRotInertia = float.Parse( RotInertia.Text, CultureInfo.CurrentCulture );
-                PhysObj p = new( SelectedEntity, Vector.One, fMass, fRotInertia, new() );
+                PhysObj p = new( SelectedEntity, Vector.One, fMass, fRotInertia, new(), PhysicsEnvironment.Default_Gravity );
                 World.AddPhysicsObject( p );
             }
             catch ( Exception ex )

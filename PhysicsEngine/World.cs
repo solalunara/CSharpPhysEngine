@@ -28,9 +28,9 @@ namespace PhysEngine
     }
     class World : BaseWorld
     {
-        public World( Vector Gravity, float PhysSimTime ) : base()
+        public World( float PhysSimTime ) : base()
         {
-            Simulator = new( PhysSimTime, this, new( Gravity ) );
+            Simulator = new( PhysSimTime, this, new() );
         }
 
         public PhysicsSimulator Simulator;
@@ -159,7 +159,7 @@ namespace PhysEngine
             StreamReader sr = new( filepath );
             BinaryReader br = new( sr.BaseStream );
 
-            World w = new( PhysicsEnvironment.Default_Gravity, 0.02f );
+            World w = new( 0.02f );
             w.player = new Player3D( Matrix.IdentityMatrix(), PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
 
             int EntListLength = br.ReadInt32();

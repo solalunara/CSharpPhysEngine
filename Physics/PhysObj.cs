@@ -16,12 +16,13 @@ namespace Physics
         const float GroundDragCoeff = 0.6f;
         const float AirDensity = 1.255f; //kg/m^3
 
-        public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity ) : base( LinkedEnt )
+        public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity, Vector Gravity ) : base( LinkedEnt )
         {
             this.AirDragCoeffs = AirDragCoeffs;
             this.Mass = Mass;
             this.RotInertia = RotInertia;
             this.Velocity = Velocity;
+            this.Gravity = Gravity;
         }
 
         internal Vector LastAngVelocity;
@@ -195,11 +196,14 @@ namespace Physics
             Index += Marshal.SizeOf( AirVelocity );
 
             float Mass = BytesToStruct<float>( Bytes, Index );
-            Index += Marshal.SizeOf( Mass );
+            Index += sizeof( float );
 
             float RotInertia = BytesToStruct<float>( Bytes, Index );
+            Index += sizeof( float );
 
-            PhysObj ret = new( LinkedEnt, AirDragCoeffs, Mass, RotInertia, Momentum / Mass )
+            Vector Gravity = BytesToStruct<Vector>( Bytes, Index );
+
+            PhysObj ret = new( LinkedEnt, AirDragCoeffs, Mass, RotInertia, Momentum / Mass, Gravity )
             {
                 AngularMomentum = AngularMomentum,
                 AirVelocity = AirVelocity

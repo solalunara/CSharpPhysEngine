@@ -1,8 +1,9 @@
 #version 330 core
 
-out vec4 FragColor;
-
 in vec2 TexCoord;
+in vec4 WorldPos;
+
+out vec4 FragColor;
 
 const int MAX_POINT_LIGHTS = 100;
 
@@ -14,8 +15,5 @@ uniform float LightIntensities[ MAX_POINT_LIGHTS ];
 
 void main()
 {
-	vec4 TexColor = texture( TextureToRender, TexCoord );
-	if ( TexColor.a < 0.1 )
-		discard;
-	FragColor = TexColor;
+	FragColor = texture( TextureToRender, TexCoord ) * vec4( .5, 0, .5, 1 );
 }

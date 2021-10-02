@@ -55,17 +55,15 @@ namespace Physics
     {
         public static readonly Vector Default_Gravity = new( 0, -10, 0 );
 
-        public PhysicsEnvironment( Vector Gravity )
+        public PhysicsEnvironment()
         {
             PObjs = new();
-            this.Gravity = Gravity;
             LastSimTime = DateTime.Now;
         }
 
         public DateTime LastSimTime;
 
         public List<BasePhysics> PObjs;
-        public Vector Gravity;
 
         internal SimulationData Data;
 
@@ -76,7 +74,7 @@ namespace Physics
                 LastSimTime = DateTime.Now;
                 float dt = Data.PhysSimTime;
                 BaseWorld world = Data.world;
-                Assert( !Data.Paused ); //shouldn't be called if we're paused
+                //Assert( !Data.Paused ); //shouldn't be called if we're paused
 
                 List<(PhysObj, PhysObj)> Pairs = PhysObj.GetCollisionPairs( world );
                 foreach ( (PhysObj, PhysObj) Pair in Pairs )
@@ -100,13 +98,13 @@ namespace Physics
                         if ( BaseEntity.BinaryTestCollision( ent, p.LinkedEnt ) )
                         {
                             Collide = true;
-                            p.Collide( ent, Gravity );
+                            p.Collide( ent, p.Gravity );
                         }
                     }
 
                     //p.TestCollision( world, out _, out bool TopCollision );
 
-                    p.NetForce += Gravity * p.Mass;
+                    p.NetForce += p.Gravity * p.Mass;
 
                     p.Momentum += p.NetForce * dt;
                     p.LinkedEnt.SetAbsOrigin( p.LinkedEnt.GetAbsOrigin() + p.Velocity * dt );
@@ -122,7 +120,7 @@ namespace Physics
                     p.NetForce = new();
                     p.ClearChannels();
 
-                    p.DragSimulate( Collide, Gravity );
+                    p.DragSimulate( Collide, p.Gravity );
                     p.LastAngVelocity = p.AngularVelocity;
                 }
             }
