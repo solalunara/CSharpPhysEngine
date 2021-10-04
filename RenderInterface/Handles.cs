@@ -34,6 +34,104 @@ namespace RenderInterface
             LocalTransform = clone.LocalTransform;
             _Parent = clone._Parent;
         }
+        public BaseEntity( Vector mins, Vector maxs, (Texture, string)[] tx, bool NormalizeBox = true ) :
+            this( new (FaceMesh, string)[ 6 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
+        {
+            Mins = mins;
+            Maxs = maxs;
+
+            if ( NormalizeBox )
+            {
+                LocalTransform.Position = ( mins + maxs ) / 2;
+                mins -= LocalTransform.Position;
+                maxs -= LocalTransform.Position;
+            }
+
+            int[] inds =
+            {
+                0, 1, 3,
+                1, 2, 3
+            };
+
+            float[] ZMins =
+            {
+                mins.x, mins.y, mins.z, 1.0f, 0.0f,
+                maxs.x, mins.y, mins.z, 0.0f, 0.0f,
+                maxs.x, maxs.y, mins.z, 0.0f, 1.0f,
+                mins.x, maxs.y, mins.z, 1.0f, 1.0f,
+            };
+            float[] ZMaxs =
+            {
+                mins.x, mins.y, maxs.z, 0.0f, 0.0f,
+                maxs.x, mins.y, maxs.z, 1.0f, 0.0f,
+                maxs.x, maxs.y, maxs.z, 1.0f, 1.0f,
+                mins.x, maxs.y, maxs.z, 0.0f, 1.0f,
+            };
+            float[] YMins =
+            {
+                mins.x, mins.y, mins.z, 0.0f, 0.0f,
+                maxs.x, mins.y, mins.z, 1.0f, 0.0f,
+                maxs.x, mins.y, maxs.z, 1.0f, 1.0f,
+                mins.x, mins.y, maxs.z, 0.0f, 1.0f,
+            };
+            float[] YMaxs =
+            {
+                mins.x, maxs.y, mins.z, 1.0f, 0.0f,
+                maxs.x, maxs.y, mins.z, 0.0f, 0.0f,
+                maxs.x, maxs.y, maxs.z, 0.0f, 1.0f,
+                mins.x, maxs.y, maxs.z, 1.0f, 1.0f,
+            };
+            float[] XMins =
+            {
+                mins.x, mins.y, mins.z, 0.0f, 0.0f,
+                mins.x, maxs.y, mins.z, 0.0f, 1.0f,
+                mins.x, maxs.y, maxs.z, 1.0f, 1.0f,
+                mins.x, mins.y, maxs.z, 1.0f, 0.0f,
+            };
+            float[] XMaxs =
+            {
+                maxs.x, mins.y, mins.z, 1.0f, 0.0f,
+                maxs.x, maxs.y, mins.z, 1.0f, 1.0f,
+                maxs.x, maxs.y, maxs.z, 0.0f, 1.0f,
+                maxs.x, mins.y, maxs.z, 0.0f, 0.0f,
+            };
+
+            float[][] Verts = { ZMins, ZMaxs, YMins, YMaxs, XMins, XMaxs };
+
+            Vector[] Normals =
+            {
+                new Vector( 0, 0,-1 ),
+                new Vector( 0, 0, 1 ),
+                new Vector( 0,-1, 0 ),
+                new Vector( 0, 1, 0 ),
+                new Vector(-1, 0, 0 ),
+                new Vector( 1, 0, 0 )
+            };
+
+            switch ( tx.Length )
+            {
+                case 0:
+                for ( int i = 0; i < 6; ++i )
+                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, new Texture(), Normals[ i ] ), "");
+                break;
+                case 1:
+                for ( int i = 0; i < 6; ++i )
+                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ 0 ].Item1, Normals[ i ] ), tx[ 0 ].Item2);
+                break;
+                case 6:
+                for ( int i = 0; i < 6; ++i )
+                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ i ].Item1, Normals[ i ] ), tx[ i ].Item2);
+                break;
+                default:
+                Assert( false );
+                break;
+            }
+
+
+        }
+
+        public Vector Mins;
+        public Vector Maxs;
 
         //member data
         public (FaceMesh, string)[] Meshes;
@@ -354,108 +452,6 @@ namespace RenderInterface
                 return null;
         }
     }
-
-    public class BoxEnt : BaseEntity
-    {
-        public BoxEnt( Vector mins, Vector maxs, (Texture, string)[] tx, bool NormalizeBox = true ) :
-            base( new (FaceMesh, string)[ 6 ], new Transform( new Vector(), new Vector( 1, 1, 1 ), Matrix.IdentityMatrix() ) )
-        {
-            Mins = mins;
-            Maxs = maxs;
-
-            if ( NormalizeBox )
-            {
-                LocalTransform.Position = ( mins + maxs ) / 2;
-                mins -= LocalTransform.Position;
-                maxs -= LocalTransform.Position;
-            }
-
-            int[] inds =
-            {
-                0, 1, 3,
-                1, 2, 3
-            };
-
-            float[] ZMins =
-            {
-                mins.x, mins.y, mins.z, 1.0f, 0.0f,
-                maxs.x, mins.y, mins.z, 0.0f, 0.0f,
-                maxs.x, maxs.y, mins.z, 0.0f, 1.0f,
-                mins.x, maxs.y, mins.z, 1.0f, 1.0f,
-            };
-            float[] ZMaxs =
-            {
-                mins.x, mins.y, maxs.z, 0.0f, 0.0f,
-                maxs.x, mins.y, maxs.z, 1.0f, 0.0f,
-                maxs.x, maxs.y, maxs.z, 1.0f, 1.0f,
-                mins.x, maxs.y, maxs.z, 0.0f, 1.0f,
-            };
-            float[] YMins =
-            {
-                mins.x, mins.y, mins.z, 0.0f, 0.0f,
-                maxs.x, mins.y, mins.z, 1.0f, 0.0f,
-                maxs.x, mins.y, maxs.z, 1.0f, 1.0f,
-                mins.x, mins.y, maxs.z, 0.0f, 1.0f,
-            };
-            float[] YMaxs =
-            {
-                mins.x, maxs.y, mins.z, 1.0f, 0.0f,
-                maxs.x, maxs.y, mins.z, 0.0f, 0.0f,
-                maxs.x, maxs.y, maxs.z, 0.0f, 1.0f,
-                mins.x, maxs.y, maxs.z, 1.0f, 1.0f,
-            };
-            float[] XMins =
-            {
-                mins.x, mins.y, mins.z, 0.0f, 0.0f,
-                mins.x, maxs.y, mins.z, 0.0f, 1.0f,
-                mins.x, maxs.y, maxs.z, 1.0f, 1.0f,
-                mins.x, mins.y, maxs.z, 1.0f, 0.0f,
-            };
-            float[] XMaxs =
-            {
-                maxs.x, mins.y, mins.z, 1.0f, 0.0f,
-                maxs.x, maxs.y, mins.z, 1.0f, 1.0f,
-                maxs.x, maxs.y, maxs.z, 0.0f, 1.0f,
-                maxs.x, mins.y, maxs.z, 0.0f, 0.0f,
-            };
-
-            float[][] Verts = { ZMins, ZMaxs, YMins, YMaxs, XMins, XMaxs };
-
-            Vector[] Normals =
-            {
-                new Vector( 0, 0,-1 ),
-                new Vector( 0, 0, 1 ),
-                new Vector( 0,-1, 0 ),
-                new Vector( 0, 1, 0 ),
-                new Vector(-1, 0, 0 ),
-                new Vector( 1, 0, 0 )
-            };
-
-            switch ( tx.Length )
-            {
-                case 0:
-                for ( int i = 0; i < 6; ++i )
-                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, new Texture(), Normals[ i ] ), "");
-                break;
-                case 1:
-                for ( int i = 0; i < 6; ++i )
-                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ 0 ].Item1, Normals[ i ] ), tx[ 0 ].Item2);
-                break;
-                case 6:
-                for ( int i = 0; i < 6; ++i )
-                    Meshes[ i ] = (new FaceMesh( Verts[ i ], inds, tx[ i ].Item1, Normals[ i ] ), tx[ i ].Item2);
-                break;
-                default:
-                Assert( false );
-                break;
-            }
-
-
-        }
-
-        public Vector Mins;
-        public Vector Maxs;
-    }
     public class Transform
     {
         public Transform( Vector Position, Vector Scale, Matrix Rotation )
@@ -577,7 +573,6 @@ namespace RenderInterface
         public BasePhysics( BaseEntity LinkedEnt )
         {
             this.LinkedEnt = LinkedEnt;
-            ForceChannels = new();
         }
         public BaseEntity LinkedEnt;
 
@@ -617,16 +612,6 @@ namespace RenderInterface
             return ret.ToArray();
         }
 
-        internal List<int> ForceChannels;
-        public void ClearChannels() => ForceChannels.Clear();
-        public void AddForce( Vector force, int Channel )
-        {
-            if ( !ForceChannels.Contains( Channel ) )
-            {
-                NetForce += force;
-                ForceChannels.Add( Channel );
-            }
-        }
         public void TestCollision( BaseWorld world, out bool bCollision, out bool TopCollision )
         {
             bCollision = false;

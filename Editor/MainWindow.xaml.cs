@@ -54,13 +54,10 @@ namespace Editor
                 Rot1.Dispatcher.Invoke( new Action( () => Rot1.Text = Rot.y.ToString( CultureInfo.CurrentCulture ) ) );
                 Rot2.Dispatcher.Invoke( new Action( () => Rot2.Text = Rot.z.ToString( CultureInfo.CurrentCulture ) ) );
 
-                if ( SelectedEntity is BoxEnt Box )
-                {
-                    Vector vMins = Box.Mins;
-                    Mins.Dispatcher.Invoke( new Action( () => Mins.Text = $"{vMins.x}, {vMins.y}, {vMins.z}" ) );
-                    Vector vMaxs = Box.Maxs;
-                    Maxs.Dispatcher.Invoke( new Action( () => Maxs.Text = $"{vMaxs.x}, {vMaxs.y}, {vMaxs.z}" ) );
-                }
+                Vector vMins = SelectedEntity.Mins;
+                Mins.Dispatcher.Invoke( new Action( () => Mins.Text = $"{vMins.x}, {vMins.y}, {vMins.z}" ) );
+                Vector vMaxs = SelectedEntity.Maxs;
+                Maxs.Dispatcher.Invoke( new Action( () => Maxs.Text = $"{vMaxs.x}, {vMaxs.y}, {vMaxs.z}" ) );
 
                 BasePhysics? Physics = World.GetEntPhysics( SelectedEntity );
                 if ( Physics is null )
@@ -107,7 +104,7 @@ namespace Editor
             {
                 Vector vMins = new( float.Parse( MinsElems[ 0 ], CultureInfo.CurrentCulture ), float.Parse( MinsElems[ 1 ], CultureInfo.CurrentCulture ), float.Parse( MinsElems[ 2 ], CultureInfo.CurrentCulture ) );
                 Vector vMaxs = new( float.Parse( MaxsElems[ 0 ], CultureInfo.CurrentCulture ), float.Parse( MaxsElems[ 1 ], CultureInfo.CurrentCulture ), float.Parse( MaxsElems[ 2 ], CultureInfo.CurrentCulture ) );
-                World.WorldEnts.Add( new BoxEnt( vMins, vMaxs, new[] { (FindTexture( TexturePath ), TexturePath) } ) );
+                World.WorldEnts.Add( new BaseEntity( vMins, vMaxs, new[] { (FindTexture( TexturePath ), TexturePath) } ) );
             }
             catch ( Exception ex )
             {
@@ -199,6 +196,13 @@ namespace Editor
             TexturePath = Texture.Text;
             SelectedEntity.Meshes[ SelectedFace ].Item2 = TexturePath;
             SelectedEntity.Meshes[ SelectedFace ].Item1.texture = FindTexture( TexturePath );
+        }
+
+        private void SetupTextureDropDown( object sender, EventArgs e )
+        {
+            string[] Textures = GetTextureList();
+            for ( int i = 0; i < Textures.Length; ++i )
+                Texture.Items.Add( Textures[ i ] );
         }
     }
 }

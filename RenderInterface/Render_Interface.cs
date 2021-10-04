@@ -22,6 +22,14 @@ namespace RenderInterface
             Assert( Name == "", "Failed to find texture with given name" );
             return new Texture();
         }
+        public static string[] GetTextureList()
+        {
+            Assert( Textures.Count != 0 );
+            string[] ret = new string[ Textures.Count ];
+            for ( int i = 0; i < ret.Length; ++i )
+                ret[ i ] = Textures[ i ].Item2;
+            return ret;
+        }
         public static void AddTexture( string Path )
         {
             Textures.Add( ( new Texture( Path ), Path ) );
@@ -500,7 +508,7 @@ namespace RenderInterface
         public static Vector operator *( Vector a, float b ) => new( a.x * b, a.y * b, a.z * b );
         public static Vector operator *( float b, Vector a ) => a * b;
         public static Vector operator /( Vector a, float b ) => new( a.x / b, a.y / b, a.z / b );
-        public static Vector operator /( float b, Vector a ) => a / b;
+        public static Vector operator /( float b, Vector a ) => new( b / a.x, b / a.y, b / a.z );
         public static Vector operator *( Vector a, Vector b ) => new( a.x * b.x, a.y * b.y, a.z * b.z );
         public static bool operator ==( Vector a, Vector b ) => a.x == b.x && a.y == b.y && a.z == b.z;
         public static bool operator !=( Vector a, Vector b ) => !( a == b );

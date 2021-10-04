@@ -23,6 +23,7 @@ namespace PhysEngine
         public static readonly string DirName = Path.GetDirectoryName( Assembly.GetExecutingAssembly().Location );
         private static Move MoveTracker = Move.MOVE_NONE;
         private static World MainWorld;
+        private static float FrameTime;
 
         public const float fov = 75.0f;
         public const float nearclip = 0.01f;
@@ -57,27 +58,25 @@ namespace PhysEngine
                             t.Start();
                             EditorStarted = true;
                         }
-
-                        switch ( args[ i ].ToLower() )
-                        {
-                            case "-3d":
-                            {
-                                Run3D( window );
-                                break;
-                            }
-                        }
                         if ( args[ i ].ToLower().Contains( ".worldmap" ) )
                         {
                             MainWorld = World.FromFile( args[ i ] );
                         }
-
                     }
+                    if ( MainWorld is null )
+                    {
+                        MainWorld = new( PhysSimTime: 0.02f );
+                        MainWorld.player = new Player3D( Matrix.IdentityMatrix(), PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
+                    }
+                    Run3D( window );
                 }
                 else
                 {
 #if ALWAYS_USE_EDITOR
                     t.Start();
 #endif
+                    MainWorld = new( PhysSimTime: 0.02f );
+                    MainWorld.player = new Player3D( Matrix.IdentityMatrix(), PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
                     Run3D( window );
                 }
             }
@@ -89,6 +88,9 @@ namespace PhysEngine
 
         public static void Run3D( IntPtr window )
         {
+            GetWindowSize( window, out int width, out int height );
+            MainWorld.player.camera.Perspective = Matrix.Perspective( fov, (float)width / height, nearclip, farclip );
+
             Shader shader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\FragmentShader.frag" );
             Shader SelectedShader = new( DirName + "\\Shaders\\VertexShader.vert", DirName + "\\Shaders\\Selected.frag" );
             Shader GUI = new( DirName + "\\Shaders\\GUIVert.vert", DirName + "\\Shaders\\GUIFrag.frag" );
@@ -101,9 +103,6 @@ namespace PhysEngine
             };
             shader.SetLights( testlights );
 
-            GetWindowSize( window, out int width, out int height );
-            Matrix persp = Matrix.Perspective( fov, (float) width / height, nearclip, farclip );
-
             float[] CrosshairVerts =
             {
                 -.05f, -.05f, 0.0f,     0.0f, 0.0f,
@@ -115,67 +114,65 @@ namespace PhysEngine
             FaceMesh CrosshairMesh = new( CrosshairVerts, CrosshairInds, FindTexture( DirName + "\\Textures\\Crosshair.png" ), new Vector( 0, 0, 0 ) );
 
 
-            MainWorld = new( 0.03f );
-
             (Texture, string)[] dirt = { (FindTexture( DirName + "\\Textures\\dirt.png" ), DirName + "\\Textures\\dirt.png") };
             (Texture, string)[] grass = { (FindTexture( DirName + "\\Textures\\grass.png" ), DirName + "\\Textures\\grass.png") };
-            MainWorld.player = new Player3D( persp, PhysObj.Default_Coeffs, Player3D.PLAYER_MASS, Player3D.PLAYER_ROTI );
             //player = new Player2D();
             MainWorld.Add
             (
-                new PhysObj( new BoxEnt( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 5, new(), PhysicsEnvironment.Default_Gravity )
+                new PhysObj( new BaseEntity( new Vector( -1, -1, -7 ), new Vector( 1, 0, -5 ), grass ), PhysObj.Default_Coeffs, 25, 5, new(), PhysicsEnvironment.Default_Gravity )
             );
-            BoxEnt GravityBox;
+            //BaseEntity GravityBox;
             MainWorld.Add
             (
                 //dirt floors
-                new BoxEnt( new( -10, -11, -10 ), new( 0, -10, 10 ), dirt ),
-                new BoxEnt( new( 0, -12, -10 ), new( 20, -11, 10 ), dirt ),
+                new BaseEntity( new( -10, -11, -10 ), new( 0, -10, 10 ), dirt ),
+                new BaseEntity( new( 0, -12, -10 ), new( 20, -11, 10 ), dirt ),
 
                 //grass walls
-                new BoxEnt( new( -10, -10, -12 ), new( 0, 5, -10 ), grass ),
-                new BoxEnt( new( -10, -10, 10 ), new( 0, 5, 12 ), grass ),
-                new BoxEnt( new( 0, -11, -12 ), new( 20, 5, -10 ), grass ),
-                new BoxEnt( new( 0, -11, 10 ), new( 20, 5, 12 ), grass ),
-                new BoxEnt( new( -12, -10, -10 ), new( -10, 5, 10 ), grass ),
-                new BoxEnt( new( 10, -10, -10 ), new( 12, 5, 10 ), grass ),
-                new BoxEnt( new( 20, -11, -10 ), new( 22, 5, 10 ), grass ),
+                new BaseEntity( new( -10, -10, -12 ), new( 0, 5, -10 ), grass ),
+                new BaseEntity( new( -10, -10, 10 ), new( 0, 5, 12 ), grass ),
+                new BaseEntity( new( 0, -11, -12 ), new( 20, 5, -10 ), grass ),
+                new BaseEntity( new( 0, -11, 10 ), new( 20, 5, 12 ), grass ),
+                new BaseEntity( new( -12, -10, -10 ), new( -10, 5, 10 ), grass ),
+                new BaseEntity( new( 10, -10, -10 ), new( 12, 5, 10 ), grass ),
+                new BaseEntity( new( 20, -11, -10 ), new( 22, 5, 10 ), grass ),
 
                 //dirt roof
-                new BoxEnt( new Vector( -10, 5, -10 ), new Vector( 20, 6, 10 ), dirt ),
+                new BaseEntity( new Vector( -10, 5, -10 ), new Vector( 20, 6, 10 ), dirt )
 
                 //gravity box
-                GravityBox = new BoxEnt( new( -1, -6, -1 ), new( 1, -4, 1 ), dirt )
+                //GravityBox = new BaseEntity( new( -1, -6, -1 ), new( 1, -4, 1 ), dirt )
             );
+
+            //MainWorld.player.Body.Gravity = new();
 
             SetInputCallback( window, Marshal.GetFunctionPointerForDelegate<InputHandle>( Input ) );
             SetWindowMoveCallback( window, Marshal.GetFunctionPointerForDelegate<WindowHandle>( WindowMove ) );
             SetMouseButtonCallback( window, Marshal.GetFunctionPointerForDelegate<MouseHandle>( MouseClick ) );
 
             float lasttime = GetTime();
-
             while ( !ShouldTerminate( window ) )
             {
                 if ( MainWindow.Started && MainWindow.Instance.World is null ) //editor open
                     MainWindow.Instance.World = MainWorld;
 
                 float time = GetTime();
-                float frametime = time - lasttime;
+                FrameTime = time - lasttime;
                 lasttime = time;
-                if ( frametime > 1.0f )
-                    frametime = 0; //most likely debugging
+                if ( FrameTime > 1.0f )
+                    FrameTime = 0; //most likely debugging
 
                 if ( !MainWorld.Simulator.Paused() )
                 {
-                    BasePhysics CamPhys = MainWorld.player.Body;
+                    PhysObj CamPhys = MainWorld.player.Body;
 
                     Mouse.HideMouse( window );
                     const float LookSpeed = 10.0f;
                     Point2<double> MousePos = Mouse.GetMouseOffset( window );
-                    MainWorld.player.Body.LinkedEnt.SetAbsRot( Matrix.RotMatrix( frametime * LookSpeed * -(float)MousePos.x, new Vector( 0, 1, 0 ) ) * MainWorld.player.Body.LinkedEnt.GetAbsRot() );
+                    MainWorld.player.Body.LinkedEnt.SetAbsRot( Matrix.RotMatrix( FrameTime * LookSpeed * -(float)MousePos.x, new Vector( 0, 1, 0 ) ) * MainWorld.player.Body.LinkedEnt.GetAbsRot() );
 
                     Matrix PrevHead = MainWorld.player.camera.GetLocalRot();
-                    MainWorld.player.camera.SetLocalRot( Matrix.RotMatrix( frametime * LookSpeed * -(float)MousePos.y, new Vector( 1, 0, 0 ) ) * MainWorld.player.camera.GetLocalRot() );
+                    MainWorld.player.camera.SetLocalRot( Matrix.RotMatrix( FrameTime * LookSpeed * -(float)MousePos.y, new Vector( 1, 0, 0 ) ) * MainWorld.player.camera.GetLocalRot() );
                     if ( Vector.Dot( new Vector( 0, 0, -1 ), MainWorld.player.camera.GetLocalRot().GetForward() ) < 0 ) //looking >90 degrees
                     {
                         MainWorld.player.camera.SetLocalRot( PrevHead );
@@ -196,7 +193,7 @@ namespace PhysEngine
                     if ( ( MoveTracker & Move.MOVE_RIGHT ) != 0 )
                         Force += MainWorld.player.Body.LinkedEnt.TransformDirection( new Vector( 1, 0, 0 ) ) * Movespeed * CamPhys.Mass;
                     //Force.y = 0;
-                    CamPhys.AddForce( Force, 0 );
+                    CamPhys.AddImpulse( Force, FrameTime );
 
                     if ( ( MoveTracker & Move.MOVE_JUMP ) != 0 && TopCollision )
                     {
@@ -212,8 +209,9 @@ namespace PhysEngine
                 else
                     Mouse.ShowMouse( window );
 
-                Vector Radius = MainWorld.player.Body.LinkedEnt.GetAbsOrigin() - GravityBox.GetAbsOrigin();
-                MainWorld.player.Body.Gravity = 1 / ( -Radius * Radius.Length() );
+                //Vector Radius = MainWorld.player.Body.LinkedEnt.GetAbsOrigin() - GravityBox.GetAbsOrigin();
+                //if ( Radius.LengthSqr() > 0.1f )
+                //    MainWorld.player.Body.Gravity = ( -Radius.Normalized() * 100 ) / Radius.LengthSqr();
 
 
                 //TimeSpan TimeDiff = DateTime.Now - MainWorld.Environment.LastSimTime;
@@ -230,7 +228,6 @@ namespace PhysEngine
                         {
                             if ( !m.Item1.texture.Initialized )
                                 continue; //nothing to render
-
 
                             m.Item1.Render( shader );
                         }

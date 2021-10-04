@@ -27,15 +27,15 @@ namespace PhysEngine
         public static readonly Vector EYE_CENTER_OFFSET = new( 0, 0.5f, 0 );
         public static readonly BBox PLAYER_NORMAL_BBOX = new( new Vector( -.5f, -1.0f, -.5f ), new Vector( .5f, 1.0f, .5f ) );
         public static readonly BBox PLAYER_CROUCH_BBOX = new( new Vector( -.5f, -0.5f, -.5f ), new Vector( .5f, 0.5f, .5f ) );
-        public static readonly (FaceMesh, string)[] PLAYER_NORMAL_FACES = new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ).Meshes;
-        public static readonly (FaceMesh, string)[] PLAYER_CROUCH_FACES = new BoxEnt( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, Array.Empty<(Texture, string)>() ).Meshes;
+        public static readonly (FaceMesh, string)[] PLAYER_NORMAL_FACES = new BaseEntity( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ).Meshes;
+        public static readonly (FaceMesh, string)[] PLAYER_CROUCH_FACES = new BaseEntity( PLAYER_CROUCH_BBOX.mins, PLAYER_CROUCH_BBOX.maxs, Array.Empty<(Texture, string)>() ).Meshes;
         public const float PLAYER_MASS = 50.0f;
         public const float PLAYER_ROTI = float.PositiveInfinity;
 
         public Player3D( Matrix Perspective, Vector Coeffs, float Mass, float RotI )
         {
             _crouched = false;
-            Body = new PhysObj( new BoxEnt( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ), Coeffs, Mass, RotI, new(), PhysicsEnvironment.Default_Gravity );
+            Body = new PhysObj( new BaseEntity( PLAYER_NORMAL_BBOX.mins, PLAYER_NORMAL_BBOX.maxs, Array.Empty<(Texture, string)>() ), Coeffs, Mass, RotI, new(), PhysicsEnvironment.Default_Gravity );
             camera = new Camera( Perspective )
             {
                 Parent = Body.LinkedEnt

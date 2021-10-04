@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PhysEngine
 {
-    class Dim2Box : BoxEnt
+    class Dim2Box : BaseEntity
     {
         public Dim2Box( Point2<float> Mins, Point2<float> Maxs, Texture tex ) : base( new( Mins.x, Mins.y, -1 ), new( Maxs.x, Maxs.y, 1 ), Array.Empty<(Texture, string)>() )
         {

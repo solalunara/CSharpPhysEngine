@@ -14,7 +14,7 @@ namespace Physics
         public static readonly Vector Default_Coeffs = Vector.One;
 
         const float GroundDragCoeff = 0.6f;
-        const float AirDensity = 1.255f; //kg/m^3
+        const float AtmoDensity = 1.255f; //kg/m^3
 
         public PhysObj( BaseEntity LinkedEnt, Vector AirDragCoeffs, float Mass, float RotInertia, Vector Velocity, Vector Gravity ) : base( LinkedEnt )
         {
@@ -33,8 +33,13 @@ namespace Physics
             Vector Radius = WorldPt - LinkedEnt.GetAbsOrigin();
             Torque += Vector.Cross( Radius, Force );
         }
+        public void AddImpulse( Vector Force, float ds )
+        {
+            // dv = Fdt / m
+            Velocity += ( Force * ds ) / Mass;
+        }
 
-        public void DragSimulate( bool GroundFriction, Vector Gravity )
+        public void DragSimulate( bool GroundFriction, Vector Gravity, float AirDensity = AtmoDensity )
         {
             //Objects sometimes have a hard time coming to rest on a surface, because they'll keep alternating direction of rotation.
             //Here we try to help those objects out a little bit by detecting their condition then rounding their angles to rest nicely on the surface.
@@ -112,7 +117,7 @@ namespace Physics
         {
             Vector Direction = OtherEnt.GetAbsOrigin() - LinkedEnt.GetAbsOrigin();
             Vector CollisionNormal = BaseEntity.TestCollision( LinkedEnt, OtherEnt );
-            if ( Vector.Dot( Direction, CollisionNormal ) > 0 )
+            if ( Vector.Dot( Direction.Normalized(), CollisionNormal ) > 0 )
                 CollisionNormal = -CollisionNormal;
             float CollisionDepth = BaseEntity.TestCollisionDepth( LinkedEnt, OtherEnt );
 
